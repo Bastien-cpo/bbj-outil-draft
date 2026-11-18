@@ -19,5 +19,10 @@ python3 build.py
 ```
 puis ouvrir `dist/index.html` dans un navigateur.
 
+## En ligne et dans Drafter
+- Site : https://bastien-cpo.github.io/bbj-outil-draft/ (fichiers `index.html`, `champs.webp`, `team.json` à la racine, copiés depuis `dist/`).
+- `team.json` : copie des données d'équipe (tier lists, line-up, préparation, historique) — la base partagée reste l'outil sur Claude.
+- Favori « BBJ ➜ Drafter » (`relay/overlay.js`) : à cliquer sur une page drafter.lol, ouvre l'outil en panneau et lui envoie picks et bans toutes les 0,5 s.
+
 ## Versions
 Voir [CHANGELOG.md](CHANGELOG.md).

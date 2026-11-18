@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.2 — 18/11/2026
+- La synchro par onglets ne passe pas depuis claude.ai (lien entre fenêtres coupé). Nouveau favori : **l'outil s'ouvre en panneau dans la page Drafter** (`relay/overlay.js`), hébergé sur GitHub Pages, et reçoit la draft en direct.
+- Version GitHub Pages : lit `team.json` (copie des tier lists, line-up, préparation, historique) mise à jour par Claude ; mode `?embed=1` compact.
+
 ## v10.1 — 18/11/2026
 - Fin de série : « Nouvelle série » vide la préparation de l'adversaire (op.gg, bans de préparation) ; son op.gg est gardé dans l'Historique. Bouton « Effacer la préparation » dans Préparation.
 - Statut Drafter en haut de l'outil : « Drafter connecté · draft remplie automatiquement » (vert) ou « déconnecté · saisie manuelle ».
