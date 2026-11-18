@@ -106,7 +106,11 @@ function drafterPanel(){
    ${ui.showRelay?`<textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea><p class="muted">Crée un favori et colle ce texte comme adresse.</p>`:""}
    <p class="muted">Les rôles sont devinés (pool et tier list de chaque joueur) : corrige-les dans la colonne si besoin. Quand Drafter passe à la game suivante, la game finie part dans la série (fearless).</p></section>`;
 }
-setInterval(()=>{ const el=document.querySelector(".drstat"); if(el){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null; el.className="drstat "+(age!=null&&age<5?"on":age!=null?"off":""); el.textContent=age!=null&&age<5?"Drafter ✓":"Drafter"; } },1000);
+setInterval(()=>{ const h=document.getElementById("drsync"); if(h){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null;
+    if(age!=null&&age<5){ h.className="on"; h.textContent="Drafter connecté · draft remplie automatiquement"; }
+    else if(age!=null){ h.className="off"; h.textContent="Drafter déconnecté (il y a "+age+" s) · saisie manuelle"; }
+    else { h.className=""; h.textContent=""; } }
+  const el=document.querySelector(".drstat"); if(el){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null; el.className="drstat "+(age!=null&&age<5?"on":age!=null?"off":""); el.textContent=age!=null&&age<5?"Drafter ✓":"Drafter"; } },1000);
 
 // ---------- Historique des séries ----------
 function seriesScore(gs){ const w=gs.filter(g=>g.result==="W").length, l=gs.filter(g=>g.result==="L").length; return w+"-"+l; }
@@ -114,9 +118,12 @@ function archiveSeries(){
   const games=live.series.games.slice(); if(live.draft.actions.every(Boolean)) games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
   if(!games.length) return;
   const opp=prep.opponent||(prep.players||[]).map(p=>String(p.name||"").split("#")[0]).filter(Boolean).slice(0,3).join(", ")||"Adversaire";
-  history.series.unshift({date:new Date().toLocaleDateString("fr-FR"), opponent:opp, type:"Scrim", lineup:{...prep.lineup}, games});
-  persist("history"); flash("Série enregistrée dans l'historique");
+  history.series.unshift({date:new Date().toLocaleDateString("fr-FR"), opponent:opp, type:"Scrim", lineup:{...prep.lineup}, games,
+    scouting:{link:prep.link||"", players:prep.players||[]}}); // op.gg de l'adversaire gardé pour les futurs profils
+  persist("history"); clearPrep(); flash("Série enregistrée dans l'historique, préparation remise à zéro");
 }
+// Série terminée : la préparation de l'adversaire (op.gg, bans) est vidée, on garde notre nom et notre line-up
+function clearPrep(){ prep.opponent=""; prep.link=""; prep.ids=[]; prep.players=[]; prep.request=null; prep.updatedAt=""; persist("prep"); }
 function viewHistory(){
   const S=history.series||[];
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
@@ -240,7 +247,7 @@ function viewPrep(){
     <div class="row"><input data-act="popp" value="${esc(prep.opponent)}" placeholder="Nom de l'équipe adverse"></div>
     <div class="row"><input data-act="plink" value="${esc(prep.link||"")}" placeholder="Colle ici le lien multi-op.gg des adversaires"></div>
     <div class="ids5">${ROLES.map((r,k)=>`<label><em>Joueur ${k+1}</em><input data-act="pid" data-k="${k}" value="${esc((prep.ids||[])[k]||"")}" placeholder="Pseudo#TAG"></label>`).join("")}</div>
-    <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
+    <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button><button class="btn sm" data-act="clearprep" title="Série terminée : vide l'adversaire, son op.gg et les bans de préparation">Effacer la préparation</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
     <p class="muted">${reqStatus()}${prep.updatedAt?` Dernière mise à jour des profils : ${esc(prep.updatedAt)}.`:""}</p></section>
   <section class="card"><h3>Bans conseillés</h3>
     ${plan.length?`<p class="muted">Par ordre de priorité : 1 = le plus important. Il y en a 7 car l'adversaire bannit souvent une partie de ceux que vous visiez.</p><div class="bplan">${plan.slice(0,7).map((x,k)=>`<div class="bpc"><span class="rk">${k+1}</span>${av(x.name,"lg")}<b>${esc(x.name)}</b><span class="muted">${esc(x.player.split("#")[0])} · ${ROLE_NAMES[x.role]}</span>
@@ -355,6 +362,7 @@ document.addEventListener("click",e=>{
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
   else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
+  else if(act==="clearprep"){ clearPrep(); flash("Préparation remise à zéro"); render(); }
   else if(act==="drpanel"){ ui.drPanel=!ui.drPanel; render(); }
   else if(act==="opendrafter"){ openDrafter(); }
   else if(act==="showrelay"){ ui.showRelay=!ui.showRelay; render(); }
