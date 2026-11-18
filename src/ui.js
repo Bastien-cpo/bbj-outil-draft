@@ -1,0 +1,408 @@
+// ===== Interface v4 =====
+const $=s=>document.querySelector(s);
+const LS="bbj-draft-v3";
+const DEF_LINEUP={T:"Fayk",J:"Billy",M:"JH",A:"Bastien",S:"Léo"};
+let cfg=defaultConfig();
+let prep={opponent:"", link:"", players:[], lineup:{...DEF_LINEUP}, updatedAt:null};
+let live={series:{locked:[],games:[]}, draft:{side:"B",actions:Array(20).fill(null)}};
+let history={series:[]}; // séries terminées (archivées par « Nouvelle série »)
+let ui={tab:"draft", poolPlayer:"Fayk", hover:null, synQ:"", ctrQ:"", tierPop:null, manual:false, pending:null, edit:null, viewGame:null, gridQ:"", gridRole:"all"};
+let sync={db:null, ok:false, readOnly:false, note:"Local"};
+
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function av(n,cls=""){ const i=ICON_INDEX[n];
+  if(i==null) return `<span class="av ${cls}">${esc(String(n).slice(0,2))}</span>`;
+  return `<span class="av ${cls}" title="${esc(n)}" style="--c:${i%14};--r:${Math.floor(i/14)}"></span>`; }
+const curStep=()=>live.draft.actions.findIndex(a=>!a);
+const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id}</option>`).join("");
+
+// ---------- Stockage : base partagée (équipe) sinon navigateur ----------
+function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer,drafterLink:ui.drafterLink}})); }catch(e){} }
+function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } return c; }
+function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); } }catch(e){} }
+const pending={}, writing={}, timers={};
+function persist(key){ saveLocal(); if(!sync.db||sync.readOnly) return; clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key),450); pending[key]=true; }
+async function flush(key){
+  if(writing[key]){ timers[key]=setTimeout(()=>flush(key),300); return; }
+  writing[key]=true; pending[key]=false;
+  const body={config:cfg,prep:prep,live:live,history:history}[key];
+  try{ await sync.db.doc("team/"+key).set(JSON.parse(JSON.stringify({v:body,at:Date.now()}))); sync.ok=true; sync.note="Synchronisé avec l'équipe"; }
+  catch(e){ if(e&&e.code==="invalid_argument"){ sync.readOnly=true; sync.note="Lecture seule : tu suis la draft en direct"; } else { sync.note="Hors ligne : enregistré sur cet appareil"; } }
+  writing[key]=false; renderSync();
+}
+async function initDb(){
+  if(!(window.claude&&window.claude.use)) return;
+  let db=null; try{ db=await window.claude.use("db"); }catch(e){}
+  if(!db) return;
+  sync.db=db; sync.note="Connexion à la base de l'équipe…"; renderSync();
+  const t=setTimeout(()=>{ sync.note="Base d'équipe injoignable : enregistré sur cet appareil"; renderSync(); },10000);
+  const apply={config:v=>{cfg=migrate(Object.assign(defaultConfig(),v));}, prep:v=>{prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},v);}, live:v=>{live=v;}, history:v=>{history=Object.assign({series:[]},v);}};
+  ["config","prep","live","history"].forEach(key=>{
+    db.doc("team/"+key).onSnapshot(snap=>{
+      if(!snap.metadata.fromCache){ clearTimeout(t); sync.ok=true; if(!sync.readOnly) sync.note="Synchronisé avec l'équipe"; }
+      if(snap.exists&&!pending[key]&&!snap.metadata.hasPendingWrites){ const d=snap.data(); if(d&&d.v){ apply[key](JSON.parse(JSON.stringify(d.v))); saveLocal(); render(); return; } }
+      renderSync();
+    }, ()=>{ sync.note="Synchro interrompue : enregistré sur cet appareil"; renderSync(); });
+  });
+}
+function renderSync(){ const el=$("#sync"); if(el){ el.textContent=sync.note; el.className=sync.ok?(sync.readOnly?"ro":"ok"):""; } }
+
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===ui.tab));
+  const v={draft:viewDraft,prep:viewPrep,pools:viewPools,hist:viewHistory,settings:viewSettings}[ui.tab]||viewDraft;
+  $("#view").innerHTML=v(); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
+}
+// Chaque ligne de suggestions montre autant de bulles entières que la largeur le permet
+function fitRows(){ document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
+  const t=k.length?k[0].offsetTop:0; k.forEach(c=>{ if(c.offsetTop>t+4) c.style.visibility="hidden"; }); }); }
+let _fitT=null; window.addEventListener("resize",()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitRows,80); });
+
+// ---------- Drafter en direct ----------
+// Le relais tourne sur la page Drafter (favori) : il lit picks et bans affichés et les envoie ici toutes les 0,5 s.
+const RELAY_CODE="(()=>{ if(window.__bbjRelay){ alert(\"Relais BBJ d\u00e9j\u00e0 actif sur cette page\"); return; } window.__bbjRelay=1;\nlet target=window.opener||null, last=\"\", lastSent=0;\naddEventListener(\"message\",e=>{ if(e.data&&e.data.type===\"bbj-hello\"){ target=e.source; } });\nconst ids={};\nconst badge=document.createElement(\"div\"); badge.style.cssText=\"position:fixed;z-index:2147483647;left:12px;bottom:12px;padding:6px 10px;border-radius:8px;font:600 12px system-ui;color:#111;background:#d4ad52;box-shadow:0 2px 8px rgba(0,0,0,.4)\"; document.body.appendChild(badge);\nfunction scan(){\n  document.querySelectorAll(\"img\").forEach(i=>{ const m=(i.getAttribute(\"src\")||\"\").match(/champions\\/(\\d+)-/); if(m&&i.alt&&i.alt!==\"Ban\"&&i.alt!==\"Pick\") ids[m[1]]=i.alt; });\n  const W=innerWidth/2, P={B:[],R:[]}, Bn={B:[],R:[]};\n  document.querySelectorAll('img[alt=\"Pick\"],img[alt=\"Ban\"]').forEach(i=>{ const s=i.getAttribute(\"src\")||\"\", r=i.getBoundingClientRect(); if(!r.width) return;\n    const side=(r.x+r.width/2)<W?\"B\":\"R\";\n    if(i.alt===\"Pick\"){ const m=s.match(/splashes\\/([a-z0-9]+)-/); if(m&&!P[side].some(x=>x[1]===m[1])) P[side].push([r.y,m[1]]); }\n    else { const m=s.match(/champions\\/(\\d+)-/); if(m){ const n=ids[m[1]]||m[1]; if(!Bn[side].some(x=>x[1]===n)) Bn[side].push([r.x,n]); } } });\n  const txt=document.body.innerText;\n  const blue=(txt.match(/([^\\n]+)\\n\\s*c\u00f4t\u00e9 bleu/)||txt.match(/([^\\n]+)\\n\\s*blue side/i)||[])[1]||\"\";\n  const red=(txt.match(/([^\\n]+)\\n\\s*(?:Pr\u00eat\\s*)?c\u00f4t\u00e9 rouge/)||txt.match(/([^\\n]+)\\n\\s*(?:Ready\\s*)?red side/i)||[])[1]||\"\";\n  const phase=(txt.match(/(Pick|Ban) (bleu|rouge)/)||[\"\"])[0];\n  return {v:1, game:+(new URL(location.href).searchParams.get(\"game\")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,\n    bb:Bn.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rb:Bn.R.sort((a,b)=>b[0]-a[0]).map(x=>x[1]),\n    bp:P.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rp:P.R.sort((a,b)=>a[0]-b[0]).map(x=>x[1])};\n}\nwindow.__bbjScan=scan;\nsetInterval(()=>{ let st; try{ st=scan(); }catch(e){ return; } const k=JSON.stringify(st); const now=Date.now();\n  if(target&&(k!==last||now-lastSent>3000)){ try{ target.postMessage({type:\"bbj-drafter\",state:st},\"*\"); lastSent=now; last=k; }catch(e){} }\n  badge.textContent=target?\"BBJ Draft Lab : synchro active \u2713\":\"BBJ Draft Lab : ouvre Drafter depuis l'outil\";\n  badge.style.background=target?\"#4cc27f\":\"#d4ad52\"; },500);\n})();\n";
+const RIOT_KEY={}; RIOT_KEYS_RAW.split("|").forEach(t=>{ const [k,n]=t.split(":"); RIOT_KEY[k]=findChamp(n)||n; });
+const DRAFTER_ALIAS={monkeyking:"Wukong",nunu:"Nunu"};
+let drafterWin=null, drafterLast=0, drafterState=null;
+function drafterChamp(x){ if(x==null) return null; x=String(x); if(/^\d+$/.test(x)) return RIOT_KEY[x]||null; return DRAFTER_ALIAS[x.toLowerCase()]||findChamp(x); }
+function openDrafter(){ const link=(ui.drafterLink||"").trim(); if(!/^https?:\/\/(www\.)?drafter\.lol\//.test(link)){ flash("Colle d'abord le lien Drafter de la série"); return; }
+  drafterWin=window.open(link,"bbj_drafter"); if(!drafterWin) flash("Le navigateur a bloqué l'ouverture : autorise les fenêtres pop-up"); }
+setInterval(()=>{ if(drafterWin&&!drafterWin.closed){ try{ drafterWin.postMessage({type:"bbj-hello"},"*"); }catch(e){} } },1000);
+window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state) return; if(!drafterLast&&ui.drPanel){ ui.drPanel=false; flash("Drafter connecté ✓"); } drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); });
+// rôle d'un pick : rôle libre que le champion joue, en privilégiant (chez nous) le joueur qui l'a dans son pool
+function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; const open=roles.filter(r=>!taken.includes(r));
+  if(side===live.draft.side){ const best=open.map(r=>({r,t:TIER_VAL[tierFor(cfg,prep.lineup[r],r,c)]||0})).sort((a,b)=>b.t-a.t)[0]; if(best&&best.t>0) return best.r; }
+  return open[0]||roles[0]; }
+function applyDrafter(st){
+  const empty=!(st.bb||[]).length&&!(st.rb||[]).length&&!(st.bp||[]).length&&!(st.rp||[]).length;
+  if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)) return; // page Drafter pas encore chargée : on ne vide pas la draft
+  const me=(ourName()||"BBJ").toLowerCase().trim(), bl=(st.blue||"").toLowerCase(), rd=(st.red||"").toLowerCase();
+  let side=live.draft.side; if(me&&bl.includes(me)&&!rd.includes(me)) side="B"; else if(me&&rd.includes(me)&&!bl.includes(me)) side="R";
+  // nouvelle game sur Drafter : la game précédente part dans la série (fearless) et on repart d'une draft vide
+  if(live.drafterGame&&st.game&&st.game!==live.drafterGame){
+    if(st.game>live.drafterGame&&live.draft.actions.some(Boolean)){ const names=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").map(a=>a.name);
+      live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null}); }
+    live.draft={side,actions:Array(20).fill(null)}; }
+  live.drafterGame=st.game||1; if(opponentFromDrafter(st,side)) {}
+  const src={ban:{B:st.bb||[],R:st.rb||[]},pick:{B:st.bp||[],R:st.rp||[]}}, cnt={ban:{B:0,R:0},pick:{B:0,R:0}};
+  const old=live.draft.actions, acts=Array(20).fill(null), taken={B:[],R:[]};
+  STEPS.forEach(([t,s],i)=>{ const raw=src[t][s][cnt[t][s]++]; const c=drafterChamp(raw); if(!c) return;
+    if(t==="ban"){ acts[i]={name:c}; return; }
+    const o=old[i]&&old[i].name===c?old[i]:null; const role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]);
+    taken[s].push(role); acts[i]={name:c,role,flex:o?!!o.flex:false}; });
+  const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side;
+  live.draft.side=side; live.draft.actions=acts;
+  if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
+}
+function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(n&&!/^adversaires?$/i.test(n)&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
+function drafterPanel(){
+  const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null, live_=age!=null&&age<5;
+  return `<section class="card drp"><h3>Drafter en direct ${live_?'<span class="tag ok">synchro active</span>':age!=null?`<span class="tag ko">dernier signal il y a ${age} s</span>`:'<span class="tag">pas connecté</span>'}</h3>
+   <ol class="muted">
+    <li>Une seule fois : glisse ce bouton dans ta barre de favoris → <a class="btn sm bm" href="javascript:${encodeURIComponent(RELAY_CODE)}" title="À glisser dans les favoris">BBJ ➜ Drafter</a>
+      <button class="lnk" data-act="showrelay">ou copier le code</button></li>
+    <li>Colle le lien Drafter de la série puis ouvre-le d'ici (important : c'est ce qui relie les deux onglets).</li>
+    <li>Sur la page Drafter, clique le favori « BBJ ➜ Drafter » : un badge vert confirme la synchro. Picks et bans arrivent ici tout seuls.</li></ol>
+   <div class="row"><input data-act="drlink" value="${esc(ui.drafterLink||"")}" placeholder="https://drafter.lol/draft/…" style="flex:1"><button class="btn" data-act="opendrafter">Ouvrir Drafter</button></div>
+   ${ui.showRelay?`<textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea><p class="muted">Crée un favori et colle ce texte comme adresse.</p>`:""}
+   <p class="muted">Les rôles sont devinés (pool et tier list de chaque joueur) : corrige-les dans la colonne si besoin. Quand Drafter passe à la game suivante, la game finie part dans la série (fearless).</p></section>`;
+}
+setInterval(()=>{ const el=document.querySelector(".drstat"); if(el){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null; el.className="drstat "+(age!=null&&age<5?"on":age!=null?"off":""); el.textContent=age!=null&&age<5?"Drafter ✓":"Drafter"; } },1000);
+
+// ---------- Historique des séries ----------
+function seriesScore(gs){ const w=gs.filter(g=>g.result==="W").length, l=gs.filter(g=>g.result==="L").length; return w+"-"+l; }
+function archiveSeries(){
+  const games=live.series.games.slice(); if(live.draft.actions.every(Boolean)) games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
+  if(!games.length) return;
+  const opp=prep.opponent||(prep.players||[]).map(p=>String(p.name||"").split("#")[0]).filter(Boolean).slice(0,3).join(", ")||"Adversaire";
+  history.series.unshift({date:new Date().toLocaleDateString("fr-FR"), opponent:opp, type:"Scrim", lineup:{...prep.lineup}, games});
+  persist("history"); flash("Série enregistrée dans l'historique");
+}
+function viewHistory(){
+  const S=history.series||[];
+  if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
+    return `<div class="dtop"><button class="btn sm" data-act="hclose">← Historique</button><b>${esc(s.date)} · ${esc(s.type||"Scrim")} vs ${esc(s.opponent)} · Game ${ui.hist.g+1} ${g.result==="W"?"(victoire)":g.result==="L"?"(défaite)":""}</b></div>
+      <section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}</div>${boardCol("R",g,true)}</section>`; }
+  if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée. « Nouvelle série » archive la série en cours ici.</p></section>`;
+  return S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
+    <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
+    ${s.games.map((g,gi)=>{ const us=g.side, them=us==="B"?"R":"B", P=t=>g.actions.filter((a,i)=>a&&STEPS[i][0]==="pick"&&STEPS[i][1]===t);
+      return `<div class="hg" data-act="hview" data-s="${si}" data-g="${gi}"><b class="${g.result==="W"?"w":g.result==="L"?"l":""}">G${gi+1} ${g.result==="W"?"✓":g.result==="L"?"✗":"·"}</b><span class="muted">${us==="B"?"Blue":"Red"}</span>
+        <span class="hp">${P(us).map(a=>av(a.name,"sm")).join("")}</span><span class="muted">vs</span><span class="hp">${P(them).map(a=>av(a.name,"sm")).join("")}</span>${g.note?`<span class="muted">${esc(g.note)}</span>`:""}</div>`; }).join("")}</section>`).join("");
+}
+
+// ---------- Draft ----------
+function targetIndex(){ return ui.edit!=null? ui.edit : curStep(); }
+const ourName=()=>prep.team||"BBJ", theirName=()=>prep.opponent||"Adversaire";
+function viewDraft(){
+  const d=live.draft, gameNo=live.series.games.length+1;
+  const top=`<div class="dtop">
+    <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
+    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
+    <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
+    <button class="btn sm drstat" data-act="drpanel">Drafter</button><button class="btn sm" data-act="newseries">Nouvelle série</button></div>${ui.drPanel?drafterPanel():""}`;
+  if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
+    return top+`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,true)}</div>${boardCol("R",g,true)}</section>`; }
+  return top+`<section class="arena">${boardCol("B",d)}<div class="center">${viewCenter()}</div>${boardCol("R",d)}</section>`;
+}
+function viewCenter(){
+  const d=live.draft, i=targetIndex();
+  const locked=live.series.locked.length?`<div class="locked"><span>Fearless</span>${live.series.locked.map(n=>`<span class="lk" title="${esc(n)}">${av(n,"sm")}</span>`).join("")}</div>`:"";
+  if(i===-1) return locked+finalHtml(d,false);
+  const [t,s]=STEPS[i], ours=s===d.side, editing=ui.edit!=null;
+  const who=editing?"CORRECTION":(ours?ourName():theirName());
+  let h=`<div class="turn ${s}${ours?" ours":""}${editing?" edit":""}"><span class="tw">${esc(who)}</span><span class="ta">${editing?(t==="ban"?"ban":"pick"):(t==="ban"?"BAN":"PICK")}</span></div>`+locked;
+
+  if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
+  return h+grid();
+}
+let lastRecs={};
+function bubble(x,role,dim){
+  const hk=x.name+"|"+(role||""); lastRecs[hk]=x; const sel=ui.pending&&ui.pending.name===x.name;
+  return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
+    ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
+}
+function pickBubbles(){
+  const r=recommendPicks(cfg,live.series,live.draft,prep.lineup,24); lastRecs={};
+  return Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
+    <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
+}
+function duoRow(){
+  const D=recommendDuos(cfg,live.series,live.draft,prep.lineup,20); if(!D.length) return "";
+  return `<div class="rrow duo"><div class="rl"><b>Duos</b></div><div class="bubs fill duos">${D.map(x=>`<button class="duob${x.team?" team":""}" data-act="duo" data-a="${esc(x.a.name)}" data-ra="${x.roles[0]}" data-b="${esc(x.b.name)}" data-rb="${x.roles[1]}" title="${esc(x.a.name)} + ${esc(x.b.name)}${x.pro?` · ${x.pro.n} games ensemble en pro (${x.pro.wr} % de victoires)`:""}${x.team?" · déjà joués en équipe":""}${x.answer?" · répond à leurs picks":""}${x.edge&&x.edge.why.length?` · botlane estimée ${x.edge.v>0?"+":""}${x.edge.v} pts (${esc(x.edge.why.join(", "))})`:""}">
+     ${av(x.a.name,"md")}${av(x.b.name,"md")}</button>`).join("")}</div></div>`;
+}
+function banBubbles(){
+  const r=recommendBans(cfg,live.series,live.draft,prep,prep.lineup,24); lastRecs={};
+  r.forEach((x,k)=>{ x.rank=k+1; lastRecs[x.name]=x; });
+  const phase2=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").length>=6;
+  return `<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
+    <div class="bubs fill">${r.map(x=>bubble(x,null,false)).join("")}</div></div>`;
+}
+function grid(){
+  const un=unavailable(live.series,live.draft); const q=normName(ui.gridQ); const p=ui.pending;
+  const list=CHAMP_NAMES.filter(n=>(ui.gridRole==="all"||CHAMPS[n].roles.includes(ui.gridRole))&&(!q||normName(n).includes(q)));
+  return `<div class="gridbox"><div class="gtools"><input id="gq" data-act="gq" value="${esc(ui.gridQ)}" placeholder="Rechercher un champion…" autocomplete="off">
+    ${[["all","Tous"],...ROLES.map(r=>[r,ROLE_NAMES[r]])].map(([k,l])=>`<button class="rf ${ui.gridRole===k?"on":""}" data-act="grole" data-v="${k}">${l}</button>`).join("")}</div>
+    <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
+      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n)}">${av(n,"md")}<span>${esc(n)}</span></button>`; }).join("")}</div>
+    <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
+      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
+      <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
+}
+function tipHtml(x){
+  const parts=(x.parts||[]).filter(p=>!p[3]);
+  return `<b>${esc(x.name)}</b> <span class="sc">${x.rank?"ban n°"+x.rank:x.score+"/100"}</span>${parts.length?`<div class="bars b${parts.length}">${parts.map(p=>`<span><i style="width:${Math.round(p[1]*100)}%"></i><em>${p[0]}</em></span>`).join("")}</div>`:""}<div class="why">${x.why.map(esc).join("<br>")}</div>`;
+}
+function finalHtml(d,ro){
+  const A=analyzeFinal(cfg,d,prep,prep.lineup); const us=d.side;
+  const card=(lbl,T)=>`<div class="acard"><em>${esc(lbl)}</em><div>${T.tags.strong.map(x=>`<span class="tag ok">${esc(x)}</span>`).join("")||'<span class="muted">—</span>'}</div>
+    ${T.tags.weak.length?`<div>${T.tags.weak.map(x=>`<span class="tag ko">${esc(x)}</span>`).join("")}</div>`:""}
+    ${T.synList.length?`<div class="muted">Synergies : ${T.synList.map(esc).join(" · ")}</div>`:""}</div>`;
+  return `<div class="final"><div class="winbox"><div class="wl">${esc(ourName())}</div><div class="wbar"><i style="width:${A.win}%"></i><b>${A.win} %</b></div><div class="wl r">${esc(theirName())}</div></div>
+    ${A.plan.key&&A.plan.key.length?`<div class="row c">${A.plan.key.map(k=>`<span class="tag ok">${esc(k)}</span>`).join("")}</div>`:""}
+    <div class="acards">${card(ourName(),A.us)}${card(theirName(),A.them)}</div>
+    ${A.lanes.length?`<div class="lanes">${A.lanes.map(l=>`<span class="lane ${l.wr>=53?"w":l.wr<=47?"l":""}" ${l.detail?`title="${esc(l.detail)}"`:""}>${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} : ${av(l.ours,"xs")}${l.ours2?av(l.ours2,"xs"):""} vs ${av(l.theirs,"xs")}${l.theirs2?av(l.theirs2,"xs"):""} <b>${l.wr}%</b></span>`).join("")}</div>`:""}
+    ${[["Early (0-14 min)",A.plan.early],["Mid game (14-25 min)",A.plan.mid],["Late game",A.plan.late]].filter(x=>x[1]&&x[1].length).map(x=>`<div class="ph"><em>${x[0]}</em><ul class="plan">${x[1].map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}
+    ${d===live.draft||live.series.games.includes(d)?`<div class="row c res"><span class="muted">Résultat :</span><button class="btn sm ${d.result==="W"?"on w":""}" data-act="result" data-v="W">Victoire</button><button class="btn sm ${d.result==="L"?"on l":""}" data-act="result" data-v="L">Défaite</button></div>`:""}
+    ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Valider la game → game ${live.series.games.length+2}</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
+}
+function boardCol(team,d,ro){
+  const i=ro?-1:targetIndex(); const active=!ro&&i>=0&&STEPS[i][1]===team;
+  const slots=STEPS.map((s,k)=>({s,k})).filter(x=>x.s[1]===team);
+  const bans=slots.filter(x=>x.s[0]==="ban"), picks=slots.filter(x=>x.s[0]==="pick");
+  const pv=k=>!ro&&k===i&&ui.pending?ui.pending.name:null;
+  const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a?av(a.name,"md"):""}</button>`;};
+  // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
+  let pools=null, pi=0;
+  if(!ro&&team!==d.side){ try{ pools=enemyPoolLeft(cfg,live.series,d,prep,5); }catch(e){ pools=null; } }
+  const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
+    if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
+      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" : "+c.g+" games"+(c.wr!=null?", "+c.wr+" %":""))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
+    if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
+    if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
+    const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
+    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.flex?" <b class='fx'>*</b>":""}</span>
+      ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
+      ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
+  const name=d.side===team?ourName():theirName();
+  return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${picks.map(pick).join("")}</div></div>`;
+}
+
+// ---------- Préparation ----------
+function viewPrep(){
+  const plan=banPlan(cfg,prep,prep.lineup), P=prepPlayers(prep);
+  return `<section class="card"><h3>Notre équipe pour ce match</h3>
+    <div class="row"><input data-act="pteam2" value="${esc(prep.team||"BBJ")}" placeholder="Nom de notre équipe"></div>
+    <div class="lineup">${ROLES.map(r=>`<label><em>${ROLE_NAMES[r]}</em><select data-act="lineup" data-r="${r}">${playerOpts(prep.lineup[r])}</select></label>`).join("")}</div>
+    ${dupWarn()}</section>
+  <section class="card"><h3>Adversaire</h3>
+    <div class="row"><input data-act="popp" value="${esc(prep.opponent)}" placeholder="Nom de l'équipe adverse"></div>
+    <div class="row"><input data-act="plink" value="${esc(prep.link||"")}" placeholder="Colle ici le lien multi-op.gg des adversaires"></div>
+    <div class="ids5">${ROLES.map((r,k)=>`<label><em>Joueur ${k+1}</em><input data-act="pid" data-k="${k}" value="${esc((prep.ids||[])[k]||"")}" placeholder="Pseudo#TAG"></label>`).join("")}</div>
+    <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
+    <p class="muted">${reqStatus()}${prep.updatedAt?` Dernière mise à jour des profils : ${esc(prep.updatedAt)}.`:""}</p></section>
+  <section class="card"><h3>Bans conseillés</h3>
+    ${plan.length?`<p class="muted">Par ordre de priorité : 1 = le plus important. Il y en a 7 car l'adversaire bannit souvent une partie de ceux que vous visiez.</p><div class="bplan">${plan.slice(0,7).map((x,k)=>`<div class="bpc"><span class="rk">${k+1}</span>${av(x.name,"lg")}<b>${esc(x.name)}</b><span class="muted">${esc(x.player.split("#")[0])} · ${ROLE_NAMES[x.role]}</span>
+      <div class="btags">${x.tags.map(t=>`<span class="tag ${t==="Meilleur joueur"?"star":"ok"}">${esc(t)}</span>`).join("")}${x.counters.length?`<span class="tag warn cnt">Counter :${x.counters.map(o=>`<span title="${esc(o.player)} · ${esc(o.champ)} ${o.wr} %">${av(o.champ,"xs")}</span>`).join("")}</span>`:""}</div>
+      <ul class="bwhy">${x.why.map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>`).join("")}</div>`
+      :`<div class="muted">Pas encore de profils adverses.</div>`}</section>
+  ${P.length?`<section class="card"><h3>Profils adverses (solo Q)</h3>${P.map((p,k)=>`<div class="opp"><div class="row"><b>${esc(p.name)}</b><span class="muted">${esc(p.rank||"")}</span>${(()=>{const v=P.map(q=>rankValue(q.rank)); const me=v[k], o=v.filter((x,j)=>j!==k&&x!=null); const g=me!=null&&o.length?me-o.reduce((a,b)=>a+b,0)/o.length:0; return g>=400?`<span class="tag star">Meilleur joueur (+${Math.round(g)} LP)</span>`:"";})()}
+      <select data-act="prole" data-k="${k}">${ROLES.map(r=>`<option value="${r}" ${p.role===r?"selected":""}>${ROLE_NAMES[r]}</option>`).join("")}</select></div>
+      <div class="chips">${p.list.map(x=>`<span class="chip">${av(x.c,"sm")} ${esc(x.c)} <b>${x.g}</b><span class="muted">${x.wr!=null?x.wr+"%":""}</span></span>`).join("")}</div></div>`).join("")}</section>`:""}
+  <details class="card" ${ui.manual?"open":""}><summary><h3>Saisie manuelle</h3></summary>
+    <p class="muted">Une ligne par joueur : <b>Pseudo : Champion games WR, …</b> (ex. <i>Adv : Ornn 182 53, Garen 60 59</i>).</p>
+    <textarea id="manual" rows="5">${esc(P.map(p=>p.name+" : "+p.list.map(x=>`${x.c} ${x.g} ${x.wr??""}`.trim()).join(", ")).join("\n"))}</textarea>
+    <div class="row"><button class="btn" data-act="applymanual">Appliquer</button><button class="btn" data-act="clearprep">Effacer l'adversaire</button></div></details>`;
+}
+// Lien multi-op.gg -> Riot IDs (le rôle de chaque adversaire est déduit de ses champions)
+function idsFromLink(url){
+  try{ const u=new URL(url.trim()); const q=u.searchParams.get("summoners")||u.searchParams.get("summonerName")||"";
+    return q.split(",").map(x=>x.trim()).filter(Boolean).map(x=>x.includes("#")?x:x.replace(/-([^-]+)$/,"#$1")).slice(0,5); }catch(e){ return []; }
+}
+function nextRun(){ const n=new Date(), h=n.getHours()+n.getMinutes()/60; return h<17.78?"aujourd'hui vers 17 h 47":"demain vers 17 h 47"; }
+function multiLink(){ const ids=(prep.ids||[]).filter(x=>x&&x.includes("#")); return ids.length?"https://op.gg/fr/lol/multisearch/euw?summoners="+encodeURIComponent(ids.join(",")):""; }
+function reqStatus(){ const q=prep.request; if(!q) return "Entre les pseudos (avec le #TAG) puis demande l'analyse : les profils et les bans conseillés se remplissent automatiquement pour toute l'équipe.";
+  return q.status==="done"?"Analyse terminée.":q.status==="error"?"L'analyse a échoué : "+esc(q.note||"")+".":`Analyse demandée le ${esc(q.at)} : elle sera faite automatiquement ${nextRun()}. Si c'est urgent, envoie le lien à Claude dans la conversation.`; }
+function dupWarn(){ const v=ROLES.map(r=>prep.lineup[r]); const d=v.filter((p,k)=>v.indexOf(p)!==k); return d.length?`<div class="warn">⚠ ${esc(d.join(", "))} est placé sur deux rôles.</div>`:""; }
+
+// ---------- Pools ----------
+function viewPools(){
+  const p=PLAYERS.find(x=>x.id===ui.poolPlayer)||PLAYERS[0], role=p.main;
+  const names=poolOf(cfg,p.id,role); const rows={S:[],A:[],B:[],C:[],D:[],"?":[]};
+  names.forEach(c=>{ const t=(cfg.tiers[p.id]||{})[c]; rows[t||"?"].push({c,a:affinity(cfg,p.id,role,c)}); });
+  for(const k in rows) rows[k].sort((x,y)=>y.a.v-x.a.v);
+  const cell=x=>`<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
+     <span class="pm">${x.a.games?`<b>${x.a.games}</b> g.`:""}${x.a.sq?` <i>SQ ${x.a.sq.g}</i>`:""}</span><span class="pa">${Math.round(x.a.v*100)}</span></button>`;
+  return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
+  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon), games en solo Q (SQ) et score d'affinité sur 100. Clique un champion pour changer son tier.</p>
+   ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
+   ${ui.tierPop?`<div class="pop"><b>${esc(ui.tierPop)}</b>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div>`:""}
+   <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;
+}
+
+// ---------- Réglages ----------
+function viewSettings(){
+  const W=cfg.weights; for(const k of Object.keys(W)) if(!(k in {affinite:1,force:1,synergie:1,matchup:1})) delete W[k]; const lab={affinite:"Affinité : games en scrim/compétition + solo Q",force:"Méta : games pro récentes + solo Q du patch",synergie:"Synergie avec vos picks (ignorée sans pick allié)",matchup:"Matchup contre leurs picks (ou capacité à être blind pick)"};
+  return `<section class="card"><h3>Poids du score sur 100</h3>${Object.keys(W).map(k=>`<label class="sl">${lab[k]} <b>${W[k]}</b><input type="range" min="0" max="50" value="${W[k]}" data-act="w" data-k="${k}"></label>`).join("")}
+   <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
+   <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
+   <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
+   <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22, Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
+   ${synEditor()}${ctrEditor()}
+   <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
+}
+function synEditor(){
+  const q=ui.synQ, n=findChamp(q);
+  const list=synPairs(cfg).filter(x=>!q||(n&&(x[0]===n||x[2]===n))).sort((a,b)=>b[4]-a[4]);
+  const rl=r=>r?` <span class="muted">${ROLE_NAMES[r]}</span>`:"";
+  return `<details class="card" ${q?"open":""}><summary><h3>Synergies <span class="muted">(${synPairs(cfg).length})</span></h3></summary>
+   <div class="row"><input list="champs" data-act="synq" value="${esc(q)}" placeholder="Filtrer par champion…"></div>
+   <p class="muted">Écart de winrate du duo par rapport à ce qu'on attendrait des deux champions seuls. Support-ADC, support-jungle, jungle-mid et jungle-top : metabot.gg Émeraude+ 26.22 ; botlane aussi lolstats.gg Maître+.</p>
+   <div class="plist">${list.slice(0,q?80:25).map(x=>`<div>${av(x[0],"xs")} ${esc(x[0])}${rl(x[1])} + ${av(x[2],"xs")} ${esc(x[2])}${rl(x[3])} <b class="${x[4]>=0?"up":"dn"}">${x[4]>0?"+":""}${x[4]} %</b> <span class="muted">${esc(x[5])}</span></div>`).join("")}</div>
+   <div class="row"><input list="champs" id="syn-a" placeholder="Champion A"><input list="champs" id="syn-b" placeholder="Champion B"><input id="syn-v" type="number" value="3" style="width:64px"><button class="btn" data-act="addsyn">+</button></div></details>`;
+}
+function ctrEditor(){
+  const q=ui.ctrQ, n=findChamp(q);
+  let body=`<div class="muted">Choisis un champion pour voir ses matchups.</div>`;
+  if(n){ const L=ctrList(cfg);
+    const beats=L.filter(x=>x[0]===n).sort((a,b)=>b[2]-a[2]), loses=L.filter(x=>x[1]===n).sort((a,b)=>b[2]-a[2]);
+    const line=(x,me)=>`<div>${av(me?x[1]:x[0],"xs")} ${esc(me?x[1]:x[0])} <b class="${me?"up":"dn"}">${me?x[2]:(100-x[2]).toFixed(1)} %</b> <span class="muted">${x[4]?ROLE_NAMES[x[4]]+" · ":""}${x[3]?x[3]+" g.":"manuel"}</span> <button class="x" data-act="ctroff" data-a="${esc(x[0])}" data-b="${esc(x[1])}" data-r="${x[4]||""}">×</button></div>`;
+    body=`<div class="two"><div><div class="rh">${esc(n)} bat</div>${beats.slice(0,15).map(x=>line(x,true)).join("")||"<div class='muted'>—</div>"}</div>
+      <div><div class="rh">${esc(n)} perd contre</div>${loses.slice(0,15).map(x=>line(x,false)).join("")||"<div class='muted'>—</div>"}</div></div>`; }
+  return `<details class="card" ${q?"open":""}><summary><h3>Counters <span class="muted">(${ctrList(cfg).length})</span></h3></summary>
+   <div class="row"><input list="champs" data-act="ctrq" value="${esc(q)}" placeholder="Champion…"></div>${body}
+   <div class="row"><input list="champs" id="ctr-a" placeholder="Fort"><span class="muted">bat</span><input list="champs" id="ctr-b" placeholder="Faible"><input id="ctr-v" type="number" value="55" style="width:64px"><button class="btn" data-act="addctr">+</button></div>
+   ${cfg.ctrOff.length?`<div class="row"><button class="btn" data-act="ctrrestore">Restaurer ${cfg.ctrOff.length} matchup(s) retiré(s)</button></div>`:""}</details>`;
+}
+
+// ---------- Actions ----------
+function flash(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(flash.t); flash.t=setTimeout(()=>t.classList.remove("on"),2200); }
+function addChamp(name,role){
+  const i=targetIndex(); if(i<0) return false; const n=findChamp(name); if(!n){ flash("Champion inconnu"); return false; }
+  const old=live.draft.actions[i];
+  const un=unavailable(live.series,live.draft); if(un.has(n)&&!(old&&old.name===n)){ flash(n+" n'est plus disponible"); return false; }
+  const [t,s]=STEPS[i]; const a={name:n};
+  if(t==="pick"){ const taken=teamPicks(live.draft,s).filter(p=>!p.flex&&p!==old).map(p=>p.role);
+    a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false; }
+  live.draft.actions[i]=a; ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
+}
+function parseManual(txt){
+  return txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{ const k=l.indexOf(":"); const name=k>0?l.slice(0,k).trim():""; const rest=k>0?l.slice(k+1):l;
+    const champs=rest.split(",").map(s=>s.trim()).filter(Boolean).map(s=>{ const m=s.match(/^(.+?)\s+(\d+)(?:\s+(\d+(?:[.,]\d+)?))?\s*%?$/); const c=findChamp(m?m[1]:s); return c?[c,m?+m[2]:0,m&&m[3]?parseFloat(m[3].replace(",",".")):null]:null; }).filter(Boolean);
+    return {name, champs}; }).filter(p=>p.champs.length);
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
+  if(act==="side"){ live.draft.side=b.dataset.v; persist("live"); render(); }
+  else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
+    // double-clic : le premier clic redessine la grille, donc on le détecte nous-mêmes (même champion cliqué deux fois en moins de 450 ms)
+    if(ui._lastChoose&&ui._lastChoose.n===n&&now-ui._lastChoose.t<450){ ui._lastChoose=null; ui.duoNext=null; addChamp(n,b.dataset.r||null); return; }
+    ui._lastChoose={n,t:now}; ui.pending={name:n,role:b.dataset.r||null}; ui.duoNext=null; render(); }
+  else if(act==="rup"){ const o=roleOrderOf(cfg).slice(), k=o.indexOf(b.dataset.r); if(k>0){ [o[k-1],o[k]]=[o[k],o[k-1]]; cfg.roleOrder=o; persist("config"); render(); } }
+  else if(act==="duo"){ ui.pending={name:b.dataset.a,role:b.dataset.ra}; ui.duoNext={name:b.dataset.b,role:b.dataset.rb}; render(); }
+  else if(act==="confirm"){ if(ui.pending){ const dn=ui.duoNext&&ui.duoNext.name!==ui.pending.name?ui.duoNext:null; ui.duoNext=null;
+      if(addChamp(ui.pending.name,ui.pending.role)&&dn){ const i=live.draft.actions.findIndex(a=>!a);
+        if(i>=0&&STEPS[i][0]==="pick"&&STEPS[i][1]===live.draft.side&&!unavailable(live.series,live.draft).has(dn.name)){ ui.pending=dn; render(); } } } }
+  else if(act==="editslot"){ const k=+b.dataset.k; if(!live.draft.actions[k]) return; ui.edit=k; ui.pending=null; render(); }
+  else if(act==="canceledit"){ ui.edit=null; ui.pending=null; render(); }
+  else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; ui.edit=null; ui.pending=null; persist("live"); render(); }
+  else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
+  else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
+  else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
+  else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; persist("live"); render(); }
+  else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").map(a=>a.name);
+    live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
+    live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
+  else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
+  else if(act==="drpanel"){ ui.drPanel=!ui.drPanel; render(); }
+  else if(act==="opendrafter"){ openDrafter(); }
+  else if(act==="showrelay"){ ui.showRelay=!ui.showRelay; render(); }
+  else if(act==="result"){ const g=ui.viewGame!=null?live.series.games[ui.viewGame]:live.draft; g.result=g.result===b.dataset.v?null:b.dataset.v; persist("live"); render(); }
+  else if(act==="hview"){ ui.hist={s:+b.dataset.s,g:+b.dataset.g}; render(); }
+  else if(act==="hclose"){ ui.hist=null; render(); }
+  else if(act==="htype"){ const s=history.series[+b.dataset.s]; const T=["Scrim","Compétition"]; s.type=T[(T.indexOf(s.type||"Scrim")+1)%T.length]; persist("history"); render(); }
+  else if(act==="goprep"){ ui.tab="prep"; render(); }
+  else if(act==="pplayer"){ ui.poolPlayer=b.dataset.p; ui.tierPop=null; render(); }
+  else if(act==="tierpop"){ ui.tierPop=b.dataset.c; render(); }
+  else if(act==="settier"){ const t=b.dataset.t, c=ui.tierPop, T=cfg.tiers[ui.poolPlayer]=cfg.tiers[ui.poolPlayer]||{};
+    if(t==="-") delete T[c]; else if(t!=="x") T[c]=t; ui.tierPop=null; if(t!=="x") persist("config"); render(); }
+  else if(act==="addpool"){ const n=findChamp($("#addpool").value); if(!n) return flash("Champion inconnu"); (cfg.tiers[ui.poolPlayer]=cfg.tiers[ui.poolPlayer]||{})[n]="B"; persist("config"); render(); }
+  else if(act==="askprep"){ const ids=(prep.ids||[]).map(x=>(x||"").trim()).filter(Boolean); if(!ids.length) return flash("Entre au moins un pseudo");
+    if(ids.some(x=>!x.includes("#"))) return flash("Ajoute le #TAG à chaque pseudo"); prep.request={ids:(prep.ids||[]).map(x=>(x||"").trim()), link:prep.link||multiLink(), at:new Date().toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}), status:"pending"}; persist("prep"); render(); flash("Analyse demandée"); }
+  else if(act==="applymanual"){ const pl=parseManual($("#manual").value); prep.players=pl.map(p=>({name:p.name,champs:p.champs})); prep.updatedAt=new Date().toLocaleString("fr-FR"); ui.manual=false; persist("prep"); render(); }
+  else if(act==="clearprep"){ prep={...prep,opponent:"",link:"",players:[],updatedAt:null}; persist("prep"); render(); }
+  else if(act==="addsyn"){ const x=findChamp($("#syn-a").value), y=findChamp($("#syn-b").value); if(!x||!y) return flash("Champion inconnu"); cfg.synManual.push([x,y,+$("#syn-v").value||3]); persist("config"); render(); }
+  else if(act==="addctr"){ const x=findChamp($("#ctr-a").value), y=findChamp($("#ctr-b").value); if(!x||!y) return flash("Champion inconnu"); cfg.ctrManual.push([x,y,+$("#ctr-v").value||55,0]); persist("config"); render(); }
+  else if(act==="ctroff"){ const k=b.dataset.a+">"+b.dataset.b+"|"+(b.dataset.r||"*"); cfg.ctrManual=cfg.ctrManual.filter(x=>x[0]+">"+x[1]+"|*"!==k); if(CTR_DATA.some(x=>ctrKey(x)===k)) cfg.ctrOff.push(k); persist("config"); render(); }
+  else if(act==="ctrrestore"){ cfg.ctrOff=[]; persist("config"); render(); }
+  else if(act==="reset"){ cfg=defaultConfig(); persist("config"); flash("Réglages réinitialisés"); render(); }
+});
+document.addEventListener("change",e=>{
+  const b=e.target; const act=b.dataset&&b.dataset.act; if(!act) return;
+  if(act==="lineup"){ prep.lineup[b.dataset.r]=b.value; persist("prep"); render(); }
+  else if(act==="drlink"){ ui.drafterLink=b.value.trim(); saveLocal(); }
+  else if(act==="hopp"){ history.series[+b.dataset.s].opponent=b.value.trim()||"Adversaire"; persist("history"); render(); }
+  else if(act==="role"){ live.draft.actions[+b.dataset.k].role=b.value; persist("live"); render(); }
+  else if(act==="prole"){ const p=prep.players[+b.dataset.k]; if(p){ p.role=b.value; persist("prep"); render(); } }
+  else if(act==="w"){ cfg.weights[b.dataset.k]=+b.value; persist("config"); render(); }
+  else if(act==="exd"){ cfg.excludeD=b.checked; persist("config"); render(); }
+  else if(act==="pteam2"){ prep.team=b.value.trim(); persist("prep"); }
+  else if(act==="popp"){ prep.opponent=b.value; persist("prep"); }
+  else if(act==="plink"){ prep.link=b.value.trim(); const ids=idsFromLink(prep.link); if(ids.length){ prep.ids=ROLES.map((r,k)=>ids[k]||""); flash(ids.length+" joueur(s) récupéré(s) du lien"); } else if(prep.link) flash("Lien multi-op.gg non reconnu"); persist("prep"); render(); }
+  else if(act==="pid"){ prep.ids=prep.ids||["","","","",""]; prep.ids[+b.dataset.k]=b.value.trim(); persist("prep"); render(); }
+  else if(act==="synq"){ ui.synQ=b.value; render(); }
+  else if(act==="ctrq"){ ui.ctrQ=b.value; render(); }
+});
+document.addEventListener("mouseover",e=>{ const b=e.target.closest(".bub"); const tip=$("#tip"); if(!b){ if(!e.target.closest("#tip")) tip.classList.remove("on"); return; }
+  const x=lastRecs[b.dataset.h]; if(!x) return; tip.innerHTML=tipHtml(x); const r=b.getBoundingClientRect();
+  tip.classList.add("on"); const w=tip.offsetWidth; tip.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+"px"; tip.style.top=(r.bottom+6+scrollY)+"px"; });
+document.addEventListener("input",e=>{ if(e.target.id==="gq"){ ui.gridQ=e.target.value; const pos=e.target.selectionStart; const box=$(".cgrid"); render(); const g=$("#gq"); if(g){ g.focus(); g.setSelectionRange(pos,pos); } } });
+document.addEventListener("keydown",e=>{
+  if(ui.tab!=="draft") return;
+  if(e.key==="Enter"){ if(ui.pending){ addChamp(ui.pending.name,ui.pending.role); e.preventDefault(); }
+    else if(e.target.id==="gq"){ const n=CHAMP_NAMES.filter(x=>(ui.gridRole==="all"||CHAMPS[x].roles.includes(ui.gridRole))&&normName(x).includes(normName(ui.gridQ)))[0]; if(n){ ui.pending={name:n,role:null}; render(); } } }
+  if(e.key==="Escape"){ ui.pending=null; ui.edit=null; render(); } });
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; ui.tierPop=null; render(); });
+$("#champs").innerHTML=CHAMP_NAMES.map(n=>`<option value="${esc(n)}">`).join("");
+loadLocal(); render(); initDb();
