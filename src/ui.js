@@ -76,7 +76,11 @@ function applyDrafter(st){
   const empty=!(st.bb||[]).length&&!(st.rb||[]).length&&!(st.bp||[]).length&&!(st.rp||[]).length;
   if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)) return; // page Drafter pas encore chargée : on ne vide pas la draft
   const me=(ourName()||"BBJ").toLowerCase().trim(), bl=(st.blue||"").toLowerCase(), rd=(st.red||"").toLowerCase();
-  let side=live.draft.side; if(me&&bl.includes(me)&&!rd.includes(me)) side="B"; else if(me&&rd.includes(me)&&!bl.includes(me)) side="R";
+  // côté : 1) choix manuel (boutons Blue/Red) pour cette game, 2) nom d'équipe sur Drafter, 3) les picks qui collent le plus à nos pools
+  let side=live.draft.side;
+  if(live.sideManual&&live.sideManual===(st.game||1)) live.sideHow="manuel";
+  else if(me&&bl.includes(me)&&!rd.includes(me)){ side="B"; live.sideHow="nom"; } else if(me&&rd.includes(me)&&!bl.includes(me)){ side="R"; live.sideHow="nom"; }
+  else { const pb=poolFit(st.bp), pr=poolFit(st.rp); if(pb>pr+0.5){ side="B"; live.sideHow="pools"; } else if(pr>pb+0.5){ side="R"; live.sideHow="pools"; } else live.sideHow="?"; }
   // nouvelle game sur Drafter : la game précédente part dans la série (fearless) et on repart d'une draft vide
   if(live.drafterGame&&st.game&&st.game!==live.drafterGame){
     if(st.game>live.drafterGame&&live.draft.actions.some(Boolean)){ const names=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").map(a=>a.name);
@@ -93,6 +97,7 @@ function applyDrafter(st){
   live.draft.side=side; live.draft.actions=acts;
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
 }
+function poolFit(list){ let s=0; (list||[]).forEach(x=>{ const c=drafterChamp(x); if(!c) return; s+=Math.max(0,...ROLES.map(r=>({S:1,A:0.6})[tierFor(cfg,prep.lineup[r],r,c)]||0)); }); return s; }
 function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(n&&!/^adversaires?$/i.test(n)&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
 function drafterPanel(){
   const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null, live_=age!=null&&age<5;
@@ -100,10 +105,10 @@ function drafterPanel(){
    <ol class="muted">
     <li>Une seule fois : glisse ce bouton dans ta barre de favoris → <a class="btn sm bm" href="javascript:${encodeURIComponent(RELAY_CODE)}" title="À glisser dans les favoris">BBJ ➜ Drafter</a>
       <button class="lnk" data-act="showrelay">ou copier le code</button> (remplace l'ancien favori s'il existe)</li>
-    <li>Ouvre ta draft sur drafter.lol normalement, puis clique le favori : l'outil s'ouvre en panneau à droite de la draft et se remplit tout seul.</li>
-    <li>Reclique le favori pour masquer / afficher le panneau ; le bouton ⇔ le réduit.</li></ol>
+    <li>Ouvre la draft sur drafter.lol (la tienne ou celle de l'adversaire), puis clique le favori : l'outil s'ouvre dans une fenêtre à part (à mettre sur ton 2e écran) et se remplit tout seul.</li>
+    <li>Notre côté est trouvé par le nom d'équipe, sinon par nos pools ; s'il se trompe, clique Blue/Red : ton choix est gardé pour la game.</li></ol>
    ${ui.showRelay?`<textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea><p class="muted">Crée un favori (ou modifie l'ancien) et colle ce texte comme adresse.</p>`:""}
-   <p class="muted">Le panneau utilise la copie des tier lists, de la line-up et de la préparation publiée avec le site (mise à jour par Claude à chaque changement). Les rôles sont devinés : corrige-les si besoin. Quand Drafter passe à la game suivante, la game finie part dans la série (fearless).</p></section>`;
+   <p class="muted">Le panneau utilise la copie des tier lists, de la line-up et de la préparation publiée avec le site (mise à jour par Claude à chaque changement). Les rôles sont devinés : corrige-les si besoin. Si la fenêtre est fermée, le petit badge en bas à gauche de Drafter la rouvre. Quand Drafter passe à la game suivante, la game finie part dans la série (fearless).</p></section>`;
 }
 setInterval(()=>{ const h=document.getElementById("drsync"); if(h){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null;
     if(age!=null&&age<5){ h.className="on"; h.textContent="Drafter connecté · draft remplie automatiquement"; }
@@ -143,7 +148,7 @@ function viewDraft(){
   const d=live.draft, gameNo=live.series.games.length+1;
   const top=`<div class="dtop">
     <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
-    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
+    ${ui.viewGame==null&&drafterLast&&(live.sideHow==="?"||live.sideHow==="pools")?`<span class="sideask">${live.sideHow==="?"?"Quel est notre côté ?":"Côté deviné par nos pools — vérifie"}</span>`:""}${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
     <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
     <button class="btn sm drstat" data-act="drpanel">Drafter</button><button class="btn sm" data-act="newseries">Nouvelle série</button></div>${ui.drPanel?drafterPanel():""}`;
   if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
@@ -340,7 +345,7 @@ function parseManual(txt){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
-  if(act==="side"){ live.draft.side=b.dataset.v; persist("live"); render(); }
+  if(act==="side"){ live.draft.side=b.dataset.v; live.sideManual=live.drafterGame||1; persist("live"); render(); }
   else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
     // double-clic : le premier clic redessine la grille, donc on le détecte nous-mêmes (même champion cliqué deux fois en moins de 450 ms)
     if(ui._lastChoose&&ui._lastChoose.n===n&&now-ui._lastChoose.t<450){ ui._lastChoose=null; ui.duoNext=null; addChamp(n,b.dataset.r||null); return; }

@@ -1,17 +1,15 @@
-// Favori « BBJ ➜ Drafter » : ouvre BBJ Outil Draft en panneau sur la page Drafter et lui envoie la draft en direct.
-(()=>{ const URL_OUTIL="https://bastien-cpo.github.io/bbj-outil-draft/?embed=1";
-if(window.__bbjPanel){ const p=window.__bbjPanel; p.style.display=p.style.display==="none"?"block":"none"; return; }
-const W=Math.min(620,Math.round(innerWidth*0.42));
-const box=document.createElement("div"); box.style.cssText="position:fixed;z-index:2147483647;top:0;right:0;height:100vh;width:"+W+"px;background:#0b0d12;box-shadow:-4px 0 18px rgba(0,0,0,.55);border-left:2px solid #d4ad52";
-const fr=document.createElement("iframe"); fr.src=URL_OUTIL; fr.style.cssText="border:0;width:100%;height:100%";
-const bt=document.createElement("button"); bt.textContent="⇔"; bt.title="Réduire / agrandir le panneau BBJ"; bt.style.cssText="position:absolute;left:-30px;top:70px;width:28px;height:44px;border:0;border-radius:6px 0 0 6px;background:#d4ad52;color:#111;font:700 14px system-ui;cursor:pointer";
-let small=false; bt.onclick=()=>{ small=!small; box.style.width=(small?40:W)+"px"; fr.style.visibility=small?"hidden":"visible"; };
-box.appendChild(fr); box.appendChild(bt); document.body.appendChild(box); window.__bbjPanel=box;
+// Favori « BBJ ➜ Drafter » : ouvre BBJ Outil Draft dans une fenêtre à part (déplaçable sur un 2e écran) et lui envoie la draft en direct.
+(()=>{ const URL_OUTIL="https://bastien-cpo.github.io/bbj-outil-draft/";
+const R=window.__bbjRelay2||(window.__bbjRelay2={win:null});
+function openWin(){ if(R.win&&!R.win.closed){ R.win.focus(); return; } R.win=window.open(URL_OUTIL,"bbj_outil","popup,width=900,height=1000"); if(!R.win) alert("Firefox a bloqué la fenêtre : autorise les pop-ups pour drafter.lol puis reclique le favori."); }
+openWin(); if(R.started) return; R.started=true;
+const bd=document.createElement("div"); bd.style.cssText="position:fixed;z-index:2147483647;left:8px;bottom:8px;padding:4px 9px;border-radius:12px;font:600 11px system-ui;background:#1d2a1d;color:#8fe08f;border:1px solid #3c6;cursor:pointer;opacity:.85";
+bd.title="Clique pour rouvrir / afficher la fenêtre BBJ"; bd.onclick=openWin; document.body.appendChild(bd);
 const ids={};
 function scan(){
   document.querySelectorAll("img").forEach(i=>{ const m=(i.getAttribute("src")||"").match(/champions\/(\d+)-/); if(m&&i.alt&&i.alt!=="Ban"&&i.alt!=="Pick") ids[m[1]]=i.alt; });
-  const vis=box.getBoundingClientRect().left, Wd=(vis>0?vis:innerWidth)/2, P={B:[],R:[]}, Bn={B:[],R:[]};
-  document.querySelectorAll('img[alt="Pick"],img[alt="Ban"]').forEach(i=>{ if(box.contains(i)) return; const s=i.getAttribute("src")||"", r=i.getBoundingClientRect(); if(!r.width) return;
+  const P={B:[],R:[]}, Bn={B:[],R:[]};
+  document.querySelectorAll('img[alt="Pick"],img[alt="Ban"]').forEach(i=>{ const s=i.getAttribute("src")||"", r=i.getBoundingClientRect(); if(!r.width) return;
     const side=(r.x+r.width/2)<innerWidth/2?"B":"R";
     if(i.alt==="Pick"){ const m=s.match(/splashes\/([a-z0-9]+)-/); if(m&&!P[side].some(x=>x[1]===m[1])) P[side].push([r.y,m[1]]); }
     else { const m=s.match(/champions\/(\d+)-/); if(m){ const n=ids[m[1]]||m[1]; if(!Bn[side].some(x=>x[1]===n)) Bn[side].push([r.x,n]); } } });
@@ -23,5 +21,6 @@ function scan(){
     bb:Bn.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rb:Bn.R.sort((a,b)=>b[0]-a[0]).map(x=>x[1]),
     bp:P.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rp:P.R.sort((a,b)=>a[0]-b[0]).map(x=>x[1])};
 }
-setInterval(()=>{ let st; try{ st=scan(); }catch(e){ return; } try{ fr.contentWindow.postMessage({type:"bbj-drafter",state:st},"*"); }catch(e){} },500);
+setInterval(()=>{ const ok=R.win&&!R.win.closed; bd.textContent=ok?"● BBJ synchro":"○ BBJ fenêtre fermée (clique)"; bd.style.color=ok?"#8fe08f":"#e0b05a";
+  if(!ok) return; let st; try{ st=scan(); }catch(e){ return; } try{ R.win.postMessage({type:"bbj-drafter",state:st},"*"); }catch(e){} },500);
 })();
