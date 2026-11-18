@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.4 — 18/11/2026
+- Bans ratés : le favori lit les emplacements fixes de Drafter ; un ban vide alors que la draft a continué devient « ∅ » et l'outil passe à l'étape suivante. Bouton « ∅ Ban raté » en saisie manuelle.
+
 ## v10.3 — 18/11/2026
 - Le favori ouvre l'outil dans **une fenêtre à part** (2e écran) au lieu d'un panneau qui cachait un côté de Drafter ; petit badge de statut en bas à gauche de Drafter.
 - Notre côté : choix manuel Blue/Red gardé pour la game > nom d'équipe > picks qui collent à nos pools (S/A) ; alerte « Quel est notre côté ? » si doute.

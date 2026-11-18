@@ -8,18 +8,15 @@ bd.title="Clique pour rouvrir / afficher la fenêtre BBJ"; bd.onclick=openWin; d
 const ids={};
 function scan(){
   document.querySelectorAll("img").forEach(i=>{ const m=(i.getAttribute("src")||"").match(/champions\/(\d+)-/); if(m&&i.alt&&i.alt!=="Ban"&&i.alt!=="Pick") ids[m[1]]=i.alt; });
-  const P={B:[],R:[]}, Bn={B:[],R:[]};
-  document.querySelectorAll('img[alt="Pick"],img[alt="Ban"]').forEach(i=>{ const s=i.getAttribute("src")||"", r=i.getBoundingClientRect(); if(!r.width) return;
-    const side=(r.x+r.width/2)<innerWidth/2?"B":"R";
-    if(i.alt==="Pick"){ const m=s.match(/splashes\/([a-z0-9]+)-/); if(m&&!P[side].some(x=>x[1]===m[1])) P[side].push([r.y,m[1]]); }
-    else { const m=s.match(/champions\/(\d+)-/); if(m){ const n=ids[m[1]]||m[1]; if(!Bn[side].some(x=>x[1]===n)) Bn[side].push([r.x,n]); } } });
+  // emplacements fixes Drafter (#blue-ban-1…, #red-pick-5) : null si vide, pour repérer les bans ratés
+  const slot=(k,n)=>{ const out=[]; for(let j=1;j<=5;j++){ const el=document.getElementById(k+"-"+j), im=el&&el.querySelector(n==="ban"?"img[alt=\"Ban\"]":"img[alt=\"Pick\"]"), s=im?im.getAttribute("src")||"":"";
+      let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; } else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; } out.push(v); } return out; };
   const txt=document.body.innerText;
   const blue=(txt.match(/([^\n]+)\n\s*côté bleu/)||txt.match(/([^\n]+)\n\s*blue side/i)||[])[1]||"";
   const red=(txt.match(/([^\n]+)\n\s*(?:Prêt\s*)?côté rouge/)||txt.match(/([^\n]+)\n\s*(?:Ready\s*)?red side/i)||[])[1]||"";
   const phase=(txt.match(/(Pick|Ban) (bleu|rouge)/)||[""])[0];
-  return {v:2, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
-    bb:Bn.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rb:Bn.R.sort((a,b)=>b[0]-a[0]).map(x=>x[1]),
-    bp:P.B.sort((a,b)=>a[0]-b[0]).map(x=>x[1]), rp:P.R.sort((a,b)=>a[0]-b[0]).map(x=>x[1])};
+  return {v:3, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
+    bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick")};
 }
 setInterval(()=>{ const ok=R.win&&!R.win.closed; bd.textContent=ok?"● BBJ synchro":"○ BBJ fenêtre fermée (clique)"; bd.style.color=ok?"#8fe08f":"#e0b05a";
   if(!ok) return; let st; try{ st=scan(); }catch(e){ return; } try{ R.win.postMessage({type:"bbj-drafter",state:st},"*"); }catch(e){} },500);

@@ -73,7 +73,7 @@ function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; c
   if(side===live.draft.side){ const best=open.map(r=>({r,t:TIER_VAL[tierFor(cfg,prep.lineup[r],r,c)]||0})).sort((a,b)=>b.t-a.t)[0]; if(best&&best.t>0) return best.r; }
   return open[0]||roles[0]; }
 function applyDrafter(st){
-  const empty=!(st.bb||[]).length&&!(st.rb||[]).length&&!(st.bp||[]).length&&!(st.rp||[]).length;
+  const empty=![...(st.bb||[]),...(st.rb||[]),...(st.bp||[]),...(st.rp||[])].some(x=>x!=null);
   if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)) return; // page Drafter pas encore chargée : on ne vide pas la draft
   const me=(ourName()||"BBJ").toLowerCase().trim(), bl=(st.blue||"").toLowerCase(), rd=(st.red||"").toLowerCase();
   // côté : 1) choix manuel (boutons Blue/Red) pour cette game, 2) nom d'équipe sur Drafter, 3) les picks qui collent le plus à nos pools
@@ -83,13 +83,16 @@ function applyDrafter(st){
   else { const pb=poolFit(st.bp), pr=poolFit(st.rp); if(pb>pr+0.5){ side="B"; live.sideHow="pools"; } else if(pr>pb+0.5){ side="R"; live.sideHow="pools"; } else live.sideHow="?"; }
   // nouvelle game sur Drafter : la game précédente part dans la série (fearless) et on repart d'une draft vide
   if(live.drafterGame&&st.game&&st.game!==live.drafterGame){
-    if(st.game>live.drafterGame&&live.draft.actions.some(Boolean)){ const names=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").map(a=>a.name);
+    if(st.game>live.drafterGame&&live.draft.actions.some(Boolean)){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
       live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null}); }
     live.draft={side,actions:Array(20).fill(null)}; }
   live.drafterGame=st.game||1; if(opponentFromDrafter(st,side)) {}
   const src={ban:{B:st.bb||[],R:st.rb||[]},pick:{B:st.bp||[],R:st.rp||[]}}, cnt={ban:{B:0,R:0},pick:{B:0,R:0}};
   const old=live.draft.actions, acts=Array(20).fill(null), taken={B:[],R:[]};
-  STEPS.forEach(([t,s],i)=>{ const raw=src[t][s][cnt[t][s]++]; const c=drafterChamp(raw); if(!c) return;
+  const slots=st.v>=3, raws=STEPS.map(([t,s])=>src[t][s][cnt[t][s]++]);
+  const lastFilled=raws.reduce((m,r,i)=>r!=null&&drafterChamp(r)?i:m,-1);
+  STEPS.forEach(([t,s],i)=>{ const raw=raws[i]; const c=drafterChamp(raw);
+    if(!c){ if(slots&&t==="ban"&&i<lastFilled) acts[i]={name:"",miss:true}; return; } // ban vide mais la draft a continué : ban raté
     if(t==="ban"){ acts[i]={name:c}; return; }
     const o=old[i]&&old[i].name===c?old[i]:null; const role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]);
     taken[s].push(role); acts[i]={name:c,role,flex:o?!!o.flex:false}; });
@@ -197,7 +200,7 @@ function grid(){
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
       return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n)}">${av(n,"md")}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
-      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
+      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>=0&&STEPS[curStep()][0]==="ban"?`<button class="btn" data-act="missban" title="L'équipe n'a rien banni à temps : on passe à l'étape suivante">∅ Ban raté</button>`:"")+(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
 }
 function tipHtml(x){
@@ -222,7 +225,7 @@ function boardCol(team,d,ro){
   const slots=STEPS.map((s,k)=>({s,k})).filter(x=>x.s[1]===team);
   const bans=slots.filter(x=>x.s[0]==="ban"), picks=slots.filter(x=>x.s[0]==="pick");
   const pv=k=>!ro&&k===i&&ui.pending?ui.pending.name:null;
-  const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a?av(a.name,"md"):""}</button>`;};
+  const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
   if(!ro&&team!==d.side){ try{ pools=enemyPoolLeft(cfg,live.series,d,prep,5); }catch(e){ pools=null; } }
@@ -360,9 +363,10 @@ document.addEventListener("click",e=>{
   else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; ui.edit=null; ui.pending=null; persist("live"); render(); }
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
+  else if(act==="missban"){ const i=curStep(); if(i>=0&&STEPS[i][0]==="ban"){ live.draft.actions[i]={name:"",miss:true}; ui.pending=null; persist("live"); render(); } }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
   else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; persist("live"); render(); }
-  else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").map(a=>a.name);
+  else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
   else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
