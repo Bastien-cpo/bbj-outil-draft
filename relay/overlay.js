@@ -1,7 +1,7 @@
 // Favori « BBJ ➜ Drafter » : ouvre BBJ Outil Draft dans une fenêtre à part (déplaçable sur un 2e écran) et lui envoie la draft en direct.
 (()=>{ const URL_OUTIL="https://bastien-cpo.github.io/bbj-outil-draft/";
 const R=window.__bbjRelay2||(window.__bbjRelay2={win:null});
-function openWin(){ if(R.win&&!R.win.closed){ R.win.focus(); return; } R.win=window.open(URL_OUTIL,"bbj_outil","popup,width=900,height=1000"); if(!R.win) alert("Firefox a bloqué la fenêtre : autorise les pop-ups pour drafter.lol puis reclique le favori."); }
+function openWin(){ if(!R.win&&window.__bbjW&&!window.__bbjW.closed) R.win=window.__bbjW; if(R.win&&!R.win.closed){ R.win.focus(); return; } R.win=window.__bbjW=window.open(URL_OUTIL,"bbj_outil","popup,width=900,height=1000"); if(!R.win) alert("Firefox a bloqué la fenêtre : autorise les pop-ups pour drafter.lol puis reclique le favori."); }
 openWin(); if(R.started) return; R.started=true;
 const bd=document.createElement("div"); bd.style.cssText="position:fixed;z-index:2147483647;left:8px;bottom:8px;padding:4px 9px;border-radius:12px;font:600 11px system-ui;background:#1d2a1d;color:#8fe08f;border:1px solid #3c6;cursor:pointer;opacity:.85";
 bd.title="Clique pour rouvrir / afficher la fenêtre BBJ"; bd.onclick=openWin; document.body.appendChild(bd);

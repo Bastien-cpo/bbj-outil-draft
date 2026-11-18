@@ -1208,7 +1208,7 @@ let _fitT=null; window.addEventListener("resize",()=>{ clearTimeout(_fitT); _fit
 
 // ---------- Drafter en direct ----------
 // Le relais tourne sur la page Drafter (favori) : il lit picks et bans affichés et les envoie ici toutes les 0,5 s.
-const RELAY_CODE="(()=>{const s=document.createElement('script');s.src='https://bastien-cpo.github.io/bbj-outil-draft/relay/overlay.js?'+Date.now();document.body.appendChild(s)})()"; // le favori charge relay/overlay.js depuis GitHub Pages : il se met à jour tout seul
+const RELAY_CODE="(()=>{const U='https://bastien-cpo.github.io/bbj-outil-draft/';let w=window.__bbjW;if(!w||w.closed)w=window.__bbjW=open(U,'bbj_outil','popup,width=900,height=1000');if(w)w.focus();if(!window.__bbjRelay2){const s=document.createElement('script');s.src=U+'relay/overlay.js?'+Date.now();document.body.appendChild(s)}})()"; // le favori charge relay/overlay.js depuis GitHub Pages : il se met à jour tout seul
 const RIOT_KEY={}; RIOT_KEYS_RAW.split("|").forEach(t=>{ const [k,n]=t.split(":"); RIOT_KEY[k]=findChamp(n)||n; });
 const DRAFTER_ALIAS={monkeyking:"Wukong",nunu:"Nunu"};
 let drafterWin=null, drafterLast=0, drafterState=null;
