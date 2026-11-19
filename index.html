@@ -226,7 +226,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v10.13 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v10.14 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1058,10 +1058,20 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     const plan=planAll.filter(x=>!un.has(x.name)).map((x,k)=>({name:x.name, prep:true,
       why:[`Préparation n°${planAll.indexOf(x)+1} · ${x.player.split("#")[0]} (${ROLE_NAMES[x.role]})`, ...x.tags, ...x.why.slice(0,2).map(short)]}));
     const inPlan=new Set(plan.map(x=>x.name));
-    const pro=CHAMP_NAMES.filter(c=>!un.has(c)&&!inPlan.has(c)).map(c=>{ const p=PRO[c], pb=p?Math.sqrt(p.b/PRO_BMAX):0, m=metaInfo(c,null);
-      const pl=played[c]; let s=0.5*pb+0.3*m.v+(pl?0.25:0);
-      const why=["Suggestion pro / méta"];
-      if(us==="R"){ const bi=blindInfo(cfg,c,CHAMPS[c].roles[0]); s+=0.25*bi.v; if(bi.badge==="B") why.push("Blindable : un first pick de moins pour le côté bleu"); } if(p&&p.b>=30) why.push(`Banni ${p.b}× en pro`); if(m.v>=0.6&&m.wr) why.push(`Fort sur le patch (${m.wr} % WR)`); if(pl) why.push(`Joué par ${pl.name} (${pl.g} g.)`);
+    // Bans « pro / méta » : 45 % présence pro (picks + bans), 25 % force solo Q, 30 % danger pour nos champions S/A ; côté rouge +25 % blindable
+    const PMAX=Math.max(...CHAMP_NAMES.map(c=>PRO[c]?PRO[c].p+PRO[c].b:0))||1;
+    const oursSA={}; ROLES.forEach(r=>{ oursSA[r]=CHAMP_NAMES.filter(o=>{ const t=tierFor(cfg,lineup[r],r,o); return (t==="S"||t==="A")&&CHAMPS[o].roles.includes(r); }); });
+    const dangerFor=c=>{ let s=0, hits=[]; CHAMPS[c].roles.forEach(r=>(oursSA[r]||[]).forEach(o=>{ const g=ctrGet(I,c,o,r); if(g&&g[2]>=51.5){ s+=clamp01((g[2]-50)/8); hits.push([o,g[2]]); } }));
+      hits.sort((a,b)=>b[1]-a[1]); return {v:clamp01(s/3), hits}; };
+    const ourT=c=>ROLES.map(r=>tierFor(cfg,lineup[r],r,c)).find(t=>t==="S"||t==="A");
+    const pro=CHAMP_NAMES.filter(c=>!un.has(c)&&!inPlan.has(c)).map(c=>{ const p=PRO[c], pres=p?(p.p+p.b)/PMAX:0, m=metaInfo(c,null), dg=dangerFor(c);
+      const pl=played[c], mine=ourT(c); let s=0.45*pres+0.25*m.v+0.3*dg.v+(pl?0.25:0)-(mine?0.15:0);
+      const why=["Suggestion pro / méta"]; if(mine) why.push(`Dans nos tiers ${mine} : on préfère le garder pour nous`);
+      if(us==="R"){ const bi=blindInfo(cfg,c,CHAMPS[c].roles[0]); s+=0.25*bi.v; if(bi.badge==="B") why.push("Blindable : un first pick de moins pour le côté bleu"); }
+      if(p&&p.p+p.b>=150) why.push(`Présent dans ${p.p+p.b} drafts pro (${p.b} bans, ${p.p} picks)`);
+      if(dg.hits.length) why.push(`Contre nos ${dg.hits.slice(0,3).map(h=>`${h[0]} (${Math.round((100-h[1])*10)/10} % pour nous)`).join(", ")}`);
+      if(m.v>=0.6&&m.wr) why.push(`Fort en solo Q Master+ (${m.wr} %)`);
+      if(pl) why.push(`Joué par ${pl.name} (${pl.g} games)`);
       return {name:c, s, why, prep:false}; }).sort((a,b)=>b.s-a.s);
     if(!plan.length) return pro.slice(0,n);
     const pattern="PPPPXPPPXP", out=[]; let a=0,b=0;
