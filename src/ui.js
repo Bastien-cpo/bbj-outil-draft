@@ -200,7 +200,7 @@ function grid(){
   return `<div class="gridbox"><div class="gtools"><input id="gq" data-act="gq" value="${esc(ui.gridQ)}" placeholder="Rechercher un champion…" autocomplete="off">
     ${[["all","Tous"],...ROLES.map(r=>[r,ROLE_NAMES[r]])].map(([k,l])=>`<button class="rf ${ui.gridRole===k?"on":""}" data-act="grole" data-v="${k}">${l}</button>`).join("")}</div>
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
-      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★<b>${T[n].t}</b></i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
+      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★</i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
       ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
@@ -273,6 +273,7 @@ function scoutProfile(p){
 function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
+  const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
   const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); return (t==="S"||t==="A")&&CHAMPS[c].roles.includes(r); });
   const theirs=p.list.filter(x=>x.g>=5).slice(0,12);
   const threats=[], answers=[];
@@ -282,7 +283,9 @@ function scoutModal(){
   const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
   const duel=(a,b,wr,mine)=>`<div class="scduel ${mine?"mine":""}"><span class="${st(a)?"off":""}">${av(a,"sm")} ${esc(a)}</span><i>bat</i><span>${av(b,"sm")} ${esc(b)}</span><em>${wr} %</em></div>`;
   return `<div class="scmodal" data-act="scoutclose"><div class="scbox" data-act="none">
-   <div class="schead">${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> ${esc(p.name.includes("#")?"#"+p.name.split("#")[1]:"")} · ${ROLE_NAMES[r]}${p.rank?" · "+esc(p.rank):""}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
+   <div class="schead">${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> ${esc(p.name.includes("#")?"#"+p.name.split("#")[1]:"")} · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
+   <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}${S.kda?`<span><em>KDA</em>${S.kda.toFixed(2)}</span>`:""}</div>
+   <div class="scrank r${me.rank}"><b>${me.rank===1?"★ Joueur le plus fort en face":`${me.rank}<sup>e</sup> joueur le plus fort sur 5`}</b>${me.rank===1&&me.reason?` — ${esc(me.reason)}`:""}<span class="muted"> · ordre : ${RK.map(x=>esc(x.p.name.split("#")[0])).join(" › ")}</span></div>
    <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
    <h4>Champion pool <span class="muted">(solo Q, grisé = indisponible)</span></h4>
    <div class="scpool">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>

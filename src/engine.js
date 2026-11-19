@@ -451,7 +451,7 @@ function inferRole(champs){
 function roleShares(champs){ const sc={}; let t=0; champs.forEach(([c,g])=>{ const ch=CHAMPS[findChamp(c)]; if(ch){ sc[ch.roles[0]]=(sc[ch.roles[0]]||0)+g; t+=g; } }); ROLES.forEach(r=>sc[r]=t?(sc[r]||0)/t:0); return sc; }
 function permutations(a){ if(a.length<=1) return [a]; const o=[]; a.forEach((x,i)=>permutations(a.slice(0,i).concat(a.slice(i+1))).forEach(p=>o.push([x,...p]))); return o; }
 function prepPlayers(prep){
-  const L=(prep&&prep.players||[]).map(p=>{ const champs=(p.champs||[]).map(([c,g,wr])=>({c:findChamp(c),g:+g,wr:wr==null?null:+wr})).filter(x=>x.c).sort((a,b)=>b.g-a.g);
+  const L=(prep&&prep.players||[]).map(p=>{ const champs=(p.champs||[]).map(([c,g,wr,kda])=>({c:findChamp(c),g:+g,wr:wr==null?null:+wr,kda:kda==null?null:+kda})).filter(x=>x.c).sort((a,b)=>b.g-a.g);
     return {...p, role:p.role||inferRole(champs.map(x=>[x.c,x.g])), list:champs, _sh:roleShares(champs.map(x=>[x.c,x.g]))}; });
   // 5 joueurs sans rôle imposé : un rôle chacun, la répartition qui colle le mieux à leurs champions
   if(L.length===5&&!L.some(p=>p.role&&(prep.players.find(q=>q.name===p.name)||{}).role)){
@@ -464,11 +464,34 @@ function prepPlayers(prep){
 }
 // Rang op.gg -> valeur numérique (Diamant 4 0 LP = 2400, Maître 0 LP = 2800)
 function rankValue(r){
-  const t=normName(r||""); const lp=+((String(r||"").match(/(\d+)\s*LP/i)||[])[1]||0);
+  const t=normName(r||""); const lp=+((String(r||"").replace(/(\d)[,.\u202f ](\d{3})/g,"$1$2").match(/(\d+)\s*LP/i)||[])[1]||0);
   if(/challenger|grandmaitre|grandmaster|maitre|master/.test(t)) return 2800+lp;
   const tiers=[["fer",0],["iron",0],["bronze",400],["argent",800],["silver",800],["or",1200],["gold",1200],["platine",1600],["platinum",1600],["emeraude",2000],["emerald",2000],["diamant",2400],["diamond",2400]];
   const f=tiers.find(([k])=>t.startsWith(k)); if(!f) return null;
   const div=+((String(r).match(/\b([1-4])\b/)||[])[1]||4); return f[1]+(4-div)*100+lp;
+}
+// Joueur le plus fort en face, dans l'ordre demandé :
+// 1) LP actuels et pic nettement au-dessus (> 100 LP d'écart) ; 2) sinon efficacité : WR élevé en peu de games ;
+// 3) sinon pool le plus méta + KDA moyen.
+function playerStrength(p){
+  const cur=rankValue(p.rank), pk=rankValue(p.peak)||cur, lp=cur==null?null:Math.round(0.7*cur+0.3*Math.max(cur,pk||0));
+  const g=(p.w||0)+(p.l||0), wr=g?100*p.w/g:(p.wr||null);
+  const eff=g&&wr!=null?((wr*g+50*30)/(g+30)-50)+10*Math.log2(300/Math.max(40,g)):0;
+  const L=(p.list||[]).slice(0,8), tot=L.reduce((s,x)=>s+x.g,0)||1;
+  const meta=L.reduce((s,x)=>s+x.g/tot*metaInfo(x.c,p.role).v,0);
+  const kL=L.filter(x=>x.kda!=null), kda=p.kda||(kL.length?kL.reduce((s,x)=>s+x.kda*x.g,0)/kL.reduce((s,x)=>s+x.g,0):null);
+  return {lp, cur, peak:pk, games:g||null, wr:wr==null?null:Math.round(wr), eff, meta, kda, s3:meta*10+(kda||2.5)*3};
+}
+function rankPlayers(P){
+  const S=P.map(p=>({p,s:playerStrength(p)}));
+  const why=(a,b)=>{ if(a.s.lp!=null&&b.s.lp!=null&&Math.abs(a.s.lp-b.s.lp)>100) return {k:1,d:a.s.lp-b.s.lp};
+    if(Math.abs(a.s.eff-b.s.eff)>=5) return {k:2,d:a.s.eff-b.s.eff}; return {k:3,d:a.s.s3-b.s.s3}; };
+  S.sort((a,b)=>-why(a,b).d);
+  S.forEach((x,i)=>{ x.rank=i+1; const o=S[i===0?1:0]; if(!o){ x.reason=""; return; } const w=why(x,o), n=o.p.name.split("#")[0];
+    x.reason=w.k===1?(i===0?`LP et pic nettement au-dessus (${Math.round(x.s.lp-o.s.lp)} pts de plus que ${n})`:"")
+      :w.k===2?(i===0?`LP proches de ${n} : meilleur rendement (${x.s.wr} % en ${x.s.games} games contre ${o.s.wr} % en ${o.s.games})`:"")
+      :(i===0?`LP et rendement proches de ${n} : pool plus méta${x.s.kda?` et KDA ${x.s.kda.toFixed(2)}`:""}`:""); });
+  return S;
 }
 // Nos counters possibles : un joueur de notre line-up à ce rôle joue un champion qui bat c
 // Nos counters possibles : champions du pool de notre joueur à ce rôle qui battent c sur ce rôle
@@ -480,7 +503,7 @@ function ourCounters(cfg,c,role,lineup){
 }
 function banPlan(cfg,prep,lineup){
   const out=[]; const PP=prepPlayers(prep);
-  const vals=PP.map(p=>rankValue(p.rank));
+  const vals=PP.map(p=>rankValue(p.rank)); const R={}; rankPlayers(PP).forEach(x=>R[x.p.name]=x);
   PP.forEach((pl,pi)=>{
     const list=pl.list; if(!list.length) return;
     const total=list.reduce((s,x)=>s+x.g,0)||1, second=list[1];
@@ -498,7 +521,8 @@ function banPlan(cfg,prep,lineup){
       if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games`);
       if(meta>=0.6&&m.wr) why.push(`Fort sur le patch : ${m.wr} % WR, ${m.pres} % de présence en solo Q`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
-      if(gap>=400){ s+=(0.12+0.15*clamp01((gap-400)/600))*Math.min(1,share*3+(i===0?0.4:0)); tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]} est nettement au-dessus de ses coéquipiers (+${Math.round(gap)} LP environ)`); }
+      if(R[pl.name]&&R[pl.name].rank===1){ s+=0.15*Math.min(1,share*3+(i===0?0.4:0)); tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur le plus fort en face : ${R[pl.name].reason}`); }
+      else if(R[pl.name]&&R[pl.name].rank===2) s+=0.05*Math.min(1,share*3+(i===0?0.4:0));
       const oc=ourCounters(cfg,x.c,pl.role,lineup);
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
     });

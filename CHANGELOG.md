@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.9 — 19/11/2026
+- Joueur le plus fort en face (fiche + bans) : 1) LP actuels et pic (> 100 pts d'écart), 2) sinon WR élevé en peu de games, 3) sinon pool le plus méta + KDA. Fiche : rang, pic, games, WR, KDA, classement des 5.
+- Étoile de la grille plus petite, sans lettre (couleur = tier).
+
 ## v10.8 — 19/11/2026
 - Grille des champions, à notre tour de pick : étoile S/A/B sur nos champions des tier lists ; avec un filtre de rôle, nos S puis A puis B en tête (indisponibles en fin de liste).
 
