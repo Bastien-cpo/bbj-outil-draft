@@ -64,6 +64,9 @@ const RIOT_KEY={}; RIOT_KEYS_RAW.split("|").forEach(t=>{ const [k,n]=t.split(":"
 const DRAFTER_ALIAS={monkeyking:"Wukong",nunu:"Nunu"};
 let drafterLast=0, drafterState=null;
 function drafterChamp(x){ if(x==null) return null; x=String(x); if(/^\d+$/.test(x)) return RIOT_KEY[x]||null; return DRAFTER_ALIAS[x.toLowerCase()]||findChamp(x); }
+// Diagnostic (tests) : renvoie l'état de l'outil à la fenêtre qui le demande
+window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-ping"||!e.source) return; let sug=[]; try{ sug=[...document.querySelectorAll(".center [data-n]")].slice(0,6).map(x=>x.dataset.n); }catch(err){}
+  e.source.postMessage({type:"bbj-state", s:{side:live.draft.side, sideHow:live.sideHow, sideOk:sideOk(), game:curGameNo(), acts:live.draft.actions.map(a=>a?(a.miss?"∅":a.name+(a.role?"/"+a.role:"")):null), games:live.series.games.length, locked:live.series.locked, opp:prep.opponent, hist:(history.series||[]).length, sug, prompt:!!document.querySelector(".sidepick")}},"*"); });
 window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state) return; if(!drafterLast) flash("Drafter connecté ✓"); drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); });
 // rôle d'un pick : rôle libre que le champion joue, en privilégiant (chez nous) le joueur qui l'a dans son pool
 function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; const open=roles.filter(r=>!taken.includes(r));
