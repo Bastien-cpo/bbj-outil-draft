@@ -74,7 +74,13 @@ function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; c
   return open[0]||roles[0]; }
 function applyDrafter(st){
   const empty=![...(st.bb||[]),...(st.rb||[]),...(st.bp||[]),...(st.rp||[])].some(x=>x!=null);
-  if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)) return; // page Drafter pas encore chargée : on ne vide pas la draft
+  // Nouvelle room Drafter = nouvelle série : on repart de zéro (l'ancienne série reste archivable via « Nouvelle série »)
+  const room=((st.url||"").match(/draft\/([^?#/]+)/)||[])[1]||null;
+  if(room&&live.drafterRoom&&room!==live.drafterRoom){ live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; }
+  if(room) live.drafterRoom=room;
+  // Room vide alors que l'outil a une draft : on attend ~2 s (page Drafter en chargement) puis Drafter fait foi
+  if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)){ ui.emptyScans=(ui.emptyScans||0)+1; if(ui.emptyScans<4) return; }
+  if(!empty) ui.emptyScans=0;
   const me=(ourName()||"BBJ").toLowerCase().trim(), bl=(st.blue||"").toLowerCase(), rd=(st.red||"").toLowerCase();
   // côté : 1) choix manuel (boutons Blue/Red) pour cette game, 2) nom d'équipe sur Drafter, 3) les picks qui collent le plus à nos pools
   let side=live.draft.side;
