@@ -189,11 +189,18 @@ function banBubbles(){
 }
 function grid(){
   const un=unavailable(live.series,live.draft); const q=normName(ui.gridQ); const p=ui.pending;
-  const list=CHAMP_NAMES.filter(n=>(ui.gridRole==="all"||CHAMPS[n].roles.includes(ui.gridRole))&&(!q||normName(n).includes(q)));
+  let list=CHAMP_NAMES.filter(n=>(ui.gridRole==="all"||CHAMPS[n].roles.includes(ui.gridRole))&&(!q||normName(n).includes(q)));
+  // Notre tour de pick : étoile sur nos champions S à B (tier du joueur du rôle filtré, sinon meilleur tier parmi nos rôles encore libres)
+  const ti=targetIndex(), ourPick=ti>=0&&STEPS[ti][0]==="pick"&&STEPS[ti][1]===live.draft.side, TR={S:3,A:2,B:1};
+  const freeR=ROLES.filter(r=>!teamPicks(live.draft,live.draft.side).some(a=>a.role===r&&!a.flex));
+  const ourT=n=>{ if(!ourPick) return null; const rs=ui.gridRole==="all"?freeR.filter(r=>CHAMPS[n].roles.includes(r)):[ui.gridRole];
+    let best=null; rs.forEach(r=>{ const t=tierFor(cfg,prep.lineup[r],r,n); if(TR[t]&&(!best||TR[t]>TR[best.t])) best={t,r}; }); return best; };
+  const T={}; list.forEach(n=>T[n]=ourT(n));
+  if(ourPick&&ui.gridRole!=="all") list=list.slice().sort((a,b)=>(un.has(a)-un.has(b))||((T[b]?TR[T[b].t]:0)-(T[a]?TR[T[a].t]:0))||a.localeCompare(b));
   return `<div class="gridbox"><div class="gtools"><input id="gq" data-act="gq" value="${esc(ui.gridQ)}" placeholder="Rechercher un champion…" autocomplete="off">
     ${[["all","Tous"],...ROLES.map(r=>[r,ROLE_NAMES[r]])].map(([k,l])=>`<button class="rf ${ui.gridRole===k?"on":""}" data-act="grole" data-v="${k}">${l}</button>`).join("")}</div>
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
-      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n)}">${av(n,"md")}<span>${esc(n)}</span></button>`; }).join("")}</div>
+      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★<b>${T[n].t}</b></i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
       ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;

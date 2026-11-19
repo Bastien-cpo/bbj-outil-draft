@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.8 — 19/11/2026
+- Grille des champions, à notre tour de pick : étoile S/A/B sur nos champions des tier lists ; avec un filtre de rôle, nos S puis A puis B en tête (indisponibles en fin de liste).
+
 ## v10.7 — 19/11/2026
 - Fiches des joueurs adverses : 5 icônes de rôle sous les bans adverses → profil (forme du pool, style, dégâts, champion fiable), champion pool (grisé si indisponible), ses counters à nos S/A et nos réponses.
 - Bouton « Drafter » et ouverture par lien retirés (le favori fait tout) ; le favori s'installe depuis Réglages.
