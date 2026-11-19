@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.1 — 20/11/2026
+- Bug G3 du 19/11 corrigé : Drafter affiche les icônes de lane dès la G2/G3 ; l'outil ne les lit plus qu'une fois les 10 picks faits (sinon chaque champion prenait la lane de sa case et les rôles devenaient « ? »).
+- Historique : scrim contre Funky (19/11) ajouté depuis Drafter (L, L, W).
+
 ## v11.0 — 19/11/2026 — version semi-finale (partage à l'équipe)
 - Draft automatisée avec Drafter (favori « BBJ ➜ Drafter » en fenêtre à part), fiches adverses, bans/picks calibrés sur les games pro 2026, patch 26.23.
 - Préparation du soir : Funkγ Swanny confirmé top, pool top complété avec ses saisons 2024-2025 (main top avant).

@@ -229,7 +229,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.0 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.1 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1332,7 +1332,10 @@ function applyDrafter(st){
   const old=live.draft.actions, acts=Array(20).fill(null), taken={B:[],R:[]};
   // Rôles confirmés sur Drafter : les cases sont rangées par lane → on garde l'ordre de pick connu et on prend les rôles exacts
   const laneOf={B:{},R:{}};
-  ["B","R"].forEach(sd=>{ const L=sd==="B"?st.bpr:st.rpr, P=src.pick[sd]; if(!L) return;
+  // Bug G3 du 19/11 : dès la game 2-3, Drafter affiche déjà les icônes de lane des cases pendant la draft → on ne s'en sert
+  // qu'une fois les 10 picks faits (phase « Confirmer les rôles »), sinon chaque champion héritait de la lane de sa case
+  const allPicked=[...(st.bp||[]),...(st.rp||[])].filter(x=>x!=null).length>=10;
+  ["B","R"].forEach(sd=>{ const L=sd==="B"?st.bpr:st.rpr, P=src.pick[sd]; if(!L||!allPicked) return;
     const names=P.map(x=>x==="none"?"none":drafterChamp(x)), known=STEPS.map((x,i)=>x[0]==="pick"&&x[1]===sd?i:-1).filter(i=>i>=0).map(i=>old[i]?(old[i].miss?"none":old[i].name):null);
     names.forEach((n,j)=>{ if(n&&n!=="none"&&L[j]) laneOf[sd][n]=L[j]; });
     const same=names.filter(n=>n&&n!=="none").sort().join("|")===known.filter(n=>n&&n!=="none").sort().join("|")&&known.every(Boolean);
