@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.20 — 19/11/2026
+- Échelle des scores élargie : 90+ = très bon pick ; 94+ seulement avec gros counter + synergie/compo + confiance du joueur ; 98–100 = « pick de génie » (tous les critères au maximum).
+- Préparation de l'adversaire du 19/11 (Bibbyy, BDG Invisi, Unslott, Funky Reky, Funkγ Swanny) dans l'outil et la fenêtre Drafter.
+
 ## v10.19 — 19/11/2026 — calibrage pro 2026
 - Calibrage sur 1 498 games pro 2026 (détail : projet « calibrage-pro-2026 ») : % de victoire resserré (×0,6, 35–65 %) ; matchup top +35 % (score de pick et analyse finale) ; nouvelle part « Compo » (cohérence / faiblesses) à partir du 3e pick ; méta = 60 % pro / 40 % solo Q ; léger ajustement du premier pick bleu selon les B1 pro (Cassiopeia, Vi, Ezreal, Orianna + ; Jarvan IV, Jayce, Karma, Syndra, Bard −).
 

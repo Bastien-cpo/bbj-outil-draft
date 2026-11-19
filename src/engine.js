@@ -282,7 +282,12 @@ function scorePick(cfg,c,role,ctx){
   const tw=parts.reduce((s,p)=>s+p[2],0)||1;
   const raw=parts.reduce((s,p)=>s+p[1]*p[2],0)/tw;
   // Échelle d'affichage : 90+ = pick excellent, 75-90 = très bon, 60-75 = correct, < 60 = à éviter
-  const score=Math.max(1,Math.min(99,Math.round(45+(raw-0.35)*125)));
+  // Échelle élargie : 90+ réservé aux très bons picks ; 95+ seulement si gros counter + synergie/compo + confiance du joueur ; 100 = pick de génie
+  const synBest=Math.max(ctx.allies.length?sy.v:0, coh==null?0:coh);
+  const genius=af.v>=0.85&&mu.mode==="lane"&&mu.v>=0.85&&synBest>=0.8&&raw>=0.9;
+  const strong=af.v>=0.75&&mu.mode==="lane"&&mu.v>=0.75&&synBest>=0.65;
+  const cap=genius?100:strong?97:93;
+  const score=Math.max(1,Math.min(cap,Math.round(45+(raw-0.35)*100)));
   const why=[];
   const ex=[]; if(af.games) ex.push(`${af.games} g. en équipe`); if(af.sq) ex.push(`${af.sq.g} g. en solo Q`);
   why.push(ex.length?"Expérience : "+ex.join(" + "):"Peu joué"+(af.tier!=="-"?` (tier ${af.tier})`:""));
@@ -298,6 +303,7 @@ function scorePick(cfg,c,role,ctx){
   if(duoPart) why.push("Duo avéré possible avec "+duoPart+" au pick suivant");
   if(mu.mode!=="lane"&&expo>0&&side==="B"&&n>=4) why.push("⚠ Exposé au dernier pick adverse");
   if(mu.mode==="lane"&&ctx.enemyAfter===0) why.push("Dernier pick : le matchup compte double");
+  if(genius&&score>=99) why.unshift("★ Pick de génie : gros counter, synergie et confiance du joueur");
   if(ctx.firstPick) why.push("First pick : force et blind prioritaires");
   if(b1>=0.03) why.push(`Premier pick qui gagne en pro (${B1_PRO[c][1]}/${B1_PRO[c][0]})`); else if(b1<=-0.03) why.push(`⚠ Premier pick qui perd souvent en pro (${B1_PRO[c][1]}/${B1_PRO[c][0]})`);
   if(coh!=null&&coh>=0.6) why.push("Compo cohérente avec ce pick"); else if(coh!=null&&coh<=0.3) why.push("⚠ Laisse la compo avec des faiblesses");
