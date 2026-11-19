@@ -383,7 +383,7 @@ function viewPools(){
 
 // ---------- Réglages ----------
 function viewSettings(){
-  const W=cfg.weights; for(const k of Object.keys(W)) if(!(k in {affinite:1,force:1,synergie:1,matchup:1})) delete W[k]; const lab={affinite:"Affinité : games en scrim/compétition + solo Q",force:"Méta : games pro récentes + solo Q du patch",synergie:"Synergie avec vos picks (ignorée sans pick allié)",matchup:"Matchup contre leurs picks (ou capacité à être blind pick)"};
+  const W=cfg.weights; for(const k of Object.keys(W)) if(!(k in {affinite:1,force:1,synergie:1,matchup:1})) delete W[k]; const lab={affinite:"Affinité : games en scrim/compétition + solo Q",force:"Méta : games pro récentes + solo Q du patch",synergie:"Synergie avec vos picks + cohérence de la compo (comble-t-il une faiblesse ?)",matchup:"Matchup contre leurs picks (ou capacité à être blind pick) ; compte 35 % de plus en top"};
   return `<section class="card"><h3>Poids du score sur 100</h3>${Object.keys(W).map(k=>`<label class="sl">${lab[k]} <b>${W[k]}</b><input type="range" min="0" max="50" value="${W[k]}" data-act="w" data-k="${k}"></label>`).join("")}
    <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>

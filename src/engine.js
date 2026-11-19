@@ -66,7 +66,11 @@ const proPrio = c=>{ const p=PRO[c]; return p? clamp01(Math.sqrt((p.p+p.b)/PRO_M
 // Méta d'un pick : force du patch ; sur les 2 premiers picks, on ajoute la priorité vue en pro
 // Méta = moitié games pro récentes (Worlds 2026 + ligues majeures été), moitié solo Q du patch actuel
 function proScore(c){ const p=PRO[c]; if(!p) return 0.15; const pres=clamp01(Math.sqrt((p.p+p.b)/PRO_MAX)); const wr=p.p>=10?p.w/p.p:0.5; return clamp01(0.85*pres+0.15+0.5*(wr-0.5)); }
-function force(cfg,c,role){ return clamp01(0.5*proScore(c)+0.5*metaInfo(c,role).v); }
+// Calibrage pro 2026 : la présence pro prédit la victoire, pas la force solo Q → 60 % pro / 40 % solo Q (on reste une équipe amateur : l'affinité garde son poids)
+function force(cfg,c,role){ return clamp01(0.6*proScore(c)+0.4*metaInfo(c,role).v); }
+// Premier pick bleu en pro 2026 (games, victoires) : léger bonus/malus, ramené vers 50 % selon l'échantillon
+const B1_PRO={"Lee Sin":[58,30],"Camille":[18,7],"Bard":[25,8],"Varus":[41,22],"Jarvan IV":[131,57],"Ryze":[105,50],"Vi":[127,71],"Karma":[56,24],"Jayce":[46,18],"Rumble":[76,41],"Orianna":[127,69],"Nocturne":[83,38],"Ezreal":[95,55],"Naafiri":[22,11],"Viktor":[24,14],"Seraphine":[34,20],"Cassiopeia":[100,63],"Lulu":[18,11],"Lucian":[40,19],"Pantheon":[37,16],"Olaf":[23,13],"Syndra":[25,7],"Annie":[34,16],"Ashe":[21,13]};
+function b1Adj(c){ const x=B1_PRO[c]; if(!x) return 0; return (x[1]/x[0]-0.5)*x[0]/(x[0]+60); }
 const OUR_SQ = {}; for(const p in OUR_SOLOQ){ OUR_SQ[p]={}; OUR_SOLOQ[p].split("|").forEach(x=>{const [n,g,w]=x.split(":"); const c=findChamp(n); if(c) OUR_SQ[p][c]={g:+g,wr:+w};}); }
 
 // ---- Configuration ----
@@ -263,11 +267,17 @@ function scorePick(cfg,c,role,ctx){
       const pt=poolOf(ctx.cfg||{tiers:{}},pid2,r2).find(b=>!ctx.un.has(b)&&b!==c&&provenDuo(null,c,role,b,r2)); if(pt){ duoPart=pt; break; } }
     if(duoPart) parts.push(["Duo",1,W.synergie*0.6]);
   }
-  let expo=0;
-  if(mu.mode==="lane") parts.push(["Matchup",mu.v,W.matchup*(ctx.enemyAfter===0?1.8:1.3)]);
+  // Cohérence de compo (calibrage pro : une compo sans faiblesse est le meilleur prédicteur de victoire)
+  let coh=null; if(ctx.allies.length>=2){ const names=ctx.allies.map(a=>a.name||a), before=compTags(names), after=compTags(names.concat([c]));
+    coh=clamp01(0.55-0.2*after.weak.length+0.05*after.strong.length-(after.weak.length>before.weak.length?0.1:0));
+    parts.push(["Compo",coh,W.synergie*(ctx.allies.length>=3?1:0.7)]); }
+  // Premier pick bleu : léger ajustement d'après les B1 pro 2026
+  let b1=0; if(ctx.firstPick&&side==="B"){ b1=b1Adj(c); if(b1) parts.push(["1er pick pro",clamp01(0.5+b1*4),W.force*0.35]); }
+  let expo=0; const topK=role==="T"?1.35:1; // le matchup top compte plus (calibrage pro + habitudes de l'équipe)
+  if(mu.mode==="lane") parts.push(["Matchup",mu.v,W.matchup*topK*(ctx.enemyAfter===0?1.8:1.3)]);
   else {
     const open=ctx.theirOpen||ROLES; expo=open.includes(role)?Math.min(1,(ctx.enemyAfter||0)/Math.max(1,open.length)):0;
-    if(expo>0) parts.push(["Blind",mu.v,W.matchup*(0.6+1.4*expo)*(side==="B"&&n>=4?1.3:1)]);
+    if(expo>0) parts.push(["Blind",mu.v,W.matchup*topK*(0.6+1.4*expo)*(side==="B"&&n>=4?1.3:1)]);
   }
   const tw=parts.reduce((s,p)=>s+p[2],0)||1;
   const raw=parts.reduce((s,p)=>s+p[1]*p[2],0)/tw;
@@ -289,6 +299,8 @@ function scorePick(cfg,c,role,ctx){
   if(mu.mode!=="lane"&&expo>0&&side==="B"&&n>=4) why.push("⚠ Exposé au dernier pick adverse");
   if(mu.mode==="lane"&&ctx.enemyAfter===0) why.push("Dernier pick : le matchup compte double");
   if(ctx.firstPick) why.push("First pick : force et blind prioritaires");
+  if(b1>=0.03) why.push(`Premier pick qui gagne en pro (${B1_PRO[c][1]}/${B1_PRO[c][0]})`); else if(b1<=-0.03) why.push(`⚠ Premier pick qui perd souvent en pro (${B1_PRO[c][1]}/${B1_PRO[c][0]})`);
+  if(coh!=null&&coh>=0.6) why.push("Compo cohérente avec ce pick"); else if(coh!=null&&coh<=0.3) why.push("⚠ Laisse la compo avec des faiblesses");
   if(tim!=null&&tim<0.5) why.push("Rôle/champion rarement pické aussi tôt");
   if(NEXT_DELTA[c]) why.push((NEXT_DELTA[c]>0?"buff ":"nerf ")+PATCH_NEXT.v);
   return {name:c, role, score, raw, parts, why, tier:af.tier, badge:pickBadge(c,role), duo:!!(sy.duos&&sy.duos.length)};
@@ -687,11 +699,12 @@ function analyzeFinal(cfg,draft,prep,lineup){
   else add("Expérience des joueurs",0, "Pas de préparation adverse : facteur non comparé");
   add("Méta / force des picks",(U.meta-T.meta)*20, `Vous ${Math.round(U.meta*100)} · eux ${Math.round(T.meta*100)}`);
   add("Synergies",Math.max(-6,Math.min(6,(U.syn-T.syn)*0.6)), `Vous ${U.syn>0?"+":""}${Math.round(U.syn*10)/10} % · eux ${T.syn>0?"+":""}${Math.round(T.syn*10)/10} %`);
-  const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*0.6,0);
+  const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*(l.role==="T"?0.9:0.6),0);
   add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
   add("Cohérence de compo",(T.tags.weak.length-U.tags.weak.length)*1.5+(U.tags.strong.length-T.tags.strong.length)*0.5, `${U.tags.weak.length} faiblesse(s) chez vous · ${T.tags.weak.length} chez eux`);
   const total=factors.reduce((s,f)=>s+f.pts,0);
-  const win=Math.round(Math.max(25,Math.min(75,50+total)));
+  // Calibrage pro 2026 : l'écart prédit était trop large (40 % annoncé → 46 % réel) → resserré, borné 35–65 %
+  const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
 if(typeof module!=="undefined"&&module.exports) module.exports={firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};

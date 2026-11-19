@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.19 — 19/11/2026 — calibrage pro 2026
+- Calibrage sur 1 498 games pro 2026 (détail : projet « calibrage-pro-2026 ») : % de victoire resserré (×0,6, 35–65 %) ; matchup top +35 % (score de pick et analyse finale) ; nouvelle part « Compo » (cohérence / faiblesses) à partir du 3e pick ; méta = 60 % pro / 40 % solo Q ; léger ajustement du premier pick bleu selon les B1 pro (Cassiopeia, Vi, Ezreal, Orianna + ; Jarvan IV, Jayce, Karma, Syndra, Bard −).
+
 ## v10.18 — 19/11/2026 — patch 26.23
 - Notes officielles 26.23 : buffs Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi (+0,07 force méta, +0,6 % WR dans les matchups) ; nerfs LeBlanc, Master Yi, Syndra (-0,09, -0,8 %). Données de jeu encore en 26.22 (patch sorti la veille), à remplacer quand il y aura assez de games.
 
