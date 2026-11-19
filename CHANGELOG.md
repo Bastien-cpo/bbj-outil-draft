@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.7 — 19/11/2026
+- Fiches des joueurs adverses : 5 icônes de rôle sous les bans adverses → profil (forme du pool, style, dégâts, champion fiable), champion pool (grisé si indisponible), ses counters à nos S/A et nos réponses.
+- Bouton « Drafter » et ouverture par lien retirés (le favori fait tout) ; le favori s'installe depuis Réglages.
+
 ## v10.6 — 19/11/2026
 - Au début de chaque game, l'outil demande d'un clic si BBJ est Blue ou Red (tout s'adapte à ce choix). Automatique si Drafter affiche BBJ / Blocked by Jungle. Devinette par les pools retirée.
 

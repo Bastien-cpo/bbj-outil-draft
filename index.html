@@ -208,6 +208,11 @@ body.drafting .arena{height:calc(100vh - 128px);align-items:stretch}
 .drstat.on{background:#2f7d52;color:#fff;border-color:#2f7d52}.drstat.off{border-color:#c0504d}.drp ol{margin:6px 0 10px 18px;line-height:1.9}.bm{cursor:grab}.relaycode{width:100%;height:70px;font:11px monospace}
 #drsync{font-size:12px;margin-left:auto;margin-right:12px;padding:3px 8px;border-radius:6px}#drsync.on{background:#2f7d52;color:#fff}#drsync.off{background:#5a2b2a;color:#f3c1bf}#drsync:empty{display:none}
 body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{display:none}
+.scout{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}.scb{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;background:#161a22;border:1px solid #2a3140;color:#c9a95c;border-radius:8px;padding:3px 5px;cursor:pointer;font-size:11px}.scb span{color:#cfd6e4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scb:hover{border-color:#d4ad52;background:#1f2430}.ricon{flex:none}
+.scmodal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:center;justify-content:center}.scbox{background:#11141b;border:1px solid #d4ad52;border-radius:14px;padding:16px 20px;width:min(640px,94vw);max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.schead{display:flex;align-items:center;gap:10px;color:#d4ad52}.schead b{font-size:20px;color:#fff}.schead .btn{margin-left:auto}.scbox h4{margin:14px 0 6px;color:#d4ad52;font-size:13px;text-transform:uppercase;letter-spacing:.05em}.scbox ul{margin:0;padding-left:18px;line-height:1.6}
+.scpool{display:flex;flex-wrap:wrap;gap:8px}.scc{display:inline-flex;flex-direction:column;align-items:center;font-size:10px;gap:2px}.scc b{font-weight:500;color:#cfd6e4;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scduels{display:grid;grid-template-columns:1fr 1fr;gap:6px}.scduel{display:flex;align-items:center;gap:6px;background:#181d27;border-radius:10px;padding:4px 8px;font-size:12px}.scduel span{display:inline-flex;align-items:center;gap:4px}.scduel .off{opacity:.35}.scduel i{font-style:normal;color:#8a93a3;font-size:11px}.scduel em{margin-left:auto;font-style:normal;font-weight:700;color:#ff9c9c}.scduel.mine em{color:#8fe08f}
+.scc em{font-style:normal;color:#9aa4b5}.scc.off{opacity:.3;filter:grayscale(1)}.scthr{display:inline-flex;align-items:center;gap:4px;background:#181d27;border-radius:10px;padding:4px 8px}.scthr i{font-style:normal;color:#d9534f}.scthr em{font-style:normal;font-weight:700;color:#ffb3b3}
 .sidepick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 20px;text-align:center}.sidepick h2{margin:0;font-size:24px}.sidebtns{display:flex;gap:18px;margin-top:10px}.sidebtns button{font-size:22px;font-weight:700;padding:22px 56px;border-radius:12px;cursor:pointer;border:2px solid}.sbB{background:#14294d;color:#9cc3ff;border-color:#3d7be0}.sbR{background:#4a1717;color:#ffaaaa;border-color:#d9534f}.sidebtns button:hover{filter:brightness(1.3)}
 .sideask{background:#5a3d10;color:#ffd27a;border:1px solid #d4ad52;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:600;margin-right:6px;animation:pulse 1.4s infinite}@keyframes pulse{50%{opacity:.55}}
 .pk.miss .miss{display:flex;align-items:center;justify-content:center;width:56px;height:56px;font-size:24px;color:#888;border:1px dashed #555;border-radius:8px}
@@ -217,7 +222,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v10.6 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v10.7 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1169,7 +1174,7 @@ const curStep=()=>live.draft.actions.findIndex(a=>!a);
 const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id}</option>`).join("");
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
-function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer,drafterLink:ui.drafterLink}})); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer}})); }catch(e){} }
 function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } return c; }
 function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); } }catch(e){} }
 const pending={}, writing={}, timers={};
@@ -1214,12 +1219,9 @@ let _fitT=null; window.addEventListener("resize",()=>{ clearTimeout(_fitT); _fit
 const RELAY_CODE="(()=>{const U='https://bastien-cpo.github.io/bbj-outil-draft/';let w=window.__bbjW;if(!w||w.closed)w=window.__bbjW=open(U,'bbj_outil','popup,width=900,height=1000');if(w)w.focus();if(!window.__bbjRelay2){const s=document.createElement('script');s.src=U+'relay/overlay.js?'+Date.now();document.body.appendChild(s)}})()"; // le favori charge relay/overlay.js depuis GitHub Pages : il se met à jour tout seul
 const RIOT_KEY={}; RIOT_KEYS_RAW.split("|").forEach(t=>{ const [k,n]=t.split(":"); RIOT_KEY[k]=findChamp(n)||n; });
 const DRAFTER_ALIAS={monkeyking:"Wukong",nunu:"Nunu"};
-let drafterWin=null, drafterLast=0, drafterState=null;
+let drafterLast=0, drafterState=null;
 function drafterChamp(x){ if(x==null) return null; x=String(x); if(/^\d+$/.test(x)) return RIOT_KEY[x]||null; return DRAFTER_ALIAS[x.toLowerCase()]||findChamp(x); }
-function openDrafter(){ const link=(ui.drafterLink||"").trim(); if(!/^https?:\/\/(www\.)?drafter\.lol\//.test(link)){ flash("Colle d'abord le lien Drafter de la série"); return; }
-  drafterWin=window.open(link,"bbj_drafter"); if(!drafterWin) flash("Le navigateur a bloqué l'ouverture : autorise les fenêtres pop-up"); }
-setInterval(()=>{ if(drafterWin&&!drafterWin.closed){ try{ drafterWin.postMessage({type:"bbj-hello"},"*"); }catch(e){} } },1000);
-window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state) return; if(!drafterLast&&ui.drPanel){ ui.drPanel=false; flash("Drafter connecté ✓"); } drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); });
+window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state) return; if(!drafterLast) flash("Drafter connecté ✓"); drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); });
 // rôle d'un pick : rôle libre que le champion joue, en privilégiant (chez nous) le joueur qui l'a dans son pool
 function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; const open=roles.filter(r=>!taken.includes(r));
   if(side===live.draft.side){ const best=open.map(r=>({r,t:TIER_VAL[tierFor(cfg,prep.lineup[r],r,c)]||0})).sort((a,b)=>b.t-a.t)[0]; if(best&&best.t>0) return best.r; }
@@ -1254,16 +1256,9 @@ function applyDrafter(st){
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
 }
 function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(n&&!/^adversaires?$/i.test(n)&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
-function drafterPanel(){
-  const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null, live_=age!=null&&age<5;
-  return `<section class="card drp"><h3>Drafter en direct ${live_?'<span class="tag ok">synchro active</span>':'<span class="tag">pas connecté ici</span>'}</h3>
-   <ol class="muted">
-    <li>Une seule fois : glisse ce bouton dans ta barre de favoris → <a class="btn sm bm" href="javascript:${encodeURIComponent(RELAY_CODE)}" title="À glisser dans les favoris">BBJ ➜ Drafter</a>
-      <button class="lnk" data-act="showrelay">ou copier le code</button> (remplace l'ancien favori s'il existe)</li>
-    <li>Ouvre la draft sur drafter.lol (la tienne ou celle de l'adversaire), puis clique le favori : l'outil s'ouvre dans une fenêtre à part (à mettre sur ton 2e écran) et se remplit tout seul.</li>
-    <li>Notre côté est trouvé par le nom d'équipe, sinon par nos pools ; s'il se trompe, clique Blue/Red : ton choix est gardé pour la game.</li></ol>
-   ${ui.showRelay?`<textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea><p class="muted">Crée un favori (ou modifie l'ancien) et colle ce texte comme adresse.</p>`:""}
-   <p class="muted">Le panneau utilise la copie des tier lists, de la line-up et de la préparation publiée avec le site (mise à jour par Claude à chaque changement). Les rôles sont devinés : corrige-les si besoin. Si la fenêtre est fermée, le petit badge en bas à gauche de Drafter la rouvre. Quand Drafter passe à la game suivante, la game finie part dans la série (fearless).</p></section>`;
+function bookmarkCard(){
+  return `<section class="card"><h3>Favori Drafter</h3><p class="muted">À installer une fois par personne : glisse ce bouton dans la barre de favoris → <a class="btn sm bm" href="javascript:${encodeURIComponent(RELAY_CODE)}">BBJ ➜ Drafter</a>. Sur une page drafter.lol, clique-le : l'outil s'ouvre dans une fenêtre à part et se remplit tout seul.</p>
+   <textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea></section>`;
 }
 setInterval(()=>{ const h=document.getElementById("drsync"); if(h){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null;
     if(age!=null&&age<5){ h.className="on"; h.textContent="Drafter connecté · draft remplie automatiquement"; }
@@ -1310,10 +1305,10 @@ function viewDraft(){
     <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
     ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
     <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
-    <button class="btn sm drstat" data-act="drpanel">Drafter</button><button class="btn sm" data-act="newseries">Nouvelle série</button></div>${ui.drPanel?drafterPanel():""}`;
+    <button class="btn sm" data-act="newseries">Nouvelle série</button></div>`;
   if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
     return top+`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,true)}</div>${boardCol("R",g,true)}</section>`; }
-  return top+`<section class="arena">${boardCol("B",d)}<div class="center">${sideOk()?viewCenter():sidePrompt()}</div>${boardCol("R",d)}</section>`;
+  return top+`<section class="arena">${boardCol("B",d)}<div class="center">${sideOk()?viewCenter():sidePrompt()}</div>${boardCol("R",d)}</section>`+(ui.scout?scoutModal():"");
 }
 function viewCenter(){
   const d=live.draft, i=targetIndex();
@@ -1398,7 +1393,54 @@ function boardCol(team,d,ro){
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
-    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${picks.map(pick).join("")}</div></div>`;
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}</div></div>`;
+}
+
+// ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
+const ROLE_SVG={
+ T:'<path d="M3 3h13l-4 4H7v5l-4 4z" fill="currentColor"/><path d="M10 10h4v4h-4z M21 7v14H7l3-3h8V10z" fill="currentColor" opacity=".45"/>',
+ J:'<path d="M12 2c-1 4-4 6-4 10 0 3 2 5 4 8 2-3 4-5 4-8 0-4-3-6-4-10zM5 6c0 4 1 7 4 9-2 1-3 0-4-1zM19 6c0 4-1 7-4 9 2 1 3 0 4-1z" fill="currentColor"/>',
+ M:'<path d="M3 17l14-14h4v4L7 21H3z" fill="currentColor"/><path d="M3 3h8L3 11zM21 21h-8l8-8z" fill="currentColor" opacity=".45"/>',
+ A:'<path d="M21 21H8l4-4h5v-5l4-4z" fill="currentColor"/><path d="M10 10h4v4h-4z M3 17V3h14l-3 3H6v8z" fill="currentColor" opacity=".45"/>',
+ S:'<path d="M12 3l3 4h6l-5 4 2 8-6-4-6 4 2-8-5-4h6z" fill="currentColor"/>'};
+const roleIcon=(r,s=18)=>`<svg class="ricon" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${ROLE_SVG[r]}</svg>`;
+function scoutRow(team,d){
+  if(team===d.side) return ""; let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length) return "";
+  return `<div class="scout">${ROLES.map(r=>{ const p=P.find(x=>x.role===r); return p?`<button class="scb" data-act="scout" data-r="${r}" title="${ROLE_NAMES[r]} : ${esc(p.name.split("#")[0])} — voir sa fiche">${roleIcon(r,22)}</button>`:""; }).join("")}</div>`;
+}
+function scoutProfile(p){
+  const L=p.list, tot=L.reduce((s,x)=>s+x.g,0)||1, w=x=>x.g/tot;
+  const ax={}; AXES.forEach(a=>ax[a]=L.reduce((s,x)=>s+w(x)*((CHAMPS[x.c]||{})[a]||0),0));
+  const top=AXES.slice().sort((a,b)=>ax[b]-ax[a]).filter(a=>ax[a]>=1.6).slice(0,3);
+  const dm={}; L.forEach(x=>{ const k=(CHAMPS[x.c]||{}).dmg||"?"; dm[k]=(dm[k]||0)+w(x); }); const dmg=Object.keys(dm).sort((a,b)=>dm[b]-dm[a])[0];
+  const s1=w(L[0]||{g:0}), s3=L.slice(0,3).reduce((s,x)=>s+w(x),0);
+  const shape=s1>=0.45?`One-trick ${L[0].c} (${Math.round(s1*100)} % de ses games)`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions, aucun ne dépasse ${Math.round(s1*100)} %`;
+  const comfort=L.filter(x=>x.g>=15&&x.wr!=null).sort((a,b)=>b.wr-a.wr)[0];
+  const early=ax.early-ax.scaling;
+  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", dmg&&dmg!=="?"?`Dégâts surtout ${({AD:"physiques (AD)",AP:"magiques (AP)",MIX:"mixtes",TK:"de tank"})[dmg]||dmg}`:"", comfort?`Champion le plus fiable : ${comfort.c} (${comfort.wr} % sur ${comfort.g} games)`:""];
+  return lines.filter(Boolean);
+}
+function scoutModal(){
+  const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
+  const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
+  const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); return (t==="S"||t==="A")&&CHAMPS[c].roles.includes(r); });
+  const theirs=p.list.filter(x=>x.g>=5).slice(0,12);
+  const threats=[], answers=[];
+  theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
+  const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
+  const st=c=>un.has(c)?(live.series.locked.includes(c)?"fearless":"pris/banni"):"";
+  const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
+  const duel=(a,b,wr,mine)=>`<div class="scduel ${mine?"mine":""}"><span class="${st(a)?"off":""}">${av(a,"sm")} ${esc(a)}</span><i>bat</i><span>${av(b,"sm")} ${esc(b)}</span><em>${wr} %</em></div>`;
+  return `<div class="scmodal" data-act="scoutclose"><div class="scbox" data-act="none">
+   <div class="schead">${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> ${esc(p.name.includes("#")?"#"+p.name.split("#")[1]:"")} · ${ROLE_NAMES[r]}${p.rank?" · "+esc(p.rank):""}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
+   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+   <h4>Champion pool <span class="muted">(solo Q, grisé = indisponible)</span></h4>
+   <div class="scpool">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")}, tiers S/A)</h4>
+   ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.c,t.o,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
+   <h4>Nos réponses à ses champions</h4>
+   ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}
+  </div></div>`;
 }
 
 // ---------- Préparation ----------
@@ -1461,7 +1503,7 @@ function viewSettings(){
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
    <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
    <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22, Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
-   ${synEditor()}${ctrEditor()}
+   ${synEditor()}${ctrEditor()}${bookmarkCard()}
    <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
 }
 function synEditor(){
@@ -1505,6 +1547,9 @@ function parseManual(txt){
     return {name, champs}; }).filter(p=>p.champs.length);
 }
 document.addEventListener("click",e=>{
+  const sc=e.target.closest("[data-act]"); if(sc&&sc.dataset.act==="none") return;
+  if(sc&&sc.dataset.act==="scout"){ ui.scout=sc.dataset.r; render(); return; }
+  if(sc&&sc.dataset.act==="scoutclose"){ ui.scout=null; render(); return; }
   const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
   if(act==="side"){ live.draft.side=b.dataset.v; live.sideManual=curGameNo(); live.sideHow="manuel"; persist("live"); render(); }
   else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
@@ -1528,9 +1573,6 @@ document.addEventListener("click",e=>{
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
   else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
   else if(act==="clearprep"){ clearPrep(); flash("Préparation remise à zéro"); render(); }
-  else if(act==="drpanel"){ ui.drPanel=!ui.drPanel; render(); }
-  else if(act==="opendrafter"){ openDrafter(); }
-  else if(act==="showrelay"){ ui.showRelay=!ui.showRelay; render(); }
   else if(act==="result"){ const g=ui.viewGame!=null?live.series.games[ui.viewGame]:live.draft; g.result=g.result===b.dataset.v?null:b.dataset.v; persist("live"); render(); }
   else if(act==="hview"){ ui.hist={s:+b.dataset.s,g:+b.dataset.g}; render(); }
   else if(act==="hclose"){ ui.hist=null; render(); }
@@ -1554,7 +1596,6 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   const b=e.target; const act=b.dataset&&b.dataset.act; if(!act) return;
   if(act==="lineup"){ prep.lineup[b.dataset.r]=b.value; persist("prep"); render(); }
-  else if(act==="drlink"){ ui.drafterLink=b.value.trim(); saveLocal(); }
   else if(act==="hopp"){ history.series[+b.dataset.s].opponent=b.value.trim()||"Adversaire"; persist("history"); render(); }
   else if(act==="role"){ live.draft.actions[+b.dataset.k].role=b.value; persist("live"); render(); }
   else if(act==="prole"){ const p=prep.players[+b.dataset.k]; if(p){ p.role=b.value; persist("prep"); render(); } }
@@ -1572,6 +1613,7 @@ document.addEventListener("mouseover",e=>{ const b=e.target.closest(".bub"); con
   tip.classList.add("on"); const w=tip.offsetWidth; tip.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+"px"; tip.style.top=(r.bottom+6+scrollY)+"px"; });
 document.addEventListener("input",e=>{ if(e.target.id==="gq"){ ui.gridQ=e.target.value; const pos=e.target.selectionStart; const box=$(".cgrid"); render(); const g=$("#gq"); if(g){ g.focus(); g.setSelectionRange(pos,pos); } } });
 document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&ui.scout){ ui.scout=null; render(); return; }
   if(ui.tab!=="draft") return;
   if(e.key==="Enter"){ if(ui.pending){ addChamp(ui.pending.name,ui.pending.role); e.preventDefault(); }
     else if(e.target.id==="gq"){ const n=CHAMP_NAMES.filter(x=>(ui.gridRole==="all"||CHAMPS[x].roles.includes(ui.gridRole))&&normName(x).includes(normName(ui.gridQ)))[0]; if(n){ ui.pending={name:n,role:null}; render(); } } }
