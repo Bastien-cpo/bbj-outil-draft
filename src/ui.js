@@ -281,7 +281,7 @@ function scoutRow(team,d){
   if(team===d.side) return ""; let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length) return "";
   return `<div class="scout">${ROLES.map(r=>{ const p=P.find(x=>x.role===r); return p?`<button class="scb" data-act="scout" data-r="${r}" title="${ROLE_NAMES[r]} : ${esc(p.name.split("#")[0])} — voir sa fiche">${roleIcon(r,22)}</button>`:""; }).join("")}</div>`;
 }
-function scoutProfile(p){
+function scoutProfile(p,P){
   const L=p.list, tot=L.reduce((s,x)=>s+x.g,0)||1, w=x=>x.g/tot;
   const ax={}; AXES.forEach(a=>ax[a]=L.reduce((s,x)=>s+w(x)*((CHAMPS[x.c]||{})[a]||0),0));
   const top=AXES.slice().sort((a,b)=>ax[b]-ax[a]).filter(a=>ax[a]>=1.6).slice(0,3);
@@ -292,10 +292,12 @@ function scoutProfile(p){
   const trap=L.filter(x=>x.wr!=null&&x.g>=Math.max(20,tot*0.06)&&x.wr<=47).sort((a,b)=>a.wr-b.wr)[0];
   const early=ax.early-ax.scaling;
   // Flex : champions de son pool jouables à son rôle mais surtout joués ailleurs (ADC qui joue Syndra, top qui joue des mids…)
-  const fx=L.filter(x=>x.g>=5&&CHAMPS[x.c]&&CHAMPS[x.c].roles[0]!==p.role).slice(0,5);
+  // Flex = champion présent dans le pool affiché de deux de leurs joueurs (chacun à son rôle, ≥ 5 games)
+  const shown=q=>q.list.slice(0,15).filter(y=>y.g>=5);
+  const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q!==p&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
   const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
   const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
-  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex ? ${fx.map(x=>`${x.c} (${ROLE_NAMES[CHAMPS[x.c].roles[0]].toLowerCase()})`).join(", ")} : s'il sort, ce pick peut être pour lui`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
+  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex : ${fx.map(x=>`${x.c} (aussi ${x.o.map(q=>`${q.name.split("#")[0]} en ${ROLE_NAMES[q.role].toLowerCase()}`).join(", ")})`).join(" · ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
   return lines.filter(Boolean);
 }
 function scoutModal(){
@@ -317,7 +319,7 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile(p,P).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
       const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
       return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
