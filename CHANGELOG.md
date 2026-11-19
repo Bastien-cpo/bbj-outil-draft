@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.3
+- Analyse de fin de draft : côté rouge, BBJ et notre % de victoire passent à droite, l'adversaire à gauche (cartes et lanes aussi).
+
 ## v11.2
 - Alerte « support exposé au contre » (et « bot exposé » tant que leur support n'est pas choisi), avec les contres probables.
 - Grappins contre bot peu mobile, anti-dash contre compo à dashs : pris en compte dans les alertes et les bans de phase 2.

@@ -229,10 +229,11 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .expo{margin:6px 0 8px;padding:8px 10px;border-radius:10px;border:1px solid #d9a33a;background:rgba(217,163,58,.12);font-size:13px}
 .expo.post{border-color:#e0605a;background:rgba(224,96,90,.12)}
 .exth{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.exth span{display:flex;align-items:center;gap:5px}.exth em{font-style:normal;opacity:.75;font-size:12px}
+.wbar.rev{transform:scaleX(-1)}.wbar.rev b{transform:scaleX(-1)}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.2 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.3 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1507,10 +1508,10 @@ function finalHtml(d,ro){
   const card=(lbl,T)=>`<div class="acard"><em>${esc(lbl)}</em><div>${T.tags.strong.map(x=>`<span class="tag ok">${esc(x)}</span>`).join("")||'<span class="muted">—</span>'}</div>
     ${T.tags.weak.length?`<div>${T.tags.weak.map(x=>`<span class="tag ko">${esc(x)}</span>`).join("")}</div>`:""}
     ${T.synList.length?`<div class="muted">Synergies : ${T.synList.map(esc).join(" · ")}</div>`:""}</div>`;
-  return `<div class="final"><div class="winbox"><div class="wl">${esc(ourName())}</div><div class="wbar"><i style="width:${A.win}%"></i><b>${A.win} %</b></div><div class="wl r">${esc(theirName())}</div></div>
+  return `<div class="final"><div class="winbox"><div class="wl">${esc(us==="R"?theirName():ourName())}</div><div class="wbar${us==="R"?" rev":""}"><i style="width:${A.win}%"></i><b>${A.win} %</b></div><div class="wl r">${esc(us==="R"?ourName():theirName())}</div></div>
     ${A.plan.key&&A.plan.key.length?`<div class="row c">${A.plan.key.map(k=>`<span class="tag ok">${esc(k)}</span>`).join("")}</div>`:""}
-    <div class="acards">${card(ourName(),A.us)}${card(theirName(),A.them)}</div>
-    ${A.lanes.length?`<div class="lanes">${A.lanes.map(l=>`<span class="lane ${l.wr>=53?"w":l.wr<=47?"l":""}" ${l.detail?`title="${esc(l.detail)}"`:""}>${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} : ${av(l.ours,"xs")}${l.ours2?av(l.ours2,"xs"):""} vs ${av(l.theirs,"xs")}${l.theirs2?av(l.theirs2,"xs"):""} <b>${l.wr}%</b></span>`).join("")}</div>`:""}
+    <div class="acards">${us==="R"?card(theirName(),A.them)+card(ourName(),A.us):card(ourName(),A.us)+card(theirName(),A.them)}</div>
+    ${A.lanes.length?`<div class="lanes">${A.lanes.map(l=>`<span class="lane ${l.wr>=53?"w":l.wr<=47?"l":""}" ${l.detail?`title="${esc(l.detail)}"`:""}>${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} : ${(()=>{ const o=av(l.ours,"xs")+(l.ours2?av(l.ours2,"xs"):""), t=av(l.theirs,"xs")+(l.theirs2?av(l.theirs2,"xs"):""); return us==="R"?t+" vs "+o:o+" vs "+t; })()} <b title="Notre winrate">${l.wr}%</b></span>`).join("")}</div>`:""}
     ${[["Early (0-14 min)",A.plan.early],["Mid game (14-25 min)",A.plan.mid],["Late game",A.plan.late]].filter(x=>x[1]&&x[1].length).map(x=>`<div class="ph"><em>${x[0]}</em><ul class="plan">${x[1].map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}
     ${d===live.draft||live.series.games.includes(d)?`<div class="row c res"><span class="muted">Résultat :</span><button class="btn sm ${d.result==="W"?"on w":""}" data-act="result" data-v="W">Victoire</button><button class="btn sm ${d.result==="L"?"on l":""}" data-act="result" data-v="L">Défaite</button></div>`:""}
     ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Valider la game → game ${live.series.games.length+2}</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
