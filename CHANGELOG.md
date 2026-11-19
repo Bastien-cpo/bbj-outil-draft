@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.21 — 19/11/2026
+- Échelle finale : ≤ 92 score normal (90+ = très bon pick) ; 93–98 = les 3 critères réunis (counter de lane ≥ ~54 %, synergie + cohérence de compo, confiance du joueur), plus haut quand ils sont maximisés ; 98–100 = « pick de génie » : 3 critères + casse la compo adverse (exploite leur faiblesse : réception, engage, teamfight, early ; ou écrase sa lane).
+- Unslott (mid adverse) : vrai niveau Master (compte perdu, Diamant 3 affiché) → Master estimé, remonte dans le classement et les bans ; note dans sa fiche.
+
 ## v10.20 — 19/11/2026
 - Échelle des scores élargie : 90+ = très bon pick ; 94+ seulement avec gros counter + synergie/compo + confiance du joueur ; 98–100 = « pick de génie » (tous les critères au maximum).
 - Préparation de l'adversaire du 19/11 (Bibbyy, BDG Invisi, Unslott, Funky Reky, Funkγ Swanny) dans l'outil et la fenêtre Drafter.

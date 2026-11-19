@@ -317,7 +317,7 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
       const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
       return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
