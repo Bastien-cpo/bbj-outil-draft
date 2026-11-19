@@ -1308,7 +1308,8 @@ function applyDrafter(st){
   live.draft.side=side; live.draft.actions=acts;
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
 }
-function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(n&&!/^adversaires?$/i.test(n)&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
+// Nom de l'adversaire pris sur Drafter seulement si la préparation n'en a pas et que notre côté est confirmé
+function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(prep.opponent||!sideOk()) return false; if(n&&!/^(adversaires?|blue|red|bleu|rouge|team ?\d|équipe ?\d)$/i.test(n.trim())&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
 function bookmarkCard(){
   return `<section class="card"><h3>Favori Drafter</h3><p class="muted">À installer une fois par personne : glisse ce bouton dans la barre de favoris → <a class="btn sm bm" href="javascript:${encodeURIComponent(RELAY_CODE)}">BBJ ➜ Drafter</a>. Sur une page drafter.lol, clique-le : l'outil s'ouvre dans une fenêtre à part et se remplit tout seul.</p>
    <textarea class="relaycode" readonly>javascript:${esc(encodeURIComponent(RELAY_CODE))}</textarea></section>`;
