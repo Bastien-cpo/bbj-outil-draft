@@ -264,34 +264,36 @@ function scoutProfile(p){
   const top=AXES.slice().sort((a,b)=>ax[b]-ax[a]).filter(a=>ax[a]>=1.6).slice(0,3);
   const dm={}; L.forEach(x=>{ const k=(CHAMPS[x.c]||{}).dmg||"?"; dm[k]=(dm[k]||0)+w(x); }); const dmg=Object.keys(dm).sort((a,b)=>dm[b]-dm[a])[0];
   const s1=w(L[0]||{g:0}), s3=L.slice(0,3).reduce((s,x)=>s+w(x),0);
-  const shape=s1>=0.45?`One-trick ${L[0].c} (${Math.round(s1*100)} % de ses games)`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions, aucun ne dépasse ${Math.round(s1*100)} %`;
-  const comfort=L.filter(x=>x.g>=15&&x.wr!=null).sort((a,b)=>b.wr-a.wr)[0];
+  const shape=s1>=0.45?`One-trick ${L[0].c} : ${Math.round(s1*100)} % de ses games`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions joués, son plus joué (${L[0]?L[0].c:"?"}) ne fait que ${Math.round(s1*100)} % de ses games`;
+  // champion qu'il joue souvent mais avec de mauvais résultats : il risque de le prendre, inutile de le bannir
+  const trap=L.filter(x=>x.wr!=null&&x.g>=Math.max(20,tot*0.06)&&x.wr<=47).sort((a,b)=>a.wr-b.wr)[0];
   const early=ax.early-ax.scaling;
-  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", dmg&&dmg!=="?"?`Dégâts surtout ${({AD:"physiques (AD)",AP:"magiques (AP)",MIX:"mixtes",TK:"de tank"})[dmg]||dmg}`:"", comfort?`Champion le plus fiable : ${comfort.c} (${comfort.wr} % sur ${comfort.g} games)`:""];
+  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", dmg&&dmg!=="?"?`Dégâts surtout ${({AD:"physiques (AD)",AP:"magiques (AP)",MIX:"mixtes",TK:"de tank"})[dmg]||dmg}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
   return lines.filter(Boolean);
 }
 function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
   const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
-  const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); return (t==="S"||t==="A")&&CHAMPS[c].roles.includes(r); });
+  const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
+    const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta
   const theirs=p.list.filter(x=>x.g>=5).slice(0,12);
   const threats=[], answers=[];
   theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
   const st=c=>un.has(c)?(live.series.locked.includes(c)?"fearless":"pris/banni"):"";
   const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
-  const duel=(a,b,wr,mine)=>`<div class="scduel ${mine?"mine":""}"><span class="${st(a)?"off":""}">${av(a,"sm")} ${esc(a)}</span><i>bat</i><span>${av(b,"sm")} ${esc(b)}</span><em>${wr} %</em></div>`;
+  const duel=(o,t,wr,mine)=>`<div class="scduel ${mine?"mine":""}"><span>${av(o,"sm")} ${esc(o)}</span><i>vs</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre champion">${Math.round((mine?wr:100-wr)*10)/10} %</em></div>`;
   return `<div class="scmodal" data-act="scoutclose"><div class="scbox" data-act="none">
-   <div class="schead">${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> ${esc(p.name.includes("#")?"#"+p.name.split("#")[1]:"")} · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
-   <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}${S.kda?`<span><em>KDA</em>${S.kda.toFixed(2)}</span>`:""}</div>
-   <div class="scrank r${me.rank}"><b>${me.rank===1?"★ Joueur le plus fort en face":`${me.rank}<sup>e</sup> joueur le plus fort sur 5`}</b>${me.rank===1&&me.reason?` — ${esc(me.reason)}`:""}<span class="muted"> · ordre : ${RK.map(x=>esc(x.p.name.split("#")[0])).join(" › ")}</span></div>
+   <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
+   <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
+
    <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
-   <h4>Champion pool <span class="muted">(solo Q, grisé = indisponible)</span></h4>
-   <div class="scpool">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
-   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")}, tiers S/A)</h4>
-   ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.c,t.o,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
-   <h4>Nos réponses à ses champions</h4>
+   <h4>Champion pool</h4>
+   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")}) <span class="muted">· notre winrate</span></h4>
+   ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
+   <h4>Nos réponses à ses champions <span class="muted">· notre winrate</span></h4>
    ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}
   </div></div>`;
 }
@@ -340,9 +342,9 @@ function viewPools(){
   names.forEach(c=>{ const t=(cfg.tiers[p.id]||{})[c]; rows[t||"?"].push({c,a:affinity(cfg,p.id,role,c)}); });
   for(const k in rows) rows[k].sort((x,y)=>y.a.v-x.a.v);
   const cell=x=>`<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
-     <span class="pm">${x.a.games?`<b>${x.a.games}</b> g.`:""}${x.a.sq?` <i>SQ ${x.a.sq.g}</i>`:""}</span><span class="pa">${Math.round(x.a.v*100)}</span></button>`;
+     <span class="pm">${x.a.games?`<b>${x.a.games}</b> g.`:""}${x.a.sq?` <i>SQ ${x.a.sq.g}</i>`:""}</span></button>`;
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
-  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon), games en solo Q (SQ) et score d'affinité sur 100. Clique un champion pour changer son tier.</p>
+  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon) et games en solo Q (SQ). Clique un champion pour changer son tier.</p>
    ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
    ${ui.tierPop?`<div class="pop"><b>${esc(ui.tierPop)}</b>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;

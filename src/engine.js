@@ -521,8 +521,10 @@ function banPlan(cfg,prep,lineup){
       if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games`);
       if(meta>=0.6&&m.wr) why.push(`Fort sur le patch : ${m.wr} % WR, ${m.pres} % de présence en solo Q`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
-      if(R[pl.name]&&R[pl.name].rank===1){ s+=0.15*Math.min(1,share*3+(i===0?0.4:0)); tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur le plus fort en face : ${R[pl.name].reason}`); }
-      else if(R[pl.name]&&R[pl.name].rank===2) s+=0.05*Math.min(1,share*3+(i===0?0.4:0));
+      // classement 1 à 5 du joueur (LP/pic > rendement > pool méta) : plus il est fort, plus ses champions valent un ban
+      const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.15,0.08,0.03,0,-0.05][rk-1]*Math.min(1,share*3+(i===0?0.4:0));
+      if(rk===1){ tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur n°1 en face : ${R[pl.name].reason}`); }
+      else why.push(`${pl.name.split("#")[0]} : joueur n°${rk} sur 5 en face`);
       const oc=ourCounters(cfg,x.c,pl.role,lineup);
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
     });

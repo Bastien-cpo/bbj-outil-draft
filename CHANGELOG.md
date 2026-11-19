@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.10 — 19/11/2026
+- Bans : classement 1 à 5 des joueurs adverses pris en compte (bonus dégressif du n°1 au n°4, malus au n°5).
+- Fiches : place #1–#5 en haut à gauche, sans #tag ni KDA ni ligne de classement ; pool réparti sur 1 ou 2 lignes équilibrées ; winrates toujours du point de vue de notre champion ; phrase de pool clarifiée ; « À laisser » = champion souvent joué mais perdant ; nos champions proposés seulement si joués en scrim/compétition ou très méta.
+- Pools : score d'affinité masqué.
+
 ## v10.9 — 19/11/2026
 - Joueur le plus fort en face (fiche + bans) : 1) LP actuels et pic (> 100 pts d'écart), 2) sinon WR élevé en peu de games, 3) sinon pool le plus méta + KDA. Fiche : rang, pic, games, WR, KDA, classement des 5.
 - Étoile de la grille plus petite, sans lettre (couleur = tier).
