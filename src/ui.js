@@ -125,6 +125,10 @@ function bookmarkCard(){
 setInterval(()=>{ const h=document.getElementById("drsync"); if(h){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null;
     if(age!=null&&age<5){ h.className="on"; h.textContent="Drafter connecté · draft remplie automatiquement"; }
     else if(age!=null){ h.className="off"; h.textContent="Drafter déconnecté (il y a "+age+" s) · saisie manuelle"; }
+    // Bandeau bien visible : Drafter recharge sa page à chaque nouvelle game, il faut recliquer le favori
+    let bn=document.getElementById("drlost"); const lost=age!=null&&age>=5&&age<3600;
+    if(lost&&!bn){ bn=document.createElement("div"); bn.id="drlost"; document.body.appendChild(bn); }
+    if(bn){ bn.style.display=lost?"block":"none"; if(lost) bn.innerHTML="⚠ Drafter n'envoie plus rien depuis "+age+" s (nouvelle game ou page rechargée) : <b>reclique le favori « BBJ ➜ Drafter » sur la page Drafter</b>"; }
     else { h.className=""; h.textContent=""; } }
   const el=document.querySelector(".drstat"); if(el){ const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null; el.className="drstat "+(age!=null&&age<5?"on":age!=null?"off":""); el.textContent=age!=null&&age<5?"Drafter ✓":"Drafter"; } },1000);
 
