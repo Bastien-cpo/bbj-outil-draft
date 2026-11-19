@@ -90,9 +90,9 @@ function applyDrafter(st){
   const src={ban:{B:st.bb||[],R:st.rb||[]},pick:{B:st.bp||[],R:st.rp||[]}}, cnt={ban:{B:0,R:0},pick:{B:0,R:0}};
   const old=live.draft.actions, acts=Array(20).fill(null), taken={B:[],R:[]};
   const slots=st.v>=3, raws=STEPS.map(([t,s])=>src[t][s][cnt[t][s]++]);
-  const lastFilled=raws.reduce((m,r,i)=>r!=null&&drafterChamp(r)?i:m,-1);
+  const lastFilled=raws.reduce((m,r,i)=>r!=null&&(r==="none"||drafterChamp(r))?i:m,-1);
   STEPS.forEach(([t,s],i)=>{ const raw=raws[i]; const c=drafterChamp(raw);
-    if(!c){ if(slots&&t==="ban"&&i<lastFilled) acts[i]={name:"",miss:true}; return; } // ban vide mais la draft a continué : ban raté
+    if(!c){ if(raw==="none"||(slots&&t==="ban"&&i<lastFilled)) acts[i]=t==="pick"?{name:"",miss:true,role:null}:{name:"",miss:true}; return; } // étape passée sans choix (temps écoulé) : remplacée dès que Drafter reçoit l'échange
     if(t==="ban"){ acts[i]={name:c}; return; }
     const o=old[i]&&old[i].name===c?old[i]:null; const role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]);
     taken[s].push(role); acts[i]={name:c,role,flex:o?!!o.flex:false}; });
@@ -139,7 +139,7 @@ function viewHistory(){
   if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée. « Nouvelle série » archive la série en cours ici.</p></section>`;
   return S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
     <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
-    ${s.games.map((g,gi)=>{ const us=g.side, them=us==="B"?"R":"B", P=t=>g.actions.filter((a,i)=>a&&STEPS[i][0]==="pick"&&STEPS[i][1]===t);
+    ${s.games.map((g,gi)=>{ const us=g.side, them=us==="B"?"R":"B", P=t=>g.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===t);
       return `<div class="hg" data-act="hview" data-s="${si}" data-g="${gi}"><b class="${g.result==="W"?"w":g.result==="L"?"l":""}">G${gi+1} ${g.result==="W"?"✓":g.result==="L"?"✗":"·"}</b><span class="muted">${us==="B"?"Blue":"Red"}</span>
         <span class="hp">${P(us).map(a=>av(a.name,"sm")).join("")}</span><span class="muted">vs</span><span class="hp">${P(them).map(a=>av(a.name,"sm")).join("")}</span>${g.note?`<span class="muted">${esc(g.note)}</span>`:""}</div>`; }).join("")}</section>`).join("");
 }
@@ -200,7 +200,7 @@ function grid(){
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
       return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n)}">${av(n,"md")}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
-      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>=0&&STEPS[curStep()][0]==="ban"?`<button class="btn" data-act="missban" title="L'équipe n'a rien banni à temps : on passe à l'étape suivante">∅ Ban raté</button>`:"")+(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
+      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
 }
 function tipHtml(x){
@@ -233,6 +233,7 @@ function boardCol(team,d,ro){
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" : "+c.g+" games"+(c.wr!=null?", "+c.wr+" %":""))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
+    if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}"><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté (en attente d'échange)</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.flex?" <b class='fx'>*</b>":""}</span>
@@ -363,7 +364,6 @@ document.addEventListener("click",e=>{
   else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; ui.edit=null; ui.pending=null; persist("live"); render(); }
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
-  else if(act==="missban"){ const i=curStep(); if(i>=0&&STEPS[i][0]==="ban"){ live.draft.actions[i]={name:"",miss:true}; ui.pending=null; persist("live"); render(); } }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
   else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; persist("live"); render(); }
   else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);

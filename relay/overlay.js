@@ -10,7 +10,9 @@ function scan(){
   document.querySelectorAll("img").forEach(i=>{ const m=(i.getAttribute("src")||"").match(/champions\/(\d+)-/); if(m&&i.alt&&i.alt!=="Ban"&&i.alt!=="Pick") ids[m[1]]=i.alt; });
   // emplacements fixes Drafter (#blue-ban-1…, #red-pick-5) : null si vide, pour repérer les bans ratés
   const slot=(k,n)=>{ const out=[]; for(let j=1;j<=5;j++){ const el=document.getElementById(k+"-"+j), im=el&&el.querySelector(n==="ban"?"img[alt=\"Ban\"]":"img[alt=\"Pick\"]"), s=im?im.getAttribute("src")||"":"";
-      let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; } else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; } out.push(v); } return out; };
+      let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; else if(el&&el.querySelector('[style*="rotate(45deg)"]')) v="none"; }
+      else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; else { const nm=el&&el.querySelector(".champion-name"); if(nm&&/^none$/i.test(nm.textContent.trim())) v="none"; } }
+      out.push(v); } return out; }; // "none" = temps écoulé sans choix (ban barré / pick « None »)
   const txt=document.body.innerText;
   const blue=(txt.match(/([^\n]+)\n\s*côté bleu/)||txt.match(/([^\n]+)\n\s*blue side/i)||[])[1]||"";
   const red=(txt.match(/([^\n]+)\n\s*(?:Prêt\s*)?côté rouge/)||txt.match(/([^\n]+)\n\s*(?:Ready\s*)?red side/i)||[])[1]||"";

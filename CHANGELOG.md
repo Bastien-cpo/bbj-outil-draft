@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.5 — 19/11/2026
+- Bans et picks ratés détectés automatiquement (ban barré vide / pick « None » sur Drafter) : case ∅, l'outil passe tout de suite à l'étape suivante, et la case se remplit dès que l'échange est accepté sur Drafter. Bouton « Ban raté » retiré.
+
 ## v10.4 — 18/11/2026
 - Bans ratés : le favori lit les emplacements fixes de Drafter ; un ban vide alors que la draft a continué devient « ∅ » et l'outil passe à l'étape suivante. Bouton « ∅ Ban raté » en saisie manuelle.
 
