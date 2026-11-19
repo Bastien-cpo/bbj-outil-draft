@@ -228,7 +228,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v10.17 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v10.18 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -437,7 +437,8 @@ const PLAYERS = [
 const ROLE_NAMES = {T:"Top", J:"Jungle", M:"Mid", A:"ADC", S:"Support"};
 
 // ===== Patch à venir (26.23, preview du 11/11 : sortie ~18/11) — les données OP.GG couvrent déjà 26.21 et 26.22 =====
-const PATCH_NEXT = {v:"26.23", buff:"Akshan,Annie,Azir,Bard,Ezreal,Galio,Gnar,K'Sante,Mel,Vel'Koz,Vi", nerf:"LeBlanc,Master Yi,Syndra"};
+// Patch 26.23 (sorti le 18/11) : notes officielles. Données de jeu encore en 26.22 (trop peu de games sur 26.23) → léger ajustement des champions modifiés
+const PATCH_NEXT = {v:"26.23", buff:"Annie,Azir,Bard,Ezreal,Galio,Gnar,Mel,Vel'Koz,Vi", nerf:"LeBlanc,Master Yi,Syndra"};
 // ===== Synergies botlane (Master+, patch 26.21, lolstats.gg) : ADC/Support/games/synergie % =====
 const BOT_SYN_RAW = `Yunara/Lulu/1506/+1.8;Kai'Sa/Nautilus/1256/-1.7;Ezreal/Karma/1029/-2.5;Lucian/Milio/866/+0.1;Ezreal/Bard/678/+1.5;Jhin/Bard/663/+1.6;Kai'Sa/Rell/605/+2.8;Caitlyn/Bard/587/+1.1;Ashe/Seraphine/524/+1.1;Zeri/Lulu/498/+6.6;Kai'Sa/Pyke/494/-2.4;Kai'Sa/Alistar/477/+2.2;Kalista/Renata Glasc/471/+1.4;Jinx/Thresh/468/+2.0;Kai'Sa/Camille/448/+2.6;Jhin/Nautilus/446/-0.4;Kai'Sa/Thresh/444/-0.3;Jinx/Lulu/443/-3.3;Jhin/Karma/439/+4.2;Xayah/Rakan/426/+6.1;Tristana/Nautilus/419/+1.1;Lucian/Nami/407/+0.5;Ezreal/Leona/404/+1.1;Kai'Sa/Leona/393/+2.2;Caitlyn/Lux/392/-0.1;Aphelios/Thresh/387/-0.7;Ezreal/Camille/365/+0.2;Ziggs/Camille/361/+3.8;Caitlyn/Karma/348/-2.6;Kai'Sa/Blitzcrank/347/+4.0;Ezreal/Nautilus/345/-2.5;Tristana/Lulu/343/-0.6;Yunara/Nautilus/338/+0.1;Jhin/Camille/332/+2.2;Zeri/Yuumi/327/+0.2;Jhin/Alistar/322/+2.7;Syndra/Camille/313/+5.9;Viktor/Bard/299/-2.3;Viktor/Camille/295/+1.7;Jhin/Leona/293/-0.6;Kai'Sa/Rakan/286/-6.9;Ezreal/Rell/284/-7.4;Viktor/Nautilus/280/-6.2;Syndra/Nautilus/274/-4.0;Ezreal/Alistar/273/-2.8;Kai'Sa/Bard/271/-2.3;Kai'Sa/Shen/266/-1.3;Jhin/Rell/266/-4.1;Ezreal/Janna/263/-1.0;Samira/Nautilus/262/+2.2;Jhin/Thresh/261/-0.3;Tristana/Thresh/258/+4.0;Caitlyn/Thresh/251/+3.2;Twitch/Lulu/251/-6.2;Ezreal/Pyke/250/+3.6;Kai'Sa/Pantheon/243/-4.4;Yunara/Braum/242/+1.5;Jhin/Janna/241/-0.4;Jhin/Shen/240/-7.4;Draven/Nautilus/238/+4.5;Kai'Sa/Neeko/235/+4.3;Tristana/Leona/233/-4.3;Ezreal/Thresh/233/-0.3;Kog'Maw/Lulu/231/+2.4;Tristana/Rell/225/-0.4;Yunara/Rell/224/+5.8;Lucian/Braum/223/+2.7;Yunara/Thresh/218/-0.8;Viktor/Rell/217/-1.9;Kai'Sa/Poppy/216/-1.3;Ezreal/Seraphine/216/+4.1;Yunara/Alistar/215/+0.4;Jinx/Milio/214/-2.4;Jhin/Pyke/211/-6.7;Kalista/Nautilus/210/+0.4;Ezreal/Nami/203/-5.2;Tristana/Pyke/203/+6.6;Jinx/Nautilus/202/+2.5;Jhin/Senna/200/+5.9;Syndra/Bard/199/+3.4;Kai'Sa/Janna/197/-2.5;Viktor/Nami/196/+3.6;Ezreal/Senna/195/+3.0;Syndra/Pyke/194/-0.3;Caitlyn/Nautilus/192/+1.2;Tristana/Alistar/191/+3.8;Draven/Thresh/191/-1.0;Ezreal/Shen/190/+0.2;Viktor/Alistar/189/+3.4;Syndra/Rell/188/+5.3;Ezreal/Rakan/186/+0.1;Kai'Sa/Braum/184/-2.5;Miss Fortune/Rell/184/+0.4;Tristana/Camille/184/-2.7;Kalista/Thresh/183/+4.6;Zeri/Nautilus/182/+8.1;Aphelios/Lulu/182/-0.7;Syndra/Alistar/181/+4.9;Viktor/Pyke/181/+4.8;Xerath/Camille/179/-0.2`;
 // Synergies d'équipe vues en pro / connues (hors botlane), valeur en % équivalent
@@ -521,11 +522,15 @@ Object.assign(NAME_BY_NORM,{maitreyi:"Master Yi",monkeyking:"Wukong",renata:"Ren
 function findChamp(s){ const k=normName(s); return NAME_BY_NORM[k]||CHAMP_NAMES.find(n=>normName(n).startsWith(k)&&k.length>=3)||null; }
 // ---- Matchups lolalytics patch 16.22 : Maître+ et Émeraude+ (poids 0,35) croisés, les deux sens du matchup fusionnés, puis ramenés vers 50 % selon l'échantillon (n/(n+250)) ----
 const LOLA_N=LOLA_NAMES.split("|").map(n=>findChamp(n)||n);
+const NEXT_DELTA={}; PATCH_NEXT.buff.split(",").forEach(c=>NEXT_DELTA[c]=1); PATCH_NEXT.nerf.split(",").forEach(c=>NEXT_DELTA[c]=-1);
+// Ajustement patch : buff = +0,07 de force méta et +0,6 % de WR (matchups compris), nerf = -0,09 et -0,8 %
+const PATCH_V=c=>NEXT_DELTA[c]>0?0.07:NEXT_DELTA[c]<0?-0.09:0, PATCH_WR=c=>NEXT_DELTA[c]>0?0.6:NEXT_DELTA[c]<0?-0.8:0;
 const BOTX={}; // ADC>support -> WR de l'ADC (matchups croisés en bot)
 const CTR_ALL=(()=>{ const out=[], seen=new Set();
   for(const L in LOLA_RAW){ LOLA_RAW[L].split(";").forEach(t=>{ const [ia,ib,d,n]=t.split(".").map(Number); const a=LOLA_N[ia], b=LOLA_N[ib]; if(!a||!b) return;
-    if(L==="AS"){ BOTX[a+">"+b]={wr:50+d/10,n:n*100}; return; }
-    const wr=Math.round((50+Math.abs(d)/10)*10)/10; out.push(d>0?[a,b,wr,n*100,L]:[b,a,wr,n*100,L]); seen.add([a,b].sort().join("+")+"|"+L); }); }
+    const dd=d+10*(PATCH_WR(a)-PATCH_WR(b));
+    if(L==="AS"){ BOTX[a+">"+b]={wr:50+dd/10,n:n*100}; return; }
+    const wr=Math.round((50+Math.abs(dd)/10)*10)/10; if(Math.abs(dd)<10) return; out.push(dd>0?[a,b,wr,n*100,L]:[b,a,wr,n*100,L]); seen.add([a,b].sort().join("+")+"|"+L); }); }
   // (anciennes données lolstats retirées : matchups recroisés lolalytics Maître+ et Émeraude+, petits échantillons ramenés vers 50 %)
   return out; })();
 function botCross(adc,sup){ const x=BOTX[adc+">"+sup]; return x?x.wr:null; }
@@ -548,7 +553,6 @@ const RKEY={top:"T",jungle:"J",mid:"M",adc:"A",support:"S"};
 const OPGG = {}; // OPGG[champ][role] = {m:[wr,pick,ban], e:[...]}
 OPGG_META_RAW.trim().split("\n").forEach(line=>{ const [k,v]=line.split("="); const [lvl,rk]=k.split("|"); const r=RKEY[rk];
   v.split("|").forEach(x=>{ const [n,wr,pk,bn]=x.split(":"); const c=findChamp(n); if(!c) return; ((OPGG[c]=OPGG[c]||{})[r]=OPGG[c][r]||{})[lvl==="master"?"m":"e"]=[+wr,+pk,+bn]; }); });
-const NEXT_DELTA={}; PATCH_NEXT.buff.split(",").forEach(c=>NEXT_DELTA[c]=1); PATCH_NEXT.nerf.split(",").forEach(c=>NEXT_DELTA[c]=-1);
 const STATS = {};
 STATS_RAW.split("|").forEach(s=>{const [n,g,w]=s.split(":"); STATS[n]={g:+g,wr:+w};});
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -556,14 +560,14 @@ function metaInfo(c,role){
   const o=OPGG[c]||{}; let d=role?o[role]:null;
   if(!d){ // meilleur rôle connu, avec décote
     let best=null,bs=-1; for(const r in o){ const x=o[r].m||o[r].e; const sc=x[1]+x[2]; if(sc>bs){bs=sc;best=o[r];} } d=best; if(d) d={...d,off:true}; }
-  if(!d) return {v:0.25+0.05*(NEXT_DELTA[c]||0), wr:null, pres:null};
+  if(!d) return {v:0.25+PATCH_V(c), wr:null, pres:null};
   const m=d.m, e=d.e;
   const wr = m&&e ? 0.5*m[0]+0.5*e[0] : (m||e)[0];
   const pres = m&&e ? 0.6*(m[1]+m[2])+0.4*(e[1]+e[2]) : ((m||e)[1]+(m||e)[2]);
   let v=0.6*clamp01((wr-47.5)/5)+0.4*clamp01(Math.sqrt(pres/35));
   if(d.off) v*=0.7;
-  v=clamp01(v+0.05*(NEXT_DELTA[c]||0));
-  return {v, wr:Math.round(wr*10)/10, pres:Math.round(pres*10)/10, off:!!d.off};
+  v=clamp01(v+PATCH_V(c)); const wrP=wr+PATCH_WR(c);
+  return {v, wr:Math.round(wrP*10)/10, pres:Math.round(pres*10)/10, off:!!d.off};
 }
 const proPrio = c=>{ const p=PRO[c]; return p? clamp01(Math.sqrt((p.p+p.b)/PRO_MAX)) : 0; };
 // Méta d'un pick : force du patch ; sur les 2 premiers picks, on ajoute la priorité vue en pro
@@ -1589,7 +1593,7 @@ function viewSettings(){
    <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
    <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
-   <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22, Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
+   <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22 ajusté avec les notes du patch 26.23 (buffs : Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi ; nerfs : LeBlanc, Master Yi, Syndra), Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
    ${synEditor()}${ctrEditor()}${bookmarkCard()}
    <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
 }

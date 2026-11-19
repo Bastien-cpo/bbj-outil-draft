@@ -15,11 +15,15 @@ Object.assign(NAME_BY_NORM,{maitreyi:"Master Yi",monkeyking:"Wukong",renata:"Ren
 function findChamp(s){ const k=normName(s); return NAME_BY_NORM[k]||CHAMP_NAMES.find(n=>normName(n).startsWith(k)&&k.length>=3)||null; }
 // ---- Matchups lolalytics patch 16.22 : Maître+ et Émeraude+ (poids 0,35) croisés, les deux sens du matchup fusionnés, puis ramenés vers 50 % selon l'échantillon (n/(n+250)) ----
 const LOLA_N=LOLA_NAMES.split("|").map(n=>findChamp(n)||n);
+const NEXT_DELTA={}; PATCH_NEXT.buff.split(",").forEach(c=>NEXT_DELTA[c]=1); PATCH_NEXT.nerf.split(",").forEach(c=>NEXT_DELTA[c]=-1);
+// Ajustement patch : buff = +0,07 de force méta et +0,6 % de WR (matchups compris), nerf = -0,09 et -0,8 %
+const PATCH_V=c=>NEXT_DELTA[c]>0?0.07:NEXT_DELTA[c]<0?-0.09:0, PATCH_WR=c=>NEXT_DELTA[c]>0?0.6:NEXT_DELTA[c]<0?-0.8:0;
 const BOTX={}; // ADC>support -> WR de l'ADC (matchups croisés en bot)
 const CTR_ALL=(()=>{ const out=[], seen=new Set();
   for(const L in LOLA_RAW){ LOLA_RAW[L].split(";").forEach(t=>{ const [ia,ib,d,n]=t.split(".").map(Number); const a=LOLA_N[ia], b=LOLA_N[ib]; if(!a||!b) return;
-    if(L==="AS"){ BOTX[a+">"+b]={wr:50+d/10,n:n*100}; return; }
-    const wr=Math.round((50+Math.abs(d)/10)*10)/10; out.push(d>0?[a,b,wr,n*100,L]:[b,a,wr,n*100,L]); seen.add([a,b].sort().join("+")+"|"+L); }); }
+    const dd=d+10*(PATCH_WR(a)-PATCH_WR(b));
+    if(L==="AS"){ BOTX[a+">"+b]={wr:50+dd/10,n:n*100}; return; }
+    const wr=Math.round((50+Math.abs(dd)/10)*10)/10; if(Math.abs(dd)<10) return; out.push(dd>0?[a,b,wr,n*100,L]:[b,a,wr,n*100,L]); seen.add([a,b].sort().join("+")+"|"+L); }); }
   // (anciennes données lolstats retirées : matchups recroisés lolalytics Maître+ et Émeraude+, petits échantillons ramenés vers 50 %)
   return out; })();
 function botCross(adc,sup){ const x=BOTX[adc+">"+sup]; return x?x.wr:null; }
@@ -42,7 +46,6 @@ const RKEY={top:"T",jungle:"J",mid:"M",adc:"A",support:"S"};
 const OPGG = {}; // OPGG[champ][role] = {m:[wr,pick,ban], e:[...]}
 OPGG_META_RAW.trim().split("\n").forEach(line=>{ const [k,v]=line.split("="); const [lvl,rk]=k.split("|"); const r=RKEY[rk];
   v.split("|").forEach(x=>{ const [n,wr,pk,bn]=x.split(":"); const c=findChamp(n); if(!c) return; ((OPGG[c]=OPGG[c]||{})[r]=OPGG[c][r]||{})[lvl==="master"?"m":"e"]=[+wr,+pk,+bn]; }); });
-const NEXT_DELTA={}; PATCH_NEXT.buff.split(",").forEach(c=>NEXT_DELTA[c]=1); PATCH_NEXT.nerf.split(",").forEach(c=>NEXT_DELTA[c]=-1);
 const STATS = {};
 STATS_RAW.split("|").forEach(s=>{const [n,g,w]=s.split(":"); STATS[n]={g:+g,wr:+w};});
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -50,14 +53,14 @@ function metaInfo(c,role){
   const o=OPGG[c]||{}; let d=role?o[role]:null;
   if(!d){ // meilleur rôle connu, avec décote
     let best=null,bs=-1; for(const r in o){ const x=o[r].m||o[r].e; const sc=x[1]+x[2]; if(sc>bs){bs=sc;best=o[r];} } d=best; if(d) d={...d,off:true}; }
-  if(!d) return {v:0.25+0.05*(NEXT_DELTA[c]||0), wr:null, pres:null};
+  if(!d) return {v:0.25+PATCH_V(c), wr:null, pres:null};
   const m=d.m, e=d.e;
   const wr = m&&e ? 0.5*m[0]+0.5*e[0] : (m||e)[0];
   const pres = m&&e ? 0.6*(m[1]+m[2])+0.4*(e[1]+e[2]) : ((m||e)[1]+(m||e)[2]);
   let v=0.6*clamp01((wr-47.5)/5)+0.4*clamp01(Math.sqrt(pres/35));
   if(d.off) v*=0.7;
-  v=clamp01(v+0.05*(NEXT_DELTA[c]||0));
-  return {v, wr:Math.round(wr*10)/10, pres:Math.round(pres*10)/10, off:!!d.off};
+  v=clamp01(v+PATCH_V(c)); const wrP=wr+PATCH_WR(c);
+  return {v, wr:Math.round(wrP*10)/10, pres:Math.round(pres*10)/10, off:!!d.off};
 }
 const proPrio = c=>{ const p=PRO[c]; return p? clamp01(Math.sqrt((p.p+p.b)/PRO_MAX)) : 0; };
 // Méta d'un pick : force du patch ; sur les 2 premiers picks, on ajoute la priorité vue en pro

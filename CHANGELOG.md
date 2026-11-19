@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.18 — 19/11/2026 — patch 26.23
+- Notes officielles 26.23 : buffs Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi (+0,07 force méta, +0,6 % WR dans les matchups) ; nerfs LeBlanc, Master Yi, Syndra (-0,09, -0,8 %). Données de jeu encore en 26.22 (patch sorti la veille), à remplacer quand il y aura assez de games.
+
 ## v10.17 — 19/11/2026
 - Répétition générale sur une vraie room Drafter (2 games, fearless) : côté choisi d'un clic, ban et pick ratés, échange, bans phase 2, confirmation des rôles, passage en G2 avec fearless et bans recalculés : OK.
 - Drafter recharge sa page à chaque nouvelle game : bandeau « reclique le favori » dans l'outil ; une nouvelle room enregistre la série précédente dans l'Historique (préparation gardée).
