@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.0 — 19/11/2026 — version semi-finale (partage à l'équipe)
+- Draft automatisée avec Drafter (favori « BBJ ➜ Drafter » en fenêtre à part), fiches adverses, bans/picks calibrés sur les games pro 2026, patch 26.23.
+- Préparation du soir : Funkγ Swanny confirmé top, pool top complété avec ses saisons 2024-2025 (main top avant).
+
 ## v10.22 — 19/11/2026
 - Fiches : « Flex » seulement si le champion est dans le pool affiché de deux de leurs joueurs, chacun à son rôle (ex. « Karma (aussi ChromosomeXX en support) »).
 
