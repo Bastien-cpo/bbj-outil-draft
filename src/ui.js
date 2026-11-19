@@ -78,9 +78,10 @@ function applyDrafter(st){
   const me=(ourName()||"BBJ").toLowerCase().trim(), bl=(st.blue||"").toLowerCase(), rd=(st.red||"").toLowerCase();
   // côté : 1) choix manuel (boutons Blue/Red) pour cette game, 2) nom d'équipe sur Drafter, 3) les picks qui collent le plus à nos pools
   let side=live.draft.side;
-  if(live.sideManual&&live.sideManual===(st.game||1)) live.sideHow="manuel";
-  else if(me&&bl.includes(me)&&!rd.includes(me)){ side="B"; live.sideHow="nom"; } else if(me&&rd.includes(me)&&!bl.includes(me)){ side="R"; live.sideHow="nom"; }
-  else { const pb=poolFit(st.bp), pr=poolFit(st.rp); if(pb>pr+0.5){ side="B"; live.sideHow="pools"; } else if(pr>pb+0.5){ side="R"; live.sideHow="pools"; } else live.sideHow="?"; }
+  const prevHow=live.sideHow;
+  const isUs=n=>!!n&&(/\bbbj\b|blocked\s*by\s*(the\s*)?jungle/i.test(n)||(me&&n.includes(me)));
+  if(isUs(bl)&&!isUs(rd)){ side="B"; live.sideHow="nom"; } else if(isUs(rd)&&!isUs(bl)){ side="R"; live.sideHow="nom"; }
+  else live.sideHow=live.sideManual===curGameNo()?"manuel":"?";
   // nouvelle game sur Drafter : la game précédente part dans la série (fearless) et on repart d'une draft vide
   if(live.drafterGame&&st.game&&st.game!==live.drafterGame){
     if(st.game>live.drafterGame&&live.draft.actions.some(Boolean)){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
@@ -96,11 +97,10 @@ function applyDrafter(st){
     if(t==="ban"){ acts[i]={name:c}; return; }
     const o=old[i]&&old[i].name===c?old[i]:null; const role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]);
     taken[s].push(role); acts[i]={name:c,role,flex:o?!!o.flex:false}; });
-  const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side;
+  const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
 }
-function poolFit(list){ let s=0; (list||[]).forEach(x=>{ const c=drafterChamp(x); if(!c) return; s+=Math.max(0,...ROLES.map(r=>({S:1,A:0.6})[tierFor(cfg,prep.lineup[r],r,c)]||0)); }); return s; }
 function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(n&&!/^adversaires?$/i.test(n)&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
 function drafterPanel(){
   const age=drafterLast?Math.round((Date.now()-drafterLast)/1000):null, live_=age!=null&&age<5;
@@ -147,16 +147,21 @@ function viewHistory(){
 // ---------- Draft ----------
 function targetIndex(){ return ui.edit!=null? ui.edit : curStep(); }
 const ourName=()=>prep.team||"BBJ", theirName=()=>prep.opponent||"Adversaire";
+// côté de BBJ : choisi d'un clic au début de chaque game, sauf si Drafter affiche BBJ / Blocked by Jungle
+const curGameNo=()=>live.series.games.length+1;
+const sideOk=()=>live.sideHow==="nom"||live.sideManual===curGameNo();
+function sidePrompt(){ return `<div class="sidepick"><h2>Game ${curGameNo()} : de quel côté joue ${esc(ourName())} ?</h2><p class="muted">Tout l'outil (ordre, suggestions, bans) s'adapte à ce choix.</p>
+  <div class="sidebtns"><button class="sbB" data-act="side" data-v="B">Blue</button><button class="sbR" data-act="side" data-v="R">Red</button></div></div>`; }
 function viewDraft(){
   const d=live.draft, gameNo=live.series.games.length+1;
   const top=`<div class="dtop">
     <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
-    ${ui.viewGame==null&&drafterLast&&(live.sideHow==="?"||live.sideHow==="pools")?`<span class="sideask">${live.sideHow==="?"?"Quel est notre côté ?":"Côté deviné par nos pools — vérifie"}</span>`:""}${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
+    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
     <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
     <button class="btn sm drstat" data-act="drpanel">Drafter</button><button class="btn sm" data-act="newseries">Nouvelle série</button></div>${ui.drPanel?drafterPanel():""}`;
   if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
     return top+`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,true)}</div>${boardCol("R",g,true)}</section>`; }
-  return top+`<section class="arena">${boardCol("B",d)}<div class="center">${viewCenter()}</div>${boardCol("R",d)}</section>`;
+  return top+`<section class="arena">${boardCol("B",d)}<div class="center">${sideOk()?viewCenter():sidePrompt()}</div>${boardCol("R",d)}</section>`;
 }
 function viewCenter(){
   const d=live.draft, i=targetIndex();
@@ -349,7 +354,7 @@ function parseManual(txt){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
-  if(act==="side"){ live.draft.side=b.dataset.v; live.sideManual=live.drafterGame||1; persist("live"); render(); }
+  if(act==="side"){ live.draft.side=b.dataset.v; live.sideManual=curGameNo(); live.sideHow="manuel"; persist("live"); render(); }
   else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
     // double-clic : le premier clic redessine la grille, donc on le détecte nous-mêmes (même champion cliqué deux fois en moins de 450 ms)
     if(ui._lastChoose&&ui._lastChoose.n===n&&now-ui._lastChoose.t<450){ ui._lastChoose=null; ui.duoNext=null; addChamp(n,b.dataset.r||null); return; }
