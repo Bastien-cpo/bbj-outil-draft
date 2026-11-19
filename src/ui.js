@@ -92,8 +92,9 @@ function applyDrafter(st){
   STEPS.forEach(([t,s],i)=>{ const raw=raws[i]; const c=drafterChamp(raw);
     if(!c){ if(raw==="none"||(slots&&t==="ban"&&i<lastFilled)) acts[i]=t==="pick"?{name:"",miss:true,role:null}:{name:"",miss:true}; return; } // étape passée sans choix (temps écoulé) : remplacée dès que Drafter reçoit l'échange
     if(t==="ban"){ acts[i]={name:c}; return; }
-    const o=old[i]&&old[i].name===c?old[i]:null; const role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]);
-    taken[s].push(role); acts[i]={name:c,role,flex:o?!!o.flex:false}; });
+    const o=old[i]&&old[i].name===c?old[i]:null; let role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]); let flex=o?!!o.flex:false, fx=o?o.fx:undefined;
+    if(!o&&s!==side){ const f=enemyFlex(c); if(f){ if(!taken[s].includes(f.role)) role=f.role; if(f.flex){ flex=true; fx=f.txt; } } }
+    taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
@@ -238,7 +239,7 @@ function boardCol(team,d,ro){
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}"><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté (en attente d'échange)</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
-    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.flex?" <b class='fx'>*</b>":""}</span>
+    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
@@ -249,10 +250,10 @@ function boardCol(team,d,ro){
 // ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
 const ROLE_SVG={
  T:'<path d="M3 3h13l-4 4H7v5l-4 4z" fill="currentColor"/><path d="M10 10h4v4h-4z M21 7v14H7l3-3h8V10z" fill="currentColor" opacity=".45"/>',
- J:'<path d="M12 2c-1 4-4 6-4 10 0 3 2 5 4 8 2-3 4-5 4-8 0-4-3-6-4-10zM5 6c0 4 1 7 4 9-2 1-3 0-4-1zM19 6c0 4-1 7-4 9 2 1 3 0 4-1z" fill="currentColor"/>',
+ J:'<path d="M3 21c1-5 0-9-2-13 3 2 5 6 5 13zM8.5 21c0-8 1.5-13 4.5-18-.5 6-1.5 12-1.5 18zM13.5 21c0-6 2-10.5 6.5-13.5-2.5 4-3.5 8.5-3.5 13.5zM18.5 21c.5-3 2-5.5 4.5-6.5-1.5 2-2 4-2 6.5z" fill="currentColor"/>',
  M:'<path d="M3 17l14-14h4v4L7 21H3z" fill="currentColor"/><path d="M3 3h8L3 11zM21 21h-8l8-8z" fill="currentColor" opacity=".45"/>',
  A:'<path d="M21 21H8l4-4h5v-5l4-4z" fill="currentColor"/><path d="M10 10h4v4h-4z M3 17V3h14l-3 3H6v8z" fill="currentColor" opacity=".45"/>',
- S:'<path d="M12 3l3 4h6l-5 4 2 8-6-4-6 4 2-8-5-4h6z" fill="currentColor"/>'};
+ S:'<path d="M12 1c4.5 3.5 5.5 9.5 0 15C6.5 10.5 7.5 4.5 12 1z" fill="currentColor"/><path d="M12 5.2c1.9 1.6 1.9 4.4 0 6-1.9-1.6-1.9-4.4 0-6z" fill="#11141b"/><path d="M11.1 15.5h1.8V20h-1.8zM7.5 20h9l-1 2.5h-7z" fill="currentColor"/>'};
 const roleIcon=(r,s=18)=>`<svg class="ricon" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${ROLE_SVG[r]}</svg>`;
 function scoutRow(team,d){
   if(team===d.side) return ""; let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length) return "";
@@ -264,11 +265,15 @@ function scoutProfile(p){
   const top=AXES.slice().sort((a,b)=>ax[b]-ax[a]).filter(a=>ax[a]>=1.6).slice(0,3);
   const dm={}; L.forEach(x=>{ const k=(CHAMPS[x.c]||{}).dmg||"?"; dm[k]=(dm[k]||0)+w(x); }); const dmg=Object.keys(dm).sort((a,b)=>dm[b]-dm[a])[0];
   const s1=w(L[0]||{g:0}), s3=L.slice(0,3).reduce((s,x)=>s+w(x),0);
-  const shape=s1>=0.45?`One-trick ${L[0].c} : ${Math.round(s1*100)} % de ses games`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions joués, son plus joué (${L[0]?L[0].c:"?"}) ne fait que ${Math.round(s1*100)} % de ses games`;
+  const shape=s1>=0.45?`One-trick ${L[0].c} : ${Math.round(s1*100)} % de ses games`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions joués`;
   // champion qu'il joue souvent mais avec de mauvais résultats : il risque de le prendre, inutile de le bannir
   const trap=L.filter(x=>x.wr!=null&&x.g>=Math.max(20,tot*0.06)&&x.wr<=47).sort((a,b)=>a.wr-b.wr)[0];
   const early=ax.early-ax.scaling;
-  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", dmg&&dmg!=="?"?`Dégâts surtout ${({AD:"physiques (AD)",AP:"magiques (AP)",MIX:"mixtes",TK:"de tank"})[dmg]||dmg}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
+  // Flex : champions de son pool jouables à son rôle mais surtout joués ailleurs (ADC qui joue Syndra, top qui joue des mids…)
+  const fx=L.filter(x=>x.g>=5&&CHAMPS[x.c]&&CHAMPS[x.c].roles[0]!==p.role).slice(0,5);
+  const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
+  const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
+  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex ? ${fx.map(x=>`${x.c} (${ROLE_NAMES[CHAMPS[x.c].roles[0]].toLowerCase()})`).join(", ")} : s'il sort, ce pick peut être pour lui`:"", offR?`Joue aussi ${ROLE_NAMES[offR].toLowerCase()} : ${off[offR].slice(0,4).join(", ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
   return lines.filter(Boolean);
 }
 function scoutModal(){
@@ -291,9 +296,9 @@ function scoutModal(){
    <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
    <h4>Champion pool</h4>
    <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
-   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")}) <span class="muted">· notre winrate</span></h4>
+   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")})</h4>
    ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
-   <h4>Nos réponses à ses champions <span class="muted">· notre winrate</span></h4>
+   <h4>Nos réponses à ses champions</h4>
    ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}
   </div></div>`;
 }
@@ -387,13 +392,20 @@ function ctrEditor(){
 
 // ---------- Actions ----------
 function flash(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(flash.t); flash.t=setTimeout(()=>t.classList.remove("on"),2200); }
+// Pick adverse : quel joueur de leur cinq le joue ? Plusieurs rôles possibles (ou rôle inhabituel) => « Flex ? »
+function enemyFlex(c){ let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length||!CHAMPS[c]) return null;
+  const who=P.map(p=>({p,x:(p.all||p.list).find(x=>x.c===c)})).filter(o=>o.x&&o.x.g>=5&&CHAMPS[c].roles.includes(o.p.role)).sort((a,b)=>b.x.g-a.x.g);
+  if(!who.length) return null; const roles=[...new Set(who.map(o=>o.p.role))];
+  const flex=roles.length>=2||roles[0]!==CHAMPS[c].roles[0];
+  return {role:roles[0], flex, txt:who.map(o=>`${ROLE_NAMES[o.p.role]} (${o.p.name.split("#")[0]}, ${o.x.g} g.)`).join(" ou ")}; }
 function addChamp(name,role){
   const i=targetIndex(); if(i<0) return false; const n=findChamp(name); if(!n){ flash("Champion inconnu"); return false; }
   const old=live.draft.actions[i];
   const un=unavailable(live.series,live.draft); if(un.has(n)&&!(old&&old.name===n)){ flash(n+" n'est plus disponible"); return false; }
   const [t,s]=STEPS[i]; const a={name:n};
   if(t==="pick"){ const taken=teamPicks(live.draft,s).filter(p=>!p.flex&&p!==old).map(p=>p.role);
-    a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false; }
+    a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false;
+    if(s!==live.draft.side&&!role&&!old){ const f=enemyFlex(n); if(f){ const tk=teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role); if(!tk.includes(f.role)) a.role=f.role; if(f.flex){ a.flex=true; a.fx=f.txt; } } } }
   live.draft.actions[i]=a; ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
 }
 function parseManual(txt){
@@ -422,7 +434,7 @@ document.addEventListener("click",e=>{
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
-  else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; persist("live"); render(); }
+  else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; if(!a.flex) delete a.fx; persist("live"); render(); }
   else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }

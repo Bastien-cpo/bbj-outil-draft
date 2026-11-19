@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.11 — 19/11/2026
+- Fiches : « Pool large : N champions joués », ligne dégâts retirée, mentions « notre winrate » retirées ; nouvelles lignes « Flex ? » (champions de son pool surtout joués à un autre rôle) et « Joue aussi <rôle> ».
+- Draft : un pick adverse joué par plusieurs de leurs joueurs à des rôles différents (ou à un rôle inhabituel) reçoit le rôle du joueur le plus probable et un badge « Flex ? » (détail au survol).
+- Icônes : herbe haute pour la jungle, ward pour le support.
+
 ## v10.10 — 19/11/2026
 - Bans : classement 1 à 5 des joueurs adverses pris en compte (bonus dégressif du n°1 au n°4, malus au n°5).
 - Fiches : place #1–#5 en haut à gauche, sans #tag ni KDA ni ligne de classement ; pool réparti sur 1 ou 2 lignes équilibrées ; winrates toujours du point de vue de notre champion ; phrase de pool clarifiée ; « À laisser » = champion souvent joué mais perdant ; nos champions proposés seulement si joués en scrim/compétition ou très méta.
