@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.15 — 19/11/2026
+- Fearless G2/G3 : bans de préparation recalculés sur les pools adverses sans les champions déjà joués (conforts restants en cible) ; fiche : ligne « Fearless : déjà joués … · il lui reste … », champions brûlés barrés et en fin de pool, counters/réponses limités aux champions encore disponibles.
+
 ## v10.14 — 19/11/2026
 - Bans « pro / méta » (seuls sans préparation, 2 sur 10 avec) : 45 % présence pro (picks + bans, sans racine), 25 % force solo Q, 30 % danger pour nos S/A (counters) ; malus si le champion est dans nos tiers S/A ; côté rouge +25 % blindable.
 

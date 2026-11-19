@@ -281,13 +281,13 @@ function scoutModal(){
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
   const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
   const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
-    const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta
-  const theirs=p.list.filter(x=>x.g>=5).slice(0,12);
+    if(un.has(c)) return false; const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta, encore disponible
+  const theirs=p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
   const threats=[], answers=[];
   theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
   const st=c=>un.has(c)?(live.series.locked.includes(c)?"fearless":"pris/banni"):"";
-  const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
+  const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""} ${st(c)==="fearless"?"fl":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
   const duel=(o,t,wr,mine)=>mine
     ?`<div class="scduel mine"><span class="us">${av(o,"sm")} ${esc(o)}</span><i>contre</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre ${esc(o)}">${Math.round(wr*10)/10} %</em></div>`
     :`<div class="scduel"><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><i>contre</i><span class="us">${av(o,"sm")} ${esc(o)}</span><em title="Winrate de notre ${esc(o)}">${Math.round((100-wr)*10)/10} %</em></div>`;
@@ -295,9 +295,11 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+      const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
+      return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
-   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).slice().sort((a,b)=>(!!st(a.c))-(!!st(b.c))).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
    <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")})</h4>
    ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
    <h4>Nos réponses à ses champions</h4>

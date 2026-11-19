@@ -546,13 +546,16 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   const ours=teamPicks(draft,us), theirs=teamPicks(draft,them);
   const phase2=draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").length>=6;
   const un=unavailable(series,draft); const I=ctrIndex(cfg);
-  const planAll=banPlan(cfg,prep,lineup); const P=prepPlayers(prep);
+  // Fearless : les champions déjà joués dans la série sortent des pools adverses, leurs conforts restants deviennent les cibles
+  const lockedS=new Set(series.locked||[]);
+  const prepF=lockedS.size?Object.assign({},prep,{players:(prep.players||[]).map(p=>Object.assign({},p,{champs:(p.champs||[]).filter(x=>!lockedS.has(findChamp(x[0])))}))}):prep;
+  const planAll=banPlan(cfg,prepF,lineup); const P=prepPlayers(prep);
   const played={}; P.forEach(pl=>pl.list.forEach(x=>{ if(x.g>=5&&(!played[x.c]||played[x.c].g<x.g)) played[x.c]={g:x.g,name:pl.name.split("#")[0]}; }));
   const short=w=>w.length>70?w.slice(0,68)+"…":w;
   if(!phase2){
     // Phase 1 : ~80 % préparation (dans l'ordre de priorité), ~20 % bans pro / méta joués un peu par l'adversaire
     const plan=planAll.filter(x=>!un.has(x.name)).map((x,k)=>({name:x.name, prep:true,
-      why:[`Préparation n°${planAll.indexOf(x)+1} · ${x.player.split("#")[0]} (${ROLE_NAMES[x.role]})`, ...x.tags, ...x.why.slice(0,2).map(short)]}));
+      why:[`Préparation n°${planAll.indexOf(x)+1} · ${x.player.split("#")[0]} (${ROLE_NAMES[x.role]})`, ...(lockedS.size?["Fearless : un de ses conforts encore disponibles"]:[]), ...x.tags, ...x.why.slice(0,2).map(short)]}));
     const inPlan=new Set(plan.map(x=>x.name));
     // Bans « pro / méta » : 45 % présence pro (picks + bans), 25 % force solo Q, 30 % danger pour nos champions S/A ; côté rouge +25 % blindable
     const PMAX=Math.max(...CHAMP_NAMES.map(c=>PRO[c]?PRO[c].p+PRO[c].b:0))||1;

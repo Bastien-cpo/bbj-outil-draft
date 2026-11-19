@@ -215,7 +215,8 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .scstats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.scstats span{background:#181d27;border-radius:8px;padding:3px 9px;font-size:12px}.scstats em{font-style:normal;color:#8a93a3;margin-right:5px}.scrank{margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px;background:#181d27}.scrank.r1{background:#3a2c0c;border:1px solid #d4ad52}.scrank.r1 b{color:#ffd24a}
 .scbox h4{margin:14px 0 6px;color:#d4ad52;font-size:13px;text-transform:uppercase;letter-spacing:.05em}.scbox ul{margin:0;padding-left:18px;line-height:1.6}
 .scpool{display:flex;flex-wrap:wrap;gap:8px}.scc{display:inline-flex;flex-direction:column;align-items:center;font-size:10px;gap:2px}.scc b{font-weight:500;color:#cfd6e4;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scduels{display:grid;grid-template-columns:1fr 1fr;gap:6px}.scduel{display:flex;align-items:center;gap:6px;background:#181d27;border-radius:10px;padding:4px 8px;font-size:12px}.scduel span{display:inline-flex;align-items:center;gap:4px}.scduel .us{color:#9cc3ff}.scduel .off{opacity:.35}.scduel i{font-style:normal;color:#8a93a3;font-size:11px}.scduel em{margin-left:auto;font-style:normal;font-weight:700;color:#ff9c9c}.scduel.mine em{color:#8fe08f}
-.scc em{font-style:normal;color:#9aa4b5}.scc.off{opacity:.3;filter:grayscale(1)}.scthr{display:inline-flex;align-items:center;gap:4px;background:#181d27;border-radius:10px;padding:4px 8px}.scthr i{font-style:normal;color:#d9534f}.scthr em{font-style:normal;font-weight:700;color:#ffb3b3}
+.scc em{font-style:normal;color:#9aa4b5}.scc.fl img{outline:2px solid #d9534f;outline-offset:-2px}.scc.fl b{text-decoration:line-through}.scbox li.flx{color:#ffd27a}
+.scc.off{opacity:.3;filter:grayscale(1)}.scthr{display:inline-flex;align-items:center;gap:4px;background:#181d27;border-radius:10px;padding:4px 8px}.scthr i{font-style:normal;color:#d9534f}.scthr em{font-style:normal;font-weight:700;color:#ffb3b3}
 .gc{position:relative}.gc .star{position:absolute;top:-1px;right:4px;font-style:normal;font-size:12px;line-height:1;text-shadow:0 0 3px #000,0 0 2px #000;pointer-events:none}.gc .star b{font-size:9px;vertical-align:top;margin-left:1px}.star.tS{color:#ffd24a}.star.tA{color:#d9dde6}.star.tB{color:#d08a4a}
 .sidepick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 20px;text-align:center}.sidepick h2{margin:0;font-size:24px}.sidebtns{display:flex;gap:18px;margin-top:10px}.sidebtns button{font-size:22px;font-weight:700;padding:22px 56px;border-radius:12px;cursor:pointer;border:2px solid}.sbB{background:#14294d;color:#9cc3ff;border-color:#3d7be0}.sbR{background:#4a1717;color:#ffaaaa;border-color:#d9534f}.sidebtns button:hover{filter:brightness(1.3)}
 .sideask{background:#5a3d10;color:#ffd27a;border:1px solid #d4ad52;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:600;margin-right:6px;animation:pulse 1.4s infinite}@keyframes pulse{50%{opacity:.55}}
@@ -226,7 +227,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v10.14 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v10.15 · patch 26.22</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1050,13 +1051,16 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   const ours=teamPicks(draft,us), theirs=teamPicks(draft,them);
   const phase2=draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").length>=6;
   const un=unavailable(series,draft); const I=ctrIndex(cfg);
-  const planAll=banPlan(cfg,prep,lineup); const P=prepPlayers(prep);
+  // Fearless : les champions déjà joués dans la série sortent des pools adverses, leurs conforts restants deviennent les cibles
+  const lockedS=new Set(series.locked||[]);
+  const prepF=lockedS.size?Object.assign({},prep,{players:(prep.players||[]).map(p=>Object.assign({},p,{champs:(p.champs||[]).filter(x=>!lockedS.has(findChamp(x[0])))}))}):prep;
+  const planAll=banPlan(cfg,prepF,lineup); const P=prepPlayers(prep);
   const played={}; P.forEach(pl=>pl.list.forEach(x=>{ if(x.g>=5&&(!played[x.c]||played[x.c].g<x.g)) played[x.c]={g:x.g,name:pl.name.split("#")[0]}; }));
   const short=w=>w.length>70?w.slice(0,68)+"…":w;
   if(!phase2){
     // Phase 1 : ~80 % préparation (dans l'ordre de priorité), ~20 % bans pro / méta joués un peu par l'adversaire
     const plan=planAll.filter(x=>!un.has(x.name)).map((x,k)=>({name:x.name, prep:true,
-      why:[`Préparation n°${planAll.indexOf(x)+1} · ${x.player.split("#")[0]} (${ROLE_NAMES[x.role]})`, ...x.tags, ...x.why.slice(0,2).map(short)]}));
+      why:[`Préparation n°${planAll.indexOf(x)+1} · ${x.player.split("#")[0]} (${ROLE_NAMES[x.role]})`, ...(lockedS.size?["Fearless : un de ses conforts encore disponibles"]:[]), ...x.tags, ...x.why.slice(0,2).map(short)]}));
     const inPlan=new Set(plan.map(x=>x.name));
     // Bans « pro / méta » : 45 % présence pro (picks + bans), 25 % force solo Q, 30 % danger pour nos champions S/A ; côté rouge +25 % blindable
     const PMAX=Math.max(...CHAMP_NAMES.map(c=>PRO[c]?PRO[c].p+PRO[c].b:0))||1;
@@ -1477,13 +1481,13 @@ function scoutModal(){
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
   const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
   const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
-    const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta
-  const theirs=p.list.filter(x=>x.g>=5).slice(0,12);
+    if(un.has(c)) return false; const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta, encore disponible
+  const theirs=p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
   const threats=[], answers=[];
   theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
   const st=c=>un.has(c)?(live.series.locked.includes(c)?"fearless":"pris/banni"):"";
-  const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
+  const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""} ${st(c)==="fearless"?"fl":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
   const duel=(o,t,wr,mine)=>mine
     ?`<div class="scduel mine"><span class="us">${av(o,"sm")} ${esc(o)}</span><i>contre</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre ${esc(o)}">${Math.round(wr*10)/10} %</em></div>`
     :`<div class="scduel"><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><i>contre</i><span class="us">${av(o,"sm")} ${esc(o)}</span><em title="Winrate de notre ${esc(o)}">${Math.round((100-wr)*10)/10} %</em></div>`;
@@ -1491,9 +1495,11 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+   <h4>Profil</h4><ul>${scoutProfile(p).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+      const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
+      return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
-   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).slice().sort((a,b)=>(!!st(a.c))-(!!st(b.c))).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
    <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")})</h4>
    ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
    <h4>Nos réponses à ses champions</h4>
