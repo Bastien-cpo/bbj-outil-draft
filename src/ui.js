@@ -253,7 +253,7 @@ const ROLE_SVG={
  J:'<path d="M3 21c1-5 0-9-2-13 3 2 5 6 5 13zM8.5 21c0-8 1.5-13 4.5-18-.5 6-1.5 12-1.5 18zM13.5 21c0-6 2-10.5 6.5-13.5-2.5 4-3.5 8.5-3.5 13.5zM18.5 21c.5-3 2-5.5 4.5-6.5-1.5 2-2 4-2 6.5z" fill="currentColor"/>',
  M:'<path d="M3 17l14-14h4v4L7 21H3z" fill="currentColor"/><path d="M3 3h8L3 11zM21 21h-8l8-8z" fill="currentColor" opacity=".45"/>',
  A:'<path d="M21 21H8l4-4h5v-5l4-4z" fill="currentColor"/><path d="M10 10h4v4h-4z M3 17V3h14l-3 3H6v8z" fill="currentColor" opacity=".45"/>',
- S:'<path d="M12 1c4.5 3.5 5.5 9.5 0 15C6.5 10.5 7.5 4.5 12 1z" fill="currentColor"/><path d="M12 5.2c1.9 1.6 1.9 4.4 0 6-1.9-1.6-1.9-4.4 0-6z" fill="#11141b"/><path d="M11.1 15.5h1.8V20h-1.8zM7.5 20h9l-1 2.5h-7z" fill="currentColor"/>'};
+ S:'<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="currentColor"/><path d="M12 5.2l5 1.9V11c0 3.4-2.2 6.2-5 7.7z" fill="#11141b" opacity=".35"/>'};
 const roleIcon=(r,s=18)=>`<svg class="ricon" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${ROLE_SVG[r]}</svg>`;
 function scoutRow(team,d){
   if(team===d.side) return ""; let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length) return "";
@@ -288,7 +288,9 @@ function scoutModal(){
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
   const st=c=>un.has(c)?(live.series.locked.includes(c)?"fearless":"pris/banni"):"";
   const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
-  const duel=(o,t,wr,mine)=>`<div class="scduel ${mine?"mine":""}"><span>${av(o,"sm")} ${esc(o)}</span><i>vs</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre champion">${Math.round((mine?wr:100-wr)*10)/10} %</em></div>`;
+  const duel=(o,t,wr,mine)=>mine
+    ?`<div class="scduel mine"><span class="us">${av(o,"sm")} ${esc(o)}</span><i>contre</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre ${esc(o)}">${Math.round(wr*10)/10} %</em></div>`
+    :`<div class="scduel"><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><i>contre notre</i><span class="us">${av(o,"sm")} ${esc(o)}</span><em title="Winrate de notre ${esc(o)}">${Math.round((100-wr)*10)/10} %</em></div>`;
   return `<div class="scmodal" data-act="scoutclose"><div class="scbox" data-act="none">
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>

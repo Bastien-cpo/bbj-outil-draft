@@ -13,15 +13,14 @@ const CHAMP_NAMES = Object.keys(CHAMPS).sort((a,b)=>a.localeCompare(b));
 const NAME_BY_NORM = {}; CHAMP_NAMES.forEach(n=>NAME_BY_NORM[normName(n)]=n);
 Object.assign(NAME_BY_NORM,{maitreyi:"Master Yi",monkeyking:"Wukong",renata:"Renata Glasc",nunuwillump:"Nunu",nunuetwillump:"Nunu",mundo:"Dr. Mundo",j4:"Jarvan IV",tf:"Twisted Fate",mf:"Miss Fortune",ksante:"K'Sante"});
 function findChamp(s){ const k=normName(s); return NAME_BY_NORM[k]||CHAMP_NAMES.find(n=>normName(n).startsWith(k)&&k.length>=3)||null; }
-// ---- Matchups lolalytics (Master+, patch actuel) fusionnés avec l'ancienne base lolstats ----
+// ---- Matchups lolalytics patch 16.22 : Maître+ et Émeraude+ (poids 0,35) croisés, les deux sens du matchup fusionnés, puis ramenés vers 50 % selon l'échantillon (n/(n+250)) ----
 const LOLA_N=LOLA_NAMES.split("|").map(n=>findChamp(n)||n);
 const BOTX={}; // ADC>support -> WR de l'ADC (matchups croisés en bot)
 const CTR_ALL=(()=>{ const out=[], seen=new Set();
   for(const L in LOLA_RAW){ LOLA_RAW[L].split(";").forEach(t=>{ const [ia,ib,d,n]=t.split(".").map(Number); const a=LOLA_N[ia], b=LOLA_N[ib]; if(!a||!b) return;
     if(L==="AS"){ BOTX[a+">"+b]={wr:50+d/10,n:n*100}; return; }
     const wr=Math.round((50+Math.abs(d)/10)*10)/10; out.push(d>0?[a,b,wr,n*100,L]:[b,a,wr,n*100,L]); seen.add([a,b].sort().join("+")+"|"+L); }); }
-  // anciennes données (Platine+, patch précédent) seulement pour les paires absentes, atténuées de moitié
-  CTR_DATA.forEach(x=>{ const k=[x[0],x[1]].sort().join("+")+"|"+x[4]; if(seen.has(k)) return; const wr=Math.round((50+(x[2]-50)/2)*10)/10; if(wr>=51) out.push([x[0],x[1],wr,x[3],x[4]]); });
+  // (anciennes données lolstats retirées : matchups recroisés lolalytics Maître+ et Émeraude+, petits échantillons ramenés vers 50 %)
   return out; })();
 function botCross(adc,sup){ const x=BOTX[adc+">"+sup]; return x?x.wr:null; }
 // ---- Drafts pro 2026 : position de pick par champion et par rôle, duos ----

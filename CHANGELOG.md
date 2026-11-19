@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.12 — 19/11/2026
+- Matchups refaits et recroisés : lolalytics patch 16.22 Maître+ et Émeraude+, les deux sens de chaque matchup fusionnés, petits échantillons ramenés vers 50 % ; 3 240 matchups de lane + 561 croisés bot. Anciennes données lolstats retirées. Vérifs ponctuelles op.gg / u.gg.
+- Fiches : leurs counters affichés « leur champion contre notre champion » ; icône support = bouclier.
+
 ## v10.11 — 19/11/2026
 - Fiches : « Pool large : N champions joués », ligne dégâts retirée, mentions « notre winrate » retirées ; nouvelles lignes « Flex ? » (champions de son pool surtout joués à un autre rôle) et « Joue aussi <rôle> ».
 - Draft : un pick adverse joué par plusieurs de leurs joueurs à des rôles différents (ou à un rôle inhabituel) reçoit le rôle du joueur le plus probable et un badge « Flex ? » (détail au survol).
