@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.13 — 19/11/2026
+- Pick adverse : rôle le plus probable du champion, départagé par le joueur adverse qui le joue le plus à son rôle ; badge « Flex ? » retiré de la draft.
+- Fiches : « contre » simplifié, ligne « Joue aussi » retirée.
+
 ## v10.12 — 19/11/2026
 - Matchups refaits et recroisés : lolalytics patch 16.22 Maître+ et Émeraude+, les deux sens de chaque matchup fusionnés, petits échantillons ramenés vers 50 % ; 3 240 matchups de lane + 561 croisés bot. Anciennes données lolstats retirées. Vérifs ponctuelles op.gg / u.gg.
 - Fiches : leurs counters affichés « leur champion contre notre champion » ; icône support = bouclier.

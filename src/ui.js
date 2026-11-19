@@ -93,7 +93,7 @@ function applyDrafter(st){
     if(!c){ if(raw==="none"||(slots&&t==="ban"&&i<lastFilled)) acts[i]=t==="pick"?{name:"",miss:true,role:null}:{name:"",miss:true}; return; } // étape passée sans choix (temps écoulé) : remplacée dès que Drafter reçoit l'échange
     if(t==="ban"){ acts[i]={name:c}; return; }
     const o=old[i]&&old[i].name===c?old[i]:null; let role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]); let flex=o?!!o.flex:false, fx=o?o.fx:undefined;
-    if(!o&&s!==side){ const f=enemyFlex(c); if(f){ if(!taken[s].includes(f.role)) role=f.role; if(f.flex){ flex=true; fx=f.txt; } } }
+    if(!o&&s!==side){ const r=enemyRole(c,taken[s]); if(r) role=r; }
     taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
@@ -273,7 +273,7 @@ function scoutProfile(p){
   const fx=L.filter(x=>x.g>=5&&CHAMPS[x.c]&&CHAMPS[x.c].roles[0]!==p.role).slice(0,5);
   const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
   const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
-  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex ? ${fx.map(x=>`${x.c} (${ROLE_NAMES[CHAMPS[x.c].roles[0]].toLowerCase()})`).join(", ")} : s'il sort, ce pick peut être pour lui`:"", offR?`Joue aussi ${ROLE_NAMES[offR].toLowerCase()} : ${off[offR].slice(0,4).join(", ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
+  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex ? ${fx.map(x=>`${x.c} (${ROLE_NAMES[CHAMPS[x.c].roles[0]].toLowerCase()})`).join(", ")} : s'il sort, ce pick peut être pour lui`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
   return lines.filter(Boolean);
 }
 function scoutModal(){
@@ -290,7 +290,7 @@ function scoutModal(){
   const chip=(c,extra="")=>`<span class="scc ${st(c)?"off":""}" title="${esc(c+(st(c)?" · "+st(c):""))}">${av(c,"md")}<b>${esc(c)}</b>${extra}</span>`;
   const duel=(o,t,wr,mine)=>mine
     ?`<div class="scduel mine"><span class="us">${av(o,"sm")} ${esc(o)}</span><i>contre</i><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><em title="Winrate de notre ${esc(o)}">${Math.round(wr*10)/10} %</em></div>`
-    :`<div class="scduel"><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><i>contre notre</i><span class="us">${av(o,"sm")} ${esc(o)}</span><em title="Winrate de notre ${esc(o)}">${Math.round((100-wr)*10)/10} %</em></div>`;
+    :`<div class="scduel"><span class="${st(t)?"off":""}">${av(t,"sm")} ${esc(t)}</span><i>contre</i><span class="us">${av(o,"sm")} ${esc(o)}</span><em title="Winrate de notre ${esc(o)}">${Math.round((100-wr)*10)/10} %</em></div>`;
   return `<div class="scmodal" data-act="scoutclose"><div class="scbox" data-act="none">
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
@@ -395,11 +395,12 @@ function ctrEditor(){
 // ---------- Actions ----------
 function flash(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(flash.t); flash.t=setTimeout(()=>t.classList.remove("on"),2200); }
 // Pick adverse : quel joueur de leur cinq le joue ? Plusieurs rôles possibles (ou rôle inhabituel) => « Flex ? »
-function enemyFlex(c){ let P=[]; try{ P=prepPlayers(prep); }catch(e){} if(!P.length||!CHAMPS[c]) return null;
-  const who=P.map(p=>({p,x:(p.all||p.list).find(x=>x.c===c)})).filter(o=>o.x&&o.x.g>=5&&CHAMPS[c].roles.includes(o.p.role)).sort((a,b)=>b.x.g-a.x.g);
-  if(!who.length) return null; const roles=[...new Set(who.map(o=>o.p.role))];
-  const flex=roles.length>=2||roles[0]!==CHAMPS[c].roles[0];
-  return {role:roles[0], flex, txt:who.map(o=>`${ROLE_NAMES[o.p.role]} (${o.p.name.split("#")[0]}, ${o.x.g} g.)`).join(" ou ")}; }
+// Pick adverse : rôle le plus probable du champion, départagé par le joueur adverse qui le joue le plus à son rôle
+function enemyRole(c,taken){ const C=CHAMPS[c]; if(!C) return null; let P=[]; try{ P=prepPlayers(prep); }catch(e){}
+  const prior=[1,0.55,0.3,0.2]; let best=null;
+  C.roles.forEach((r,i)=>{ if(taken.includes(r)) return; const p=P.find(x=>x.role===r), x=p&&(p.all||p.list).find(y=>y.c===c);
+    const s=(prior[i]||0.15)+(x?Math.min(0.6,x.g/100):0); if(!best||s>best.s) best={r,s}; });
+  return best&&best.r; }
 function addChamp(name,role){
   const i=targetIndex(); if(i<0) return false; const n=findChamp(name); if(!n){ flash("Champion inconnu"); return false; }
   const old=live.draft.actions[i];
@@ -407,7 +408,7 @@ function addChamp(name,role){
   const [t,s]=STEPS[i]; const a={name:n};
   if(t==="pick"){ const taken=teamPicks(live.draft,s).filter(p=>!p.flex&&p!==old).map(p=>p.role);
     a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false;
-    if(s!==live.draft.side&&!role&&!old){ const f=enemyFlex(n); if(f){ const tk=teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role); if(!tk.includes(f.role)) a.role=f.role; if(f.flex){ a.flex=true; a.fx=f.txt; } } } }
+    if(s!==live.draft.side&&!role&&!old){ const r=enemyRole(n,teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role)); if(r) a.role=r; } }
   live.draft.actions[i]=a; ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
 }
 function parseManual(txt){
