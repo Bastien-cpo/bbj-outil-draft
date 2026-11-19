@@ -96,6 +96,13 @@ function applyDrafter(st){
   live.drafterGame=st.game||1; if(opponentFromDrafter(st,side)) {}
   const src={ban:{B:st.bb||[],R:st.rb||[]},pick:{B:st.bp||[],R:st.rp||[]}}, cnt={ban:{B:0,R:0},pick:{B:0,R:0}};
   const old=live.draft.actions, acts=Array(20).fill(null), taken={B:[],R:[]};
+  // Rôles confirmés sur Drafter : les cases sont rangées par lane → on garde l'ordre de pick connu et on prend les rôles exacts
+  const laneOf={B:{},R:{}};
+  ["B","R"].forEach(sd=>{ const L=sd==="B"?st.bpr:st.rpr, P=src.pick[sd]; if(!L) return;
+    const names=P.map(x=>x==="none"?"none":drafterChamp(x)), known=STEPS.map((x,i)=>x[0]==="pick"&&x[1]===sd?i:-1).filter(i=>i>=0).map(i=>old[i]?(old[i].miss?"none":old[i].name):null);
+    names.forEach((n,j)=>{ if(n&&n!=="none"&&L[j]) laneOf[sd][n]=L[j]; });
+    const same=names.filter(n=>n&&n!=="none").sort().join("|")===known.filter(n=>n&&n!=="none").sort().join("|")&&known.every(Boolean);
+    if(same) src.pick[sd]=known.map(n=>n==="none"?"none":n); });
   const slots=st.v>=3, raws=STEPS.map(([t,s])=>src[t][s][cnt[t][s]++]);
   const lastFilled=raws.reduce((m,r,i)=>r!=null&&(r==="none"||drafterChamp(r))?i:m,-1);
   STEPS.forEach(([t,s],i)=>{ const raw=raws[i]; const c=drafterChamp(raw);
@@ -103,6 +110,7 @@ function applyDrafter(st){
     if(t==="ban"){ acts[i]={name:c}; return; }
     const o=old[i]&&old[i].name===c?old[i]:null; let role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]); let flex=o?!!o.flex:false, fx=o?o.fx:undefined;
     if(!o&&s!==side){ const r=enemyRole(c,taken[s]); if(r) role=r; }
+    if(laneOf[s][c]){ role=laneOf[s][c]; flex=false; fx=undefined; }
     taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;

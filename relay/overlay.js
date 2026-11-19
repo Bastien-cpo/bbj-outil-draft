@@ -13,12 +13,15 @@ function scan(){
       let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; else if(el&&el.querySelector('[style*="rotate(45deg)"]')) v="none"; }
       else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; else { const nm=el&&el.querySelector(".champion-name"); if(nm&&/^none$/i.test(nm.textContent.trim())) v="none"; } }
       out.push(v); } return out; }; // "none" = temps écoulé sans choix (ban barré / pick « None »)
+  // après « Confirmer les rôles », chaque case de pick porte l'icône de sa lane (les picks sont réordonnés par rôle)
+  const RL={Top:"T",Jungle:"J",Mid:"M",Bot:"A",Support:"S"};
+  const lanes=k=>{ const out=[]; for(let j=1;j<=5;j++){ const el=document.getElementById(k+"-pick-"+j), im=el&&[...el.querySelectorAll("img")].find(i=>RL[i.alt]); out.push(im?RL[im.alt]:null); } return out.some(Boolean)?out:null; };
   const txt=document.body.innerText;
   const blue=(txt.match(/([^\n]+)\n\s*côté bleu/)||txt.match(/([^\n]+)\n\s*blue side/i)||[])[1]||"";
   const red=(txt.match(/([^\n]+)\n\s*(?:Prêt\s*)?côté rouge/)||txt.match(/([^\n]+)\n\s*(?:Ready\s*)?red side/i)||[])[1]||"";
   const phase=(txt.match(/(Pick|Ban) (bleu|rouge)/)||[""])[0];
   return {v:3, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
-    bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick")};
+    bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick"), bpr:lanes("blue"), rpr:lanes("red")};
 }
 setInterval(()=>{ const ok=R.win&&!R.win.closed; bd.textContent=ok?"● BBJ synchro":"○ BBJ fenêtre fermée (clique)"; bd.style.color=ok?"#8fe08f":"#e0b05a";
   if(!ok) return; let st; try{ st=scan(); }catch(e){ return; } try{ R.win.postMessage({type:"bbj-drafter",state:st},"*"); }catch(e){} },500);
