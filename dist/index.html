@@ -226,10 +226,13 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .ban .miss{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px;color:#888;border:1px dashed #555;border-radius:6px}
 .moment{text-align:center;font-size:12px;color:var(--gold);margin:-2px 0 2px}
 @media(max-width:560px){.bubs.fill{--bw:58px}}
+.expo{margin:6px 0 8px;padding:8px 10px;border-radius:10px;border:1px solid #d9a33a;background:rgba(217,163,58,.12);font-size:13px}
+.expo.post{border-color:#e0605a;background:rgba(224,96,90,.12)}
+.exth{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.exth span{display:flex;align-items:center;gap:5px}.exth em{font-style:normal;opacity:.75;font-size:12px}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.1 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.2 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -939,7 +942,7 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const pl=P.find(p=>p.role===role); const mine=ours.find(p=>!p.flex&&p.role===role);
     const pool={}; if(pl){ const mx=Math.max(1,...pl.list.map(x=>x.g)); pl.list.forEach(x=>{ if(x.g>=5) pool[x.c]={com:Math.log(1+x.g)/Math.log(1+mx), g:x.g, wr:x.wr}; }); }
     const cands=new Set(Object.keys(pool));
-    CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role); if(!m.off&&m.pres>=8) cands.add(c); });
+    CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
     const list=[...cands].filter(c=>!un.has(c)&&CHAMPS[c]&&CHAMPS[c].roles.includes(role)).map(c=>{
       const m=metaInfo(c,role), why=[]; let ctxv, cw=null;
@@ -1124,6 +1127,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     if(weak.includes("peel")&&ch.engage>=3&&ch.early>=2){ danger+=0.3; why.push("Punit votre manque de réception"); }
     if(weak.includes("engage")&&ch.poke>=2){ danger+=0.2; why.push("Poke dangereux face à votre manque d'engage"); }
     if(weak.includes("early")&&ch.early>=3){ danger+=0.15; why.push("Fort en early contre vous"); }
+    { const td=traitDanger(c,ours.map(o=>({name:o.name,role:o.flex?null:o.role}))); if(td.v){ danger+=td.v; why.push(...td.why); } }
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
     out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
   }); });
@@ -1133,6 +1137,33 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   const top=list.slice(0,n), alerts=list.slice(n).filter(x=>x.danger>=0.9).sort((a,b)=>b.danger-a.danger).slice(0,2);
   alerts.forEach((a,k)=>{ a.why.unshift("⚠ Peu probable, mais casserait votre compo"); top.splice(Math.min(top.length,3+k*3),0,a); });
   return top.slice(0,n);
+}
+// ---- Mécaniques qui contrent : grappins contre bot peu mobile, anti-dash contre compo à dashs ----
+const HOOKS=new Set(["Pyke","Blitzcrank","Thresh","Nautilus"]), ANTIDASH=new Set(["Poppy","Janna"]);
+const DASHERS=new Set("Leona,Vi,Akali,Corki,Rakan,Alistar,Rell,Jarvan IV,Lee Sin,Yone,Yasuo,Irelia,Kai'Sa,Camille,Hecarim,Sejuani,Wukong,Xin Zhao,Pantheon,Gragas,Lucian,Tristana,Kalista,Ambessa,Gwen,Riven,Fiora,Jax,Renekton,Zac,Diana,Kha'Zix,Rengar,Qiyana,Sylas,LeBlanc,Ahri,Galio,Maokai,Vayne,Graves,Kindred,Lillia,Viego,Aatrox".split(","));
+const IMMOBILE=new Set("Jinx,Ashe,Varus,Jhin,Miss Fortune,Senna,Smolder,Twitch,Sivir,Aphelios,Kog'Maw,Ziggs,Lulu,Soraka,Sona,Yuumi,Nami,Karma,Milio,Seraphine,Zilean,Janna,Zyra,Xerath,Lux,Morgana,Brand,Vel'Koz,Swain".split(","));
+function traitDanger(c,ours){ // ours = [{name,role}]
+  let v=0; const why=[]; const bot=ours.filter(o=>o.role==="A"||o.role==="S").map(o=>o.name);
+  if(HOOKS.has(c)){ const im=bot.filter(n=>IMMOBILE.has(n)); if(im.length){ v+=0.35*im.length; why.push(`Grappin : punit votre ${im.join(" + ")}, peu mobile${im.length>1?"s":""}`); } }
+  if(ANTIDASH.has(c)){ const ds=ours.map(o=>o.name).filter(n=>DASHERS.has(n)); if(ds.length>=2){ v+=0.2*ds.length; why.push(`Bloque les dashs de ${ds.join(", ")}`); } }
+  return {v:Math.min(1,v), why};
+}
+// ---- Support exposé : leur support n'est pas choisi et ils piquent encore après vous ----
+function botExposure(cfg,series,draft,prep,lineup){
+  const i=draft.actions.findIndex(a=>!a); if(i<0) return null;
+  const us=draft.side, them=us==="B"?"R":"B";
+  const ours=teamPicks(draft,us).map(a=>({name:a.name,role:a.flex?null:a.role})), theirs=teamPicks(draft,them);
+  if(theirs.some(p=>p.role==="S")) return null;
+  let after=0; for(let k=i;k<20;k++) if(STEPS[k][0]==="pick"&&STEPS[k][1]===them&&!draft.actions[k]) after++;
+  if(!after) return null;
+  const ourS=ours.find(o=>o.role==="S"), ourTurn=STEPS[i][1]===us;
+  if(!ourS&&!(ourTurn&&STEPS[i][0]==="pick")) return null;
+  let R=null; try{ R=enemyCandidates(cfg,series,draft,prep,lineup).find(x=>x.role==="S"); }catch(e){}
+  const threats=(R?R.list.slice(0,10):[]).map(x=>{ const t=traitDanger(x.name,ours); return {name:x.name, s:x.s*(0.5+t.v)+0.2*t.v, why:[...t.why, ...x.why.slice(0,1)]}; })
+    .sort((a,b)=>b.s-a.s).slice(0,3);
+  const phase2=draft.actions.filter((a,k)=>a&&STEPS[k][0]==="pick").length>=6;
+  if(ourS) return {kind:"post", after, threats, msg:`Votre bot est exposé : leur support n'est pas encore choisi (il leur reste ${after} pick${after>1?"s":""}).`+(phase2&&STEPS[i][0]==="ban"&&ourTurn?" Bannissez en priorité ce qui le contre.":"")};
+  return {kind:"pre", after, threats, msg:`Support exposé au contre : si vous prenez votre support maintenant, ils choisiront le leur après vous.`+(us==="B"?" Côté bleu, prenez un support difficile à contrer et gardez vos 2 bans de phase 2 pour ses contres.":" Gardez-le pour votre dernier pick si possible.")};
 }
 // ---- Analyse des compos : forces, faiblesses, lanes, plan de jeu ----
 function compTags(names){
@@ -1421,6 +1452,8 @@ function viewCenter(){
   const who=editing?"CORRECTION":(ours?ourName():theirName());
   let h=`<div class="turn ${s}${ours?" ours":""}${editing?" edit":""}"><span class="tw">${esc(who)}</span><span class="ta">${editing?(t==="ban"?"ban":"pick"):(t==="ban"?"BAN":"PICK")}</span></div>`+locked;
 
+  if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
+    if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -1535,7 +1568,19 @@ function scoutProfile(p,P){
   const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
   const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
   const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex : ${fx.map(x=>`${x.c} (aussi ${x.o.map(q=>`${q.name.split("#")[0]} en ${ROLE_NAMES[q.role].toLowerCase()}`).join(", ")})`).join(" · ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
+  const op=offPool(p); if(op.length) lines.push(`Hors de son op.gg, peut sortir : ${op.map(x=>`${x.c} (${x.why})`).join(" · ")}`);
   return lines.filter(Boolean);
+}
+// Champions absents de son op.gg mais crédibles à son rôle : très présents en pro ou très joués en solo Q, proches de son style
+function offPool(p,k=3){
+  const has=new Set(p.list.filter(x=>x.g>=5).map(x=>x.c)), L=p.list, tot=L.reduce((s,x)=>s+x.g,0)||1;
+  const st={}; AXES.forEach(a=>st[a]=L.reduce((s,x)=>s+x.g/tot*((CHAMPS[x.c]||{})[a]||0),0));
+  const nst=Math.sqrt(AXES.reduce((s,a)=>s+st[a]*st[a],0))||1; let un=new Set(); try{ un=unavailable(live.series,live.draft); }catch(e){}
+  return CHAMP_NAMES.filter(c=>CHAMPS[c].roles.includes(p.role)&&!has.has(c)&&!un.has(c)).map(c=>{ const m=metaInfo(c,p.role); if(m.off) return null;
+    const pr=PRO[c], pro=pr?clamp01((pr.p+pr.b)/400):0, sq=clamp01((m.pres||0)/25), pop=Math.max(pro,sq);
+    const C=CHAMPS[c], nc=Math.sqrt(AXES.reduce((s,a)=>s+C[a]*C[a],0))||1, sim=AXES.reduce((s,a)=>s+C[a]*st[a],0)/(nc*nst);
+    return {c, s:0.65*pop+0.35*sim, why:pro>=sq?`très présent en pro, ${pr.p+pr.b} drafts`:`très joué en solo Q, ${m.pres} %`};
+  }).filter(x=>x&&x.s>=0.5).sort((a,b)=>b.s-a.s).slice(0,k);
 }
 function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";

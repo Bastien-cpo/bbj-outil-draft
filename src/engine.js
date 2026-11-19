@@ -431,7 +431,7 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const pl=P.find(p=>p.role===role); const mine=ours.find(p=>!p.flex&&p.role===role);
     const pool={}; if(pl){ const mx=Math.max(1,...pl.list.map(x=>x.g)); pl.list.forEach(x=>{ if(x.g>=5) pool[x.c]={com:Math.log(1+x.g)/Math.log(1+mx), g:x.g, wr:x.wr}; }); }
     const cands=new Set(Object.keys(pool));
-    CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role); if(!m.off&&m.pres>=8) cands.add(c); });
+    CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
     const list=[...cands].filter(c=>!un.has(c)&&CHAMPS[c]&&CHAMPS[c].roles.includes(role)).map(c=>{
       const m=metaInfo(c,role), why=[]; let ctxv, cw=null;
@@ -616,6 +616,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     if(weak.includes("peel")&&ch.engage>=3&&ch.early>=2){ danger+=0.3; why.push("Punit votre manque de réception"); }
     if(weak.includes("engage")&&ch.poke>=2){ danger+=0.2; why.push("Poke dangereux face à votre manque d'engage"); }
     if(weak.includes("early")&&ch.early>=3){ danger+=0.15; why.push("Fort en early contre vous"); }
+    { const td=traitDanger(c,ours.map(o=>({name:o.name,role:o.flex?null:o.role}))); if(td.v){ danger+=td.v; why.push(...td.why); } }
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
     out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
   }); });
@@ -625,6 +626,33 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   const top=list.slice(0,n), alerts=list.slice(n).filter(x=>x.danger>=0.9).sort((a,b)=>b.danger-a.danger).slice(0,2);
   alerts.forEach((a,k)=>{ a.why.unshift("⚠ Peu probable, mais casserait votre compo"); top.splice(Math.min(top.length,3+k*3),0,a); });
   return top.slice(0,n);
+}
+// ---- Mécaniques qui contrent : grappins contre bot peu mobile, anti-dash contre compo à dashs ----
+const HOOKS=new Set(["Pyke","Blitzcrank","Thresh","Nautilus"]), ANTIDASH=new Set(["Poppy","Janna"]);
+const DASHERS=new Set("Leona,Vi,Akali,Corki,Rakan,Alistar,Rell,Jarvan IV,Lee Sin,Yone,Yasuo,Irelia,Kai'Sa,Camille,Hecarim,Sejuani,Wukong,Xin Zhao,Pantheon,Gragas,Lucian,Tristana,Kalista,Ambessa,Gwen,Riven,Fiora,Jax,Renekton,Zac,Diana,Kha'Zix,Rengar,Qiyana,Sylas,LeBlanc,Ahri,Galio,Maokai,Vayne,Graves,Kindred,Lillia,Viego,Aatrox".split(","));
+const IMMOBILE=new Set("Jinx,Ashe,Varus,Jhin,Miss Fortune,Senna,Smolder,Twitch,Sivir,Aphelios,Kog'Maw,Ziggs,Lulu,Soraka,Sona,Yuumi,Nami,Karma,Milio,Seraphine,Zilean,Janna,Zyra,Xerath,Lux,Morgana,Brand,Vel'Koz,Swain".split(","));
+function traitDanger(c,ours){ // ours = [{name,role}]
+  let v=0; const why=[]; const bot=ours.filter(o=>o.role==="A"||o.role==="S").map(o=>o.name);
+  if(HOOKS.has(c)){ const im=bot.filter(n=>IMMOBILE.has(n)); if(im.length){ v+=0.35*im.length; why.push(`Grappin : punit votre ${im.join(" + ")}, peu mobile${im.length>1?"s":""}`); } }
+  if(ANTIDASH.has(c)){ const ds=ours.map(o=>o.name).filter(n=>DASHERS.has(n)); if(ds.length>=2){ v+=0.2*ds.length; why.push(`Bloque les dashs de ${ds.join(", ")}`); } }
+  return {v:Math.min(1,v), why};
+}
+// ---- Support exposé : leur support n'est pas choisi et ils piquent encore après vous ----
+function botExposure(cfg,series,draft,prep,lineup){
+  const i=draft.actions.findIndex(a=>!a); if(i<0) return null;
+  const us=draft.side, them=us==="B"?"R":"B";
+  const ours=teamPicks(draft,us).map(a=>({name:a.name,role:a.flex?null:a.role})), theirs=teamPicks(draft,them);
+  if(theirs.some(p=>p.role==="S")) return null;
+  let after=0; for(let k=i;k<20;k++) if(STEPS[k][0]==="pick"&&STEPS[k][1]===them&&!draft.actions[k]) after++;
+  if(!after) return null;
+  const ourS=ours.find(o=>o.role==="S"), ourTurn=STEPS[i][1]===us;
+  if(!ourS&&!(ourTurn&&STEPS[i][0]==="pick")) return null;
+  let R=null; try{ R=enemyCandidates(cfg,series,draft,prep,lineup).find(x=>x.role==="S"); }catch(e){}
+  const threats=(R?R.list.slice(0,10):[]).map(x=>{ const t=traitDanger(x.name,ours); return {name:x.name, s:x.s*(0.5+t.v)+0.2*t.v, why:[...t.why, ...x.why.slice(0,1)]}; })
+    .sort((a,b)=>b.s-a.s).slice(0,3);
+  const phase2=draft.actions.filter((a,k)=>a&&STEPS[k][0]==="pick").length>=6;
+  if(ourS) return {kind:"post", after, threats, msg:`Votre bot est exposé : leur support n'est pas encore choisi (il leur reste ${after} pick${after>1?"s":""}).`+(phase2&&STEPS[i][0]==="ban"&&ourTurn?" Bannissez en priorité ce qui le contre.":"")};
+  return {kind:"pre", after, threats, msg:`Support exposé au contre : si vous prenez votre support maintenant, ils choisiront le leur après vous.`+(us==="B"?" Côté bleu, prenez un support difficile à contrer et gardez vos 2 bans de phase 2 pour ses contres.":" Gardez-le pour votre dernier pick si possible.")};
 }
 // ---- Analyse des compos : forces, faiblesses, lanes, plan de jeu ----
 function compTags(names){

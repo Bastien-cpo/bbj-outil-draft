@@ -187,6 +187,8 @@ function viewCenter(){
   const who=editing?"CORRECTION":(ours?ourName():theirName());
   let h=`<div class="turn ${s}${ours?" ours":""}${editing?" edit":""}"><span class="tw">${esc(who)}</span><span class="ta">${editing?(t==="ban"?"ban":"pick"):(t==="ban"?"BAN":"PICK")}</span></div>`+locked;
 
+  if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
+    if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -301,7 +303,19 @@ function scoutProfile(p,P){
   const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
   const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
   const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex : ${fx.map(x=>`${x.c} (aussi ${x.o.map(q=>`${q.name.split("#")[0]} en ${ROLE_NAMES[q.role].toLowerCase()}`).join(", ")})`).join(" · ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
+  const op=offPool(p); if(op.length) lines.push(`Hors de son op.gg, peut sortir : ${op.map(x=>`${x.c} (${x.why})`).join(" · ")}`);
   return lines.filter(Boolean);
+}
+// Champions absents de son op.gg mais crédibles à son rôle : très présents en pro ou très joués en solo Q, proches de son style
+function offPool(p,k=3){
+  const has=new Set(p.list.filter(x=>x.g>=5).map(x=>x.c)), L=p.list, tot=L.reduce((s,x)=>s+x.g,0)||1;
+  const st={}; AXES.forEach(a=>st[a]=L.reduce((s,x)=>s+x.g/tot*((CHAMPS[x.c]||{})[a]||0),0));
+  const nst=Math.sqrt(AXES.reduce((s,a)=>s+st[a]*st[a],0))||1; let un=new Set(); try{ un=unavailable(live.series,live.draft); }catch(e){}
+  return CHAMP_NAMES.filter(c=>CHAMPS[c].roles.includes(p.role)&&!has.has(c)&&!un.has(c)).map(c=>{ const m=metaInfo(c,p.role); if(m.off) return null;
+    const pr=PRO[c], pro=pr?clamp01((pr.p+pr.b)/400):0, sq=clamp01((m.pres||0)/25), pop=Math.max(pro,sq);
+    const C=CHAMPS[c], nc=Math.sqrt(AXES.reduce((s,a)=>s+C[a]*C[a],0))||1, sim=AXES.reduce((s,a)=>s+C[a]*st[a],0)/(nc*nst);
+    return {c, s:0.65*pop+0.35*sim, why:pro>=sq?`très présent en pro, ${pr.p+pr.b} drafts`:`très joué en solo Q, ${m.pres} %`};
+  }).filter(x=>x&&x.s>=0.5).sort((a,b)=>b.s-a.s).slice(0,k);
 }
 function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";

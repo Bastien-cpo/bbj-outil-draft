@@ -2,6 +2,12 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.2
+- Alerte « support exposé au contre » (et « bot exposé » tant que leur support n'est pas choisi), avec les contres probables.
+- Grappins contre bot peu mobile, anti-dash contre compo à dashs : pris en compte dans les alertes et les bans de phase 2.
+- Fiches : « Hors de son op.gg, peut sortir » (champions très présents en pro ou en solo Q).
+- Historique : stats des parties importées du client LoL.
+
 ## v11.1 — 20/11/2026
 - Bug G3 du 19/11 corrigé : Drafter affiche les icônes de lane dès la G2/G3 ; l'outil ne les lit plus qu'une fois les 10 picks faits (sinon chaque champion prenait la lane de sa case et les rôles devenaient « ? »).
 - Historique : scrim contre Funky (19/11) ajouté depuis Drafter (L, L, W).
