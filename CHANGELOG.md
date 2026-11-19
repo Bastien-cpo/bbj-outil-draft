@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v10.17 — 19/11/2026
+- Répétition générale sur une vraie room Drafter (2 games, fearless) : côté choisi d'un clic, ban et pick ratés, échange, bans phase 2, confirmation des rôles, passage en G2 avec fearless et bans recalculés : OK.
+- Drafter recharge sa page à chaque nouvelle game : bandeau « reclique le favori » dans l'outil ; une nouvelle room enregistre la série précédente dans l'Historique (préparation gardée).
+
 ## v10.16 — 19/11/2026
 - Drafter « Confirmer les rôles » : l'outil lit la lane de chaque case, garde l'ordre de pick et prend les rôles exacts des deux équipes.
 - Nom de l'adversaire de la préparation jamais écrasé par Drafter ; diagnostic `bbj-ping` pour les tests.

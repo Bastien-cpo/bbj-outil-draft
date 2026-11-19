@@ -76,7 +76,7 @@ function applyDrafter(st){
   const empty=![...(st.bb||[]),...(st.rb||[]),...(st.bp||[]),...(st.rp||[])].some(x=>x!=null);
   // Nouvelle room Drafter = nouvelle série : on repart de zéro (l'ancienne série reste archivable via « Nouvelle série »)
   const room=((st.url||"").match(/draft\/([^?#/]+)/)||[])[1]||null;
-  if(room&&live.drafterRoom&&room!==live.drafterRoom){ live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; }
+  if(room&&live.drafterRoom&&room!==live.drafterRoom){ archiveSeries(true); live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; }
   if(room) live.drafterRoom=room;
   // Room vide alors que l'outil a une draft : on attend ~2 s (page Drafter en chargement) puis Drafter fait foi
   if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)){ ui.emptyScans=(ui.emptyScans||0)+1; if(ui.emptyScans<4) return; }
@@ -134,13 +134,13 @@ setInterval(()=>{ const h=document.getElementById("drsync"); if(h){ const age=dr
 
 // ---------- Historique des séries ----------
 function seriesScore(gs){ const w=gs.filter(g=>g.result==="W").length, l=gs.filter(g=>g.result==="L").length; return w+"-"+l; }
-function archiveSeries(){
+function archiveSeries(keepPrep){
   const games=live.series.games.slice(); if(live.draft.actions.every(Boolean)) games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
   if(!games.length) return;
   const opp=prep.opponent||(prep.players||[]).map(p=>String(p.name||"").split("#")[0]).filter(Boolean).slice(0,3).join(", ")||"Adversaire";
   history.series.unshift({date:new Date().toLocaleDateString("fr-FR"), opponent:opp, type:"Scrim", lineup:{...prep.lineup}, games,
     scouting:{link:prep.link||"", players:prep.players||[]}}); // op.gg de l'adversaire gardé pour les futurs profils
-  persist("history"); clearPrep(); flash("Série enregistrée dans l'historique, préparation remise à zéro");
+  persist("history"); if(keepPrep){ flash("Série précédente enregistrée dans l'historique"); return; } clearPrep(); flash("Série enregistrée dans l'historique, préparation remise à zéro");
 }
 // Série terminée : la préparation de l'adversaire (op.gg, bans) est vidée, on garde notre nom et notre line-up
 function clearPrep(){ prep.opponent=""; prep.link=""; prep.ids=[]; prep.players=[]; prep.request=null; prep.updatedAt=""; persist("prep"); }
