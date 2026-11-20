@@ -231,10 +231,11 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .exth{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.exth span{display:flex;align-items:center;gap:5px}.exth em{font-style:normal;opacity:.75;font-size:12px}
 .wbar.rev{transform:scaleX(-1)}.wbar.rev b{transform:scaleX(-1)}
 .rrow.ideas{opacity:.92}.idea{display:flex;flex-direction:column;align-items:center;width:58px;position:relative;font-size:10px;cursor:help}.idea em{position:absolute;top:-2px;right:4px;font-style:normal;font-weight:700;font-size:11px;color:var(--gold)}.idea b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}.idea.duo{flex-direction:row;width:auto;gap:2px;padding-right:18px}.idea.duo em{right:0;top:0}
+.pk.ideas .prc{position:relative}.pk.ideas .prc em{position:absolute;top:-4px;right:-4px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas .prc.pair{display:inline-flex;gap:1px;margin-right:6px}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.5 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.6 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -931,7 +932,7 @@ function firstPickGuess(cfg,series,draft,prep,lineup,k=5){
     const bi=blindInfo(cfg,x.name,R.role), m=metaInfo(x.name,R.role), pr=PRO[x.name], pp=pr?clamp01((pr.p+pr.b)/400):0;
     const appeal=0.5*bi.v+0.3*m.v+0.2*pp;
     const why=[...x.why.filter(w=>w!=="Blindable")]; if(bi.badge==="B") why.push("Blindable"); if(pp>=0.5) why.push("Très présent en pro");
-    out.push({name:x.name, role:R.role, s:x.s*(0.5+0.5*appeal)*(0.35+0.65*PRO_FIRST.B[R.role]/fmax), why:[ROLE_NAMES[R.role]+(R.player?" · "+R.player:""), ...why]}); }); });
+    out.push({name:x.name, role:R.role, s:x.s*(0.5+0.5*appeal)*(0.35+0.65*PRO_FIRST.B[R.role]/fmax)*(1+1.5*(x.intent||0)), why:[ROLE_NAMES[R.role]+(R.player?" · "+R.player:""), ...why]}); }); });
   const seen={}, per={}; return out.sort((a,b)=>b.s-a.s).filter(x=>{ if(seen[x.name]||(per[x.role]||0)>=2) return false; seen[x.name]=1; per[x.role]=(per[x.role]||0)+1; return true; }).slice(0,k); // 2 par rôle max
 }
 function enemyCandidates(cfg,series,draft,prep,lineup){
@@ -946,6 +947,20 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const cands=new Set(Object.keys(pool));
     CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
+    (series&&series.games||[]).forEach(g=>(g.actions||[]).forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]!==g.side&&CHAMPS[a.name]&&CHAMPS[a.name].roles.includes(role)) cands.add(a.name); }));
+    draft.actions.forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]===them) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,a.name,c,role); if(w!=null&&w>=52) cands.add(c); } }); });
+    // Lecture de leurs bans : bannir les counters d'un champion = le préparer ; un champion qu'ils bannissaient dans une game précédente et qu'ils laissent ouvert = pick prévu
+    const myBans=draft.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]===them?{name:a.name,k}:null).filter(Boolean);
+    const past=[]; (series&&series.games||[]).forEach((g,gi)=>(g.actions||[]).forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]!==g.side) past.push({name:a.name,g:gi+1,side:g.side==="B"?"R":"B"}); }));
+    // un ban sur un de NOS conforts (tiers S/A) vise surtout nos joueurs : il compte peu comme signal de leur plan
+    const ourSA=n=>ROLES.some(r=>{ const t=tierFor(cfg,lineup[r],r,n); return (t==="S"||t==="A")&&CHAMPS[n]&&CHAMPS[n].roles.includes(r); });
+    const intentOf=c=>{ let v=0; const why=[]; const ctr=myBans.filter(b=>{ if(ourSA(b.name)) return false; const w=laneWR(I,b.name,c,role); return w!=null&&w>=52; });
+      if(ctr.length){ v+=ctr.reduce((t,b)=>t+(b.k>=12?0.45:0.3),0); why.push(`Ils ont banni ${ctr.length>1?"ses counters":"son counter"} ${ctr.map(b=>b.name).join(", ")} : ils le préparent`); }
+      const sa=ourSA(c), pc=pool[c]?pool[c].com:0; const pb=sa&&!pc?[]:past.filter(x=>x.name===c);
+      if(pb.length&&!myBans.some(b=>b.name===c)){ const flip=pb.some(x=>x.side!==them)&&them==="B"; v+=flip?0.7:0.4;
+        why.push(flip?`Banni par eux en G${pb.map(x=>x.g).join(", G")} (côté rouge), laissé ouvert côté bleu : first pick prévu`:`Banni par eux en G${pb.map(x=>x.g).join(", G")}, laissé ouvert cette fois : ils comptent le jouer`); }
+      if(sa&&pb.length) v*=pc; // aussi un de nos conforts : signal pondéré par son attachement au champion
+      return {v:Math.min(1,v), why}; };
     // Score = 60 % pool (son op.gg solo Q) + 40 % réflexion : counter de nos picks, synergie avec les leurs, méta, mécaniques qui nous punissent
     const ourObjs=ours.map(o=>({name:o.name,role:o.flex?null:o.role}));
     const list=[...cands].filter(c=>!un.has(c)&&CHAMPS[c]&&CHAMPS[c].roles.includes(role)).map(c=>{
@@ -961,8 +976,9 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
       else { const pr=PRO[c], pop=Math.max(clamp01((m.pres||0)/25), pr?clamp01((pr.p+pr.b)/400):0); // populaire en solo Q ou en pro
         poolV=pl?0.2*pop:0.5*m.v;
         if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
-      const s=0.6*poolV+0.4*reason;
-      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p};
+      const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
+      const s=0.6*poolV+0.4*reason+0.45*it.v;
+      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
   });
@@ -1152,6 +1168,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     if(weak.includes("early")&&ch.early>=3){ danger+=0.15; why.push("Fort en early contre vous"); }
     { const td=traitDanger(c,ours.map(o=>({name:o.name,role:o.flex?null:o.role}))); if(td.v){ danger+=td.v; why.push(...td.why); } }
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
+    if(x.intent>=0.4){ danger+=0.5*x.intent; why.unshift("⚠ Pick préparé par leurs bans"); }
     out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
   }); });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].s<x.s) best[x.name]=x; });
@@ -1479,10 +1496,6 @@ function viewCenter(){
 
   if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
     if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
-  if(!editing&&i<6&&t==="ban"){ let I=null; try{ I=pickIdeas(cfg,live.series,d,prep.lineup,6); }catch(e){}
-    if(I&&I.list.length) h+=`<div class="rrow ideas"><div class="rl"><b>${I.kind==="B"?"First pick":"Picks 1-2"}</b><span>idées</span></div><div class="bubs">${I.kind==="B"
-      ?I.list.map(x=>`<span class="idea" title="${esc(ROLE_NAMES[x.role]+" · "+x.why.slice(0,3).join(" · "))}">${av(x.name,"md")}<em>${x.score}</em><b>${esc(x.name)}</b></span>`).join("")
-      :I.list.map(x=>`<span class="idea duo" title="${esc(x.why.join(" · "))}">${av(x.a.name,"md")}${av(x.b.name,"md")}<em>${x.score}</em></span>`).join("")}</div></div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -1553,7 +1566,15 @@ function boardCol(team,d,ro){
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
   if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
+  // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
+  let ideas=null; const pk0=d.actions.findIndex(a=>!a);
+  if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,6); }catch(e){ ideas=null; } }
+  let ii=0;
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
+    if(!a&&!p&&ideas&&ideas.list.length&&ii<(ideas.kind==="B"?1:2)){ const part=ideas.kind==="B"?ideas.list:ideas.list.slice(ii*3,ii*3+3); ii++;
+      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":`Idées picks 1-2${ii===2?" (suite)":""}`}</div><div class="prb">${ideas.kind==="B"
+        ?part.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
+        :part.map(c=>`<span class="prc pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"md")}${av(c.b.name,"md")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;

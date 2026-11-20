@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.6
+- Idées de first pick (bleu) / paires R1-R2 (rouge) affichées en bulles dans nos premières cases, par score.
+- Lecture des bans adverses : bannir les counters d'un champion = ils le préparent ; un champion qu'ils bannissaient dans une game précédente et laissent ouvert = pick prévu (first pick s'ils passent bleus). Les bans visant nos conforts comptent peu.
+- Bans de phase 2 : « Pick préparé par leurs bans » remonte en priorité.
+
 ## v11.5
 - Phase de bans 1 : idées de first pick (bleu) ou de duo R1-R2 (rouge), selon le score de l'outil, mises à jour à chaque ban.
 - Picks adverses prédits : 60 % leur pool solo Q, 40 % réflexion (counter de nos picks, synergie avec leurs picks, méta, mécaniques qui nous punissent). Recalculés à chaque pick et ban, des deux côtés.

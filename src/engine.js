@@ -418,7 +418,7 @@ function firstPickGuess(cfg,series,draft,prep,lineup,k=5){
     const bi=blindInfo(cfg,x.name,R.role), m=metaInfo(x.name,R.role), pr=PRO[x.name], pp=pr?clamp01((pr.p+pr.b)/400):0;
     const appeal=0.5*bi.v+0.3*m.v+0.2*pp;
     const why=[...x.why.filter(w=>w!=="Blindable")]; if(bi.badge==="B") why.push("Blindable"); if(pp>=0.5) why.push("Très présent en pro");
-    out.push({name:x.name, role:R.role, s:x.s*(0.5+0.5*appeal)*(0.35+0.65*PRO_FIRST.B[R.role]/fmax), why:[ROLE_NAMES[R.role]+(R.player?" · "+R.player:""), ...why]}); }); });
+    out.push({name:x.name, role:R.role, s:x.s*(0.5+0.5*appeal)*(0.35+0.65*PRO_FIRST.B[R.role]/fmax)*(1+1.5*(x.intent||0)), why:[ROLE_NAMES[R.role]+(R.player?" · "+R.player:""), ...why]}); }); });
   const seen={}, per={}; return out.sort((a,b)=>b.s-a.s).filter(x=>{ if(seen[x.name]||(per[x.role]||0)>=2) return false; seen[x.name]=1; per[x.role]=(per[x.role]||0)+1; return true; }).slice(0,k); // 2 par rôle max
 }
 function enemyCandidates(cfg,series,draft,prep,lineup){
@@ -433,6 +433,20 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const cands=new Set(Object.keys(pool));
     CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
+    (series&&series.games||[]).forEach(g=>(g.actions||[]).forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]!==g.side&&CHAMPS[a.name]&&CHAMPS[a.name].roles.includes(role)) cands.add(a.name); }));
+    draft.actions.forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]===them) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,a.name,c,role); if(w!=null&&w>=52) cands.add(c); } }); });
+    // Lecture de leurs bans : bannir les counters d'un champion = le préparer ; un champion qu'ils bannissaient dans une game précédente et qu'ils laissent ouvert = pick prévu
+    const myBans=draft.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]===them?{name:a.name,k}:null).filter(Boolean);
+    const past=[]; (series&&series.games||[]).forEach((g,gi)=>(g.actions||[]).forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]!==g.side) past.push({name:a.name,g:gi+1,side:g.side==="B"?"R":"B"}); }));
+    // un ban sur un de NOS conforts (tiers S/A) vise surtout nos joueurs : il compte peu comme signal de leur plan
+    const ourSA=n=>ROLES.some(r=>{ const t=tierFor(cfg,lineup[r],r,n); return (t==="S"||t==="A")&&CHAMPS[n]&&CHAMPS[n].roles.includes(r); });
+    const intentOf=c=>{ let v=0; const why=[]; const ctr=myBans.filter(b=>{ if(ourSA(b.name)) return false; const w=laneWR(I,b.name,c,role); return w!=null&&w>=52; });
+      if(ctr.length){ v+=ctr.reduce((t,b)=>t+(b.k>=12?0.45:0.3),0); why.push(`Ils ont banni ${ctr.length>1?"ses counters":"son counter"} ${ctr.map(b=>b.name).join(", ")} : ils le préparent`); }
+      const sa=ourSA(c), pc=pool[c]?pool[c].com:0; const pb=sa&&!pc?[]:past.filter(x=>x.name===c);
+      if(pb.length&&!myBans.some(b=>b.name===c)){ const flip=pb.some(x=>x.side!==them)&&them==="B"; v+=flip?0.7:0.4;
+        why.push(flip?`Banni par eux en G${pb.map(x=>x.g).join(", G")} (côté rouge), laissé ouvert côté bleu : first pick prévu`:`Banni par eux en G${pb.map(x=>x.g).join(", G")}, laissé ouvert cette fois : ils comptent le jouer`); }
+      if(sa&&pb.length) v*=pc; // aussi un de nos conforts : signal pondéré par son attachement au champion
+      return {v:Math.min(1,v), why}; };
     // Score = 60 % pool (son op.gg solo Q) + 40 % réflexion : counter de nos picks, synergie avec les leurs, méta, mécaniques qui nous punissent
     const ourObjs=ours.map(o=>({name:o.name,role:o.flex?null:o.role}));
     const list=[...cands].filter(c=>!un.has(c)&&CHAMPS[c]&&CHAMPS[c].roles.includes(role)).map(c=>{
@@ -448,8 +462,9 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
       else { const pr=PRO[c], pop=Math.max(clamp01((m.pres||0)/25), pr?clamp01((pr.p+pr.b)/400):0); // populaire en solo Q ou en pro
         poolV=pl?0.2*pop:0.5*m.v;
         if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
-      const s=0.6*poolV+0.4*reason;
-      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p};
+      const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
+      const s=0.6*poolV+0.4*reason+0.45*it.v;
+      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
   });
@@ -639,6 +654,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     if(weak.includes("early")&&ch.early>=3){ danger+=0.15; why.push("Fort en early contre vous"); }
     { const td=traitDanger(c,ours.map(o=>({name:o.name,role:o.flex?null:o.role}))); if(td.v){ danger+=td.v; why.push(...td.why); } }
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
+    if(x.intent>=0.4){ danger+=0.5*x.intent; why.unshift("⚠ Pick préparé par leurs bans"); }
     out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
   }); });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].s<x.s) best[x.name]=x; });
