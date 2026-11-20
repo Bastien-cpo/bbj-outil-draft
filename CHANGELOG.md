@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.3
+- Duos nommés : une paire choisie exprès ensemble en pro (co-occurrence ≥ 2, même rotation) garde l'étiquette « duo » même si elle performe mal (Yunara + Lulu, Lucian + Milio…). 28 duos.
+- Le bonus de duo suit sa performance : bonus jusqu'à +3 pour un duo gagnant, malus jusqu'à −2,5 pour un duo perdant ensemble.
+
 ## v12.2
 - Duos pro recalculés sur 12 746 games 2025-2026 (ligues majeures + LCK CL, EMEA Masters, LFL…), récentes pondérées plus fort, refontes exclues (Mel avant 26.22, Nami avant 26.11, Shyvana, Gwen, Bel'Veth…).
 - Un duo pro = ≥ 20 games effectives, jamais perdant ensemble, et soit choisi exprès ensemble (co-occurrence ≥ 2, même rotation de draft), soit nettement gagnant (+4 pts sur ≥ 35 games). 19 duos retenus.

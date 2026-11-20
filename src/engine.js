@@ -33,7 +33,11 @@ const ROLE_SLOT_AVG={}; ["T","J","M","A","S"].forEach(r=>ROLE_SLOT_AVG[r]=(PRO_R
 const PRO_DUOS={}; PRO_DUO_RAW.split(";").forEach(t=>{ const [rr,pair,eff,raw,wr,lift,co,px]=t.split(":"); const [a,b]=pair.split("+").map(x=>findChamp(x)); if(!a||!b) return;
   const k=[a+"|"+rr[0],b+"|"+rr[1]].sort().join("+"); PRO_DUOS[k]={a,b,ra:rr[0],rb:rr[1],n:+eff,w:+eff*(+wr)/100,raw:+raw,lift:+lift,co:+co,px:+px}; });
 // Duo pro avéré : assez de games récentes, jamais perdant ensemble, et soit choisi exprès ensemble (co-occurrence ≥ 2 et souvent pické dans la même rotation), soit nettement gagnant ensemble
-function proDuoOK(pd){ return !!pd&&pd.n>=20&&pd.lift>=-0.5&&((pd.co>=2&&pd.px>=0.4)||(pd.lift>=4&&pd.n>=35)); }
+// Duo nommé : choisi exprès ensemble (co-occurrence ≥ 2, même rotation ≥ 40 %), même s'il performe mal ; ou duo nettement gagnant (+4 pts sur ≥ 35 games)
+const proDuoNamed=pd=>!!pd&&pd.n>=20&&pd.co>=2&&pd.px>=0.4;
+function proDuoOK(pd){ return proDuoNamed(pd)||(!!pd&&pd.n>=35&&pd.lift>=4); }
+// Bonus/malus d'un duo pro selon sa performance ensemble (gain vs attendu, en pts)
+function duoAdj(pd){ if(!pd) return 3; return pd.lift>=0?Math.min(3,1+0.5*pd.lift):Math.max(-2.5,0.6*pd.lift); }
 function proDuoInfo(a,ra,b,rb){ if(ra&&rb){ return PRO_DUOS[[a+"|"+ra,b+"|"+rb].sort().join("+")]||null; }
   for(const k in PRO_DUOS){ const d=PRO_DUOS[k]; if((d.a===a&&d.b===b)||(d.a===b&&d.b===a)) return d; } return null; }
 // Icônes : index dans la planche (ordre des ids Data Dragon)
@@ -155,7 +159,7 @@ function synergy(cfg,c,role,allies){
   allies.forEach(a=>{ const x=synVal(cfg,c,role,a.name,a.role);
     const d=provenDuo(cfg,c,role,a.name,a.role);
     const w=((role==="A"&&a.role==="S")||(role==="S"&&a.role==="A")||(role==="J"&&a.role==="S")||(role==="S"&&a.role==="J"))?1.5:1;
-    if(d){ s+=(d==="pro"?4:3)*w; duos.push(a.name+" ("+d+")"); }
+    if(d){ const pd=d==="pro"?proDuoInfo(c,role,a.name,a.role):null, adj=d==="pro"?duoAdj(pd):3; s+=adj*w; duos.push(a.name+" ("+d+(pd&&pd.lift<=-1?`, perd ${pd.lift} pts ensemble`:"")+")"); }
     if(!x) return;
     s+=x.v*w; if(Math.abs(x.v)>=1) (x.v>0?why:bad).push(a.name+" "+(x.v>0?"+":"")+x.v+"%"); });
   return {v:clamp01(0.5+s/10), why, bad, duos};
@@ -383,8 +387,9 @@ function teamDuo(a,b){ return (STATS[a]&&STATS[a].g>=3)&&(STATS[b]&&STATS[b].g>=
 function provenDuo(cfg,a,ra,b,rb){
   const k=[a,b].sort().join("+");
   // Un duo, c'est une vraie complémentarité : jamais avec une anti-synergie mesurée, et jouer souvent ensemble en pro ne suffit pas
+  const pd=proDuoInfo(a,ra,b,rb); if(proDuoNamed(pd)) return "pro"; // duo nommé : l'étiquette reste, le score suit sa performance
   const q=synVal(cfg,a,ra,b,rb); if(q&&q.v<0.5) return null;
-  const pd=proDuoInfo(a,ra,b,rb); if(proDuoOK(pd)) return "pro";
+  if(proDuoOK(pd)) return "pro";
   // solo Q : seulement si le duo gagne nettement plus ensemble (≥ +2,5 % de WR) sur un gros volume
   if((ra==="A"&&rb==="S")||(ra==="S"&&rb==="A")){ const ad=ra==="A"?a:b, su=ra==="A"?b:a;
     const x=BOT_SYN.find(z=>z[0]===ad&&z[1]===su); if(x&&x[3]>=450&&x[2]>=2.5) return "solo Q"; }
@@ -489,7 +494,7 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
       let edge=null;
       if(x==="A"&&y==="S"&&(tA||tS)){ edge=botEdge(cfg,a.name,b.name,tA,tS); }
       const pd=proDuoInfo(a.name,x,b.name,y), pw=pd?pd.w/pd.n:0.5;
-      const sc=Math.round((a.score+b.score)/2+(p?Math.max(0,p.v):0)+(team?5:0)+ans*4+(edge?edge.v*1.5:0)+(pd?Math.min(5,Math.log2(pd.n))+Math.max(-5,Math.min(5,(pw-0.5)*20)):0));
+      const sc=Math.round((a.score+b.score)/2+(p?Math.max(0,p.v):0)+(team?5:0)+ans*4+(edge?edge.v*1.5:0)+(pd?2*duoAdj(pd):0));
       out.push({a,b,score:sc,syn:p?p.v:null,roles:[x,y],team,answer:ans>0,edge,pro:pd?{n:pd.raw||pd.n,wr:Math.round(pw*100)}:null}); })); });
   out.sort((p,q)=>q.score-p.score);
   const used={}, res=[]; // variété : un champion apparaît au plus 2 fois
@@ -504,8 +509,8 @@ function pickIdeas(cfg,series,draft,lineup,n=6){
   const roles=Object.keys(r), out=[];
   roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,5).forEach(a=>r[y].list.slice(0,5).forEach(b=>{ if(a.name===b.name) return;
     const q=synVal(cfg,a.name,x,b.name,y), pd=provenDuo(cfg,a.name,x,b.name,y)?proDuoInfo(a.name,x,b.name,y):null, team=teamDuo(a.name,b.name);
-    const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
-    const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.raw} games ensemble en pro (${Math.round(pd.w/pd.n*100)} %)`); if(team) why.push("déjà joués en équipe");
+    const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?duoAdj(pd):0)+(team?3:0);
+    const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`duo pro, ${pd.raw} games ensemble (${pd.lift>=0?"+":""}${pd.lift} pts vs attendu)`); if(team) why.push("déjà joués en équipe");
     out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));
   const used={}, res=[]; out.sort((p,q)=>q.score-p.score);
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
