@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.7
+- « Fin de série » envoie aussi la série au script du PC, qui l'ajoute avec les stats du client à team.json sur GitHub : toute l'équipe la voit sans passer par Claude (clé GitHub à poser une fois dans Documents\BBJ\github-token.txt).
+
 ## v12.6
 - Fin de draft : boutons « Partie suivante » et « Fin de série ».
 - « Fin de série » archive la série et lance le script du PC (lien bbj-export://, à installer une fois) : il exporte les parties du client LoL et renvoie leurs stats à l'outil, qui les range dans la série (résultats compris).

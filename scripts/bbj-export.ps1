@@ -66,7 +66,39 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
     $res += [ordered]@{ gameId = $id; at = $d.gameCreation; min = [math]::Round($d.gameDuration / 60); win = $win; us = $side[$ourTeam]; them = $side[$them]; objUs = $obj[$ourTeam]; objThem = $obj[$them] }
     Write-Host ("Partie {0} : {1} min, {2}" -f $id, [math]::Round($d.gameDuration / 60), $(if ($win) {'victoire'} else {'defaite'}))
   }
-  # 3) Envoi a l'outil (les stats voyagent dans le lien, rien ne quitte ton PC ailleurs)
+  # 3) Publication sur GitHub (toute l'equipe la recoit) : la serie envoyee par l'outil + les stats, ajoutee a team.json
+  $pub = "non publiee (pas de cle GitHub)"
+  $tokFile = Join-Path $dir 'github-token.txt'
+  if ($Lien -match '[?&]s=([\w-]+)' -and (Test-Path $tokFile)) {
+    $b = $Matches[1].Replace('-','+').Replace('_','/'); while ($b.Length % 4) { $b += '=' }
+    $serie = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b)) | ConvertFrom-Json
+    $gs = @($serie.games)
+    for ($i = 0; $i -lt $gs.Count; $i++) {
+      $x = $res[$res.Count - $gs.Count + $i]; if (-not $x) { continue }
+      $st = [ordered]@{ gameId = $x.gameId; min = $x.min; us = $x.us; them = $x.them; objUs = $x.objUs; objThem = $x.objThem }
+      $gs[$i] | Add-Member -NotePropertyName stats -NotePropertyValue $st -Force
+      if (-not $gs[$i].result) { $gs[$i] | Add-Member -NotePropertyName result -NotePropertyValue $(if ($x.win) {'W'} else {'L'}) -Force }
+    }
+    $serieJson = $serie | ConvertTo-Json -Depth 30 -Compress
+    $tok = (Get-Content $tokFile -Raw).Trim()
+    $api = 'https://api.github.com/repos/Bastien-cpo/bbj-outil-draft/contents/team.json'
+    $h = @{ Authorization = "Bearer $tok"; 'User-Agent' = 'bbj-export'; Accept = 'application/vnd.github+json' }
+    $cur = Invoke-RestMethod -Uri $api -Headers $h
+    $txt = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($cur.content -replace '\s','')))
+    if ($serie.id -and $txt.Contains('"id":' + $serie.id + ',')) { $pub = "deja publiee" } else {
+      $mark = '"history":{"series":['
+      $k = $txt.IndexOf($mark); if ($k -lt 0) { throw "team.json : format inattendu, serie non publiee." }
+      $k += $mark.Length; $sep = $(if ($txt.Substring($k, 1) -eq ']') { '' } else { ',' })
+      $txt = $txt.Substring(0, $k) + $serieJson + $sep + $txt.Substring($k)
+      $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+      $txt = [regex]::Replace($txt, '^\{"at":\d+', '{"at":' + $now)
+      $body = @{ message = "Historique : serie vs $($serie.opponent) du $($serie.date) (stats du client)"; content = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($txt)); sha = $cur.sha } | ConvertTo-Json
+      Invoke-RestMethod -Method Put -Uri $api -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($body)) -ContentType 'application/json; charset=utf-8' | Out-Null
+      $pub = "publiee sur GitHub (visible par l'equipe d'ici 1 a 2 minutes)"
+    }
+  }
+  Write-Host "Serie $pub"
+  # 4) Envoi a l'outil de ce navigateur
   $json = ([ordered]@{ v = 1; games = $res }) | ConvertTo-Json -Depth 10 -Compress
   $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json)).TrimEnd('=').Replace('+','-').Replace('/','_')
   Start-Process ("https://bastien-cpo.github.io/bbj-outil-draft/#import=" + $b64)

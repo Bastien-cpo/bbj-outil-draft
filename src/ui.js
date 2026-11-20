@@ -507,9 +507,12 @@ document.addEventListener("click",e=>{
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
   else if(act==="endseries"){ const n=live.series.games.length+(live.draft.actions.every(Boolean)?1:0); archiveSeries(true);
-    if(history.series[0]) history.series[0].pendingExport={n, at:Date.now()};
+    const S0=history.series[0]; if(S0){ S0.id=S0.id||Date.now(); S0.pendingExport={n, at:Date.now()}; }
+    // La série voyage avec le lien : le script du PC l'ajoute (avec les stats) à team.json sur GitHub pour toute l'équipe
+    let sp=""; try{ const c=JSON.parse(JSON.stringify(S0||{})); delete c.pendingExport; if(c.scouting) c.scouting={link:c.scouting.link||""};
+      sp="&s="+btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(c)))).replace(/=+$/,"").replace(/\+/g,"-").replace(/\//g,"_"); }catch(e){}
     ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); persist("history");
-    const a=document.createElement("a"); a.href="bbj-export://run?n="+n; document.body.appendChild(a); a.click(); a.remove();
+    const a=document.createElement("a"); a.href="bbj-export://run?n="+n+sp; document.body.appendChild(a); a.click(); a.remove();
     flash("Série archivée · export des "+n+" games lancé sur ton PC"); ui.tab="hist"; render(); }
   else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
   else if(act==="clearprep"){ clearPrep(); flash("Préparation remise à zéro"); render(); }
