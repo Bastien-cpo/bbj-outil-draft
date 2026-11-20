@@ -4,9 +4,12 @@ param([string]$Lien = "")
 $ErrorActionPreference = 'Stop'
 $dir = $PSScriptRoot; $out = Join-Path $dir 'parties'; $log = Join-Path $dir 'log.txt'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
-Start-Transcript -Path $log -Force | Out-Null
+Set-Content -Path $log -Value ("=== Fin de serie " + (Get-Date).ToString('s') + " ===") -Encoding UTF8
+function Log($m) { Add-Content -Path $log -Value ((Get-Date).ToString('HH:mm:ss') + '  ' + $m) -Encoding UTF8; Write-Host $m }
 try {
+  Log "Recherche du client LoL..."
   $n = 3; if ($Lien -match '[?&]n=(\d+)') { $n = [int]$Matches[1] }
+  $heures = 10; if ($Lien -match '[?&]h=(\d+)') { $heures = [int]$Matches[1] }
   # 1) Connexion au client (ligne de commande du client, sinon lockfile)
   $port = $null; $token = $null
   $proc = Get-CimInstance Win32_Process -Filter "Name='LeagueClientUx.exe'" -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -16,6 +19,7 @@ try {
   }
   if (-not $port) { foreach ($lf in @('C:\Riot Games\League of Legends\lockfile','D:\Riot Games\League of Legends\lockfile')) { if (Test-Path $lf) { $p = (Get-Content $lf -Raw).Split(':'); $port = $p[2]; $token = $p[3]; break } } }
   if (-not $port) { throw "Client League of Legends introuvable : ouvre le client, puis reclique 'Fin de serie'." }
+  Log "Client LoL trouve (port $port)"
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   if ($PSVersionTable.PSVersion.Major -lt 6 -and -not ('BBJTrust' -as [type])) {
     Add-Type @"
@@ -28,12 +32,13 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
   function Get-Lcu($path) { $q = @{ Uri = "https://127.0.0.1:$port$path"; Headers = @{ Authorization = "Basic $auth" } }; if ($PSVersionTable.PSVersion.Major -ge 6) { $q.SkipCertificateCheck = $true }; Invoke-RestMethod @q }
 
   # 2) Nos parties personnalisees des 10 dernieres heures
-  $me = Get-Lcu "/lol-summoner/v1/current-summoner"
+  $me = Get-Lcu "/lol-summoner/v1/current-summoner"; Log "Connecte au client : $($me.gameName)"
   $hist = Get-Lcu "/lol-match-history/v1/products/lol/current-summoner/matches?begIndex=0&endIndex=30"
-  $since = [DateTimeOffset]::UtcNow.AddHours(-10).ToUnixTimeMilliseconds()
+  $since = [DateTimeOffset]::UtcNow.AddHours(-$heures).ToUnixTimeMilliseconds()
   $games = @($hist.games.games) | Where-Object { ($_.gameType -eq 'CUSTOM_GAME' -or $_.queueId -eq 0) -and $_.gameCreation -ge $since } | Sort-Object gameCreation
   $games = @($games | Select-Object -Last $n)
-  if (-not $games.Count) { throw "Aucune partie personnalisee depuis 10 h dans l'historique du client." }
+  Log "$($games.Count) partie(s) personnalisee(s) retenue(s) sur $heures h"
+  if (-not $games.Count) { throw "Aucune partie personnalisee depuis $heures h dans l'historique du client." }
 
   $ordre = @('T','J','M','A','S')
   $res = @()
@@ -64,7 +69,7 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
     foreach ($tm in $d.teams) { $obj[[int]$tm.teamId] = [ordered]@{ towers = $tm.towerKills; drakes = $tm.dragonKills; barons = $tm.baronKills; herald = $tm.riftHeraldKills; grubs = $(if ($tm.hordeKills) { $tm.hordeKills } else { 0 }) }; if ([int]$tm.teamId -eq $ourTeam) { $win = ($tm.win -eq 'Win') } }
     $them = 300 - $ourTeam
     $res += [ordered]@{ gameId = $id; at = $d.gameCreation; min = [math]::Round($d.gameDuration / 60); win = $win; us = $side[$ourTeam]; them = $side[$them]; objUs = $obj[$ourTeam]; objThem = $obj[$them] }
-    Write-Host ("Partie {0} : {1} min, {2}" -f $id, [math]::Round($d.gameDuration / 60), $(if ($win) {'victoire'} else {'defaite'}))
+    Log ("Partie {0} : {1} min, {2}" -f $id, [math]::Round($d.gameDuration / 60), $(if ($win) {'victoire'} else {'defaite'}))
   }
   # 3) Publication sur GitHub (toute l'equipe la recoit) : la serie envoyee par l'outil + les stats, ajoutee a team.json
   $pub = "non publiee (pas de cle GitHub)"
@@ -83,6 +88,7 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
     $tok = (Get-Content $tokFile -Raw).Trim()
     $api = 'https://api.github.com/repos/Bastien-cpo/bbj-outil-draft/contents/team.json'
     $h = @{ Authorization = "Bearer $tok"; 'User-Agent' = 'bbj-export'; Accept = 'application/vnd.github+json' }
+    Log "Publication GitHub..."
     $cur = Invoke-RestMethod -Uri $api -Headers $h
     $txt = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($cur.content -replace '\s','')))
     if ($serie.id -and $txt.Contains('"id":' + $serie.id + ',')) { $pub = "deja publiee" } else {
@@ -97,13 +103,13 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
       $pub = "publiee sur GitHub (visible par l'equipe d'ici 1 a 2 minutes)"
     }
   }
-  Write-Host "Serie $pub"
+  Log "Serie $pub"
   # 4) Envoi a l'outil de ce navigateur
   $json = ([ordered]@{ v = 1; games = $res }) | ConvertTo-Json -Depth 10 -Compress
   $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json)).TrimEnd('=').Replace('+','-').Replace('/','_')
   Start-Process ("https://bastien-cpo.github.io/bbj-outil-draft/#import=" + $b64)
-  Write-Host "Stats envoyees a l'outil." -ForegroundColor Green
+  Log "Stats envoyees a l'outil dans le navigateur. Termine."
 } catch {
-  Write-Host $_ -ForegroundColor Red
+  Log ("ERREUR : " + $_ + "  (ligne " + $_.InvocationInfo.ScriptLineNumber + ")")
   Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show("$_", "BBJ - Fin de serie") | Out-Null
-} finally { Stop-Transcript | Out-Null }
+}
