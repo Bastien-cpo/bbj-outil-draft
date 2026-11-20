@@ -267,10 +267,11 @@ function boardCol(team,d,ro){
   if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
   let ii=0;
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
+    if(ideas&&ideas.kind==="R"&&ii===1&&!a&&!p){ ii++; return ""; } // rouge : la case R2 est fusionnée avec R1
     if(!a&&!p&&ideas&&ideas.list.length&&ii<1){ ii++;
-      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
+      return `<div class="pk empty pred ideas${ideas.kind==="R"?" tall":""}"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
         ?ideas.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
-        :ideas.list.map(c=>`<span class="pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+        :ideas.list.map(c=>`<span class="pair v" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;

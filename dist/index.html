@@ -232,10 +232,11 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .wbar.rev{transform:scaleX(-1)}.wbar.rev b{transform:scaleX(-1)}
 .rrow.ideas{opacity:.92}.idea{display:flex;flex-direction:column;align-items:center;width:58px;position:relative;font-size:10px;cursor:help}.idea em{position:absolute;top:-2px;right:4px;font-style:normal;font-weight:700;font-size:11px;color:var(--gold)}.idea b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}.idea.duo{flex-direction:row;width:auto;gap:2px;padding-right:18px}.idea.duo em{right:0;top:0}
 .pk.ideas .prc{position:relative}.pk.ideas .prc em{position:absolute;top:-4px;right:-4px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas{overflow:hidden}.pk.ideas .prb{flex-wrap:nowrap;width:100%;position:relative;padding-top:4px;gap:4px}.pk.ideas .pair{position:relative;display:inline-flex;align-items:center;gap:0;padding:2px 11px 2px 2px;border-radius:16px;background:#1a2130;border:1px solid #2c3647;flex:none}.pk.ideas .pair .av+.av{margin-left:-6px}.pk.ideas .pair em{position:absolute;top:-5px;right:-3px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas .prc{flex:none}
+.pk.ideas.tall{flex:2 1 0;min-height:130px}.pk.ideas .pair.v{flex-direction:column;padding:3px 2px 3px;border-radius:14px}.pk.ideas .pair.v .av+.av{margin-left:0;margin-top:-4px}.pk.ideas .pair.v em{position:static;margin-top:2px;background:none;padding:0}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.7 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.8 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1572,10 +1573,11 @@ function boardCol(team,d,ro){
   if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
   let ii=0;
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
+    if(ideas&&ideas.kind==="R"&&ii===1&&!a&&!p){ ii++; return ""; } // rouge : la case R2 est fusionnée avec R1
     if(!a&&!p&&ideas&&ideas.list.length&&ii<1){ ii++;
-      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
+      return `<div class="pk empty pred ideas${ideas.kind==="R"?" tall":""}"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
         ?ideas.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
-        :ideas.list.map(c=>`<span class="pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+        :ideas.list.map(c=>`<span class="pair v" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;

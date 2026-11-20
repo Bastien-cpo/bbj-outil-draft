@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.8
+- Côté rouge : les cases R1 et R2 fusionnent pendant les bans 1 ; paires verticales (un champion au-dessus de l'autre), au moins 5 affichées.
+
 ## v11.7
 - Idées de picks sur une seule ligne, dans l'ordre strict du score (plus de limite de 2 par rôle).
 - Côté rouge : paires R1-R2 en bulles partagées (deux champions + score commun), autant que la largeur le permet.
