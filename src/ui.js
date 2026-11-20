@@ -150,11 +150,19 @@ function archiveSeries(keepPrep){
 }
 // Série terminée : la préparation de l'adversaire (op.gg, bans) est vidée, on garde notre nom et notre line-up
 function clearPrep(){ prep.opponent=""; prep.link=""; prep.ids=[]; prep.players=[]; prep.request=null; prep.updatedAt=""; persist("prep"); }
+// Stats de la game importées du client LoL (script d'export) : par rôle, nous contre eux
+function statsHtml(st){ if(!st||!st.us) return "";
+  const k=x=>`${x.k}/${x.d}/${x.a}`, g=x=>(x.gold/1000).toFixed(1)+"k", O=o=>`${o.towers} tours · ${o.drakes} drakes · ${o.barons} barons · ${o.herald} héraut · ${o.grubs} larves`;
+  const tot=(t,f)=>ROLES.reduce((a,r)=>a+(t[r]?t[r][f]:0),0);
+  return `<div class="gstats"><h4>Stats de la game · ${st.min} min</h4><table><tr><th></th><th>Nous</th><th>Or</th><th>CS</th><th>Dégâts</th><th>Vision</th><th></th><th>Eux</th><th>Or</th><th>CS</th></tr>
+   ${ROLES.map(r=>{ const u=st.us[r], t=st.them[r]; if(!u||!t) return ""; const dg=u.gold-t.gold; return `<tr><td>${ROLE_NAMES[r]}</td><td>${k(u)}</td><td class="${dg>=1000?"w":dg<=-1000?"l":""}">${g(u)}</td><td>${u.cs}</td><td>${(u.dmg/1000).toFixed(1)}k</td><td>${u.vis}</td><td></td><td>${k(t)}</td><td>${g(t)}</td><td>${t.cs}</td></tr>`; }).join("")}
+   <tr class="tot"><td>Total</td><td>${tot(st.us,"k")} kills</td><td>${(tot(st.us,"gold")/1000).toFixed(1)}k</td><td colspan="4"></td><td>${tot(st.them,"k")} kills</td><td>${(tot(st.them,"gold")/1000).toFixed(1)}k</td><td></td></tr></table>
+   <p class="muted">Nous : ${O(st.objUs)}<br>Eux : ${O(st.objThem)}</p></div>`; }
 function viewHistory(){
   const S=history.series||[];
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
     return `<div class="dtop"><button class="btn sm" data-act="hclose">← Historique</button><b>${esc(s.date)} · ${esc(s.type||"Scrim")} vs ${esc(s.opponent)} · Game ${ui.hist.g+1} ${g.result==="W"?"(victoire)":g.result==="L"?"(défaite)":""}</b></div>
-      <section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}</div>${boardCol("R",g,true)}</section>`; }
+      ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
   if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée. « Nouvelle série » archive la série en cours ici.</p></section>`;
   return S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
     <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
@@ -165,7 +173,7 @@ function viewHistory(){
 
 // ---------- Draft ----------
 function targetIndex(){ return ui.edit!=null? ui.edit : curStep(); }
-const ourName=()=>prep.team||"BBJ", theirName=()=>prep.opponent||"Adversaire";
+const ourName=()=>prep.team||"BBJ", theirName=()=>(ui.histOpp!=null?ui.histOpp:prep.opponent)||"Adversaire";
 // côté de BBJ : choisi d'un clic au début de chaque game, sauf si Drafter affiche BBJ / Blocked by Jungle
 const curGameNo=()=>live.series.games.length+1;
 const sideOk=()=>live.sideHow==="nom"||live.sideManual===curGameNo();
@@ -231,7 +239,7 @@ function grid(){
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
       return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★</i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
-      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()>0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
+      ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()!==0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
 }
 function tipHtml(x){
@@ -491,7 +499,7 @@ document.addEventListener("click",e=>{
   else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; if(live.draft.manual) delete live.draft.manual[ui.edit]; ui.edit=null; ui.pending=null; persist("live"); render(); }
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
-  else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
+  else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0){ live.draft.actions[i]=null; if(live.draft.manual) delete live.draft.manual[i]; } ui.pending=null; persist("live"); render(); }
   else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; if(!a.flex) delete a.fx; persist("live"); render(); }
   else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
