@@ -983,7 +983,7 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
       const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
       const s=0.6*poolV+0.4*reason+0.45*it.v;
       // Très dangereux pour notre compo : gros counter de notre lane, ou mécanique qui nous punit fort
-      const danger=(cw!=null&&cw>=54)||td.v>=0.6||(syn>=4&&ctxv>=0.55);
+      const danger=(cw!=null&&cw>=54)||td.v>=0.4;
       return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v, danger};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
