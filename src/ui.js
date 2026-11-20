@@ -272,6 +272,8 @@ function boardCol(team,d,ro){
       return `<div class="pk empty pred ideas${ideas.kind==="R"?" tall":""}"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
         ?ideas.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
         :ideas.list.map(c=>`<span class="pair v" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+    // un champion présélectionné (pas encore confirmé) occupe la case : il « consomme » la ligne de son rôle pour ne pas décaler les suivantes
+    if(!a&&p&&pools&&pools.length>pi){ const rs=CHAMPS[p]?CHAMPS[p].roles:[]; let j=pools.findIndex((q,k)=>k>=pi&&rs[0]===q.role); if(j<0) j=pools.findIndex((q,k)=>k>=pi&&rs.includes(q.role)); if(j<0) j=pi; pools.splice(pi,0,pools.splice(j,1)[0]); pi++; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;

@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.9
+- Correctif : un champion présélectionné pour l'adversaire ne décale plus les prédictions des cases suivantes (plus de rôle en double).
+
 ## v11.8
 - Côté rouge : les cases R1 et R2 fusionnent pendant les bans 1 ; paires verticales (un champion au-dessus de l'autre), au moins 5 affichées.
 
