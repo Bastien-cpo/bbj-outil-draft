@@ -238,7 +238,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.4 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.5 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1400,6 +1400,8 @@ function applyDrafter(st){
   const room=((st.url||"").match(/draft\/([^?#/]+)/)||[])[1]||null;
   if(room&&live.drafterRoom&&room!==live.drafterRoom){ archiveSeries(true); live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; }
   if(room) live.drafterRoom=room;
+  // Deux fenêtres Drafter ouvertes (ancienne game + nouvelle) : on ne revient jamais à une game précédente de la même room
+  if(st.game&&live.drafterGame&&st.game<live.drafterGame&&room===live.drafterRoom) return;
   // Room vide alors que l'outil a une draft : on attend ~2 s (page Drafter en chargement) puis Drafter fait foi
   if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)){ ui.emptyScans=(ui.emptyScans||0)+1; if(ui.emptyScans<4) return; }
   if(!empty) ui.emptyScans=0;

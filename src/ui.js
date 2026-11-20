@@ -79,6 +79,8 @@ function applyDrafter(st){
   const room=((st.url||"").match(/draft\/([^?#/]+)/)||[])[1]||null;
   if(room&&live.drafterRoom&&room!==live.drafterRoom){ archiveSeries(true); live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; }
   if(room) live.drafterRoom=room;
+  // Deux fenêtres Drafter ouvertes (ancienne game + nouvelle) : on ne revient jamais à une game précédente de la même room
+  if(st.game&&live.drafterGame&&st.game<live.drafterGame&&room===live.drafterRoom) return;
   // Room vide alors que l'outil a une draft : on attend ~2 s (page Drafter en chargement) puis Drafter fait foi
   if(empty&&(!live.drafterGame||st.game===live.drafterGame)&&live.draft.actions.some(Boolean)){ ui.emptyScans=(ui.emptyScans||0)+1; if(ui.emptyScans<4) return; }
   if(!empty) ui.emptyScans=0;
