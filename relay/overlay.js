@@ -25,6 +25,17 @@ function scan(){
   return {v:3, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
     bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick"), bpr:lanes("blue"), rpr:lanes("red")};
 }
+// Game suivante : Drafter l'ouvre dans une nouvelle fenêtre (lien « Partie N », target=_blank). On ouvre nous-mêmes cette fenêtre
+// (même site) pour y réinjecter le relais et lui passer la fenêtre de l'outil : la synchro continue sans recliquer le favori.
+const SRC=URL_OUTIL+"relay/overlay.js"; R.adopt=adopt;
+function adopt(w){ if(!w) return; let n=0; const t=setInterval(()=>{ n++; if(n>240||w.closed){ clearInterval(t); return; }
+  try{ if(w.location.host!=="drafter.lol"||!/\/draft\//.test(w.location.pathname)||w.document.readyState==="loading"||!w.document.body) return;
+    if(w.__bbjRelay2){ clearInterval(t); return; } w.__bbjW=R.win||window.__bbjW; const sc=w.document.createElement("script"); sc.src=SRC+"?"+Date.now(); w.document.body.appendChild(sc); clearInterval(t); }catch(e){} },500); }
+if(!window.__bbjOpenWrapped){ window.__bbjOpenWrapped=true; const _open=window.open.bind(window);
+  window.open=function(u,...rest){ const w=_open(u,...rest); try{ if(w&&w!==R.win&&String(u||"").indexOf("bbj-outil")<0) adopt(w); }catch(e){} return w; };
+  document.addEventListener("click",e=>{ const a=e.target&&e.target.closest&&e.target.closest("a[href]"); if(!a) return;
+    let url; try{ url=new URL(a.href,location.href); }catch(_){ return; } if(url.host!=="drafter.lol"||!/^\/draft\//.test(url.pathname)) return;
+    if(a.target==="_blank"||e.ctrlKey||e.metaKey||e.button===1){ e.preventDefault(); e.stopPropagation(); adopt(_open(url.href,"_blank")); } },true); }
 setInterval(()=>{ const ok=R.win&&!R.win.closed; bd.textContent=ok?"● BBJ synchro":"○ BBJ fenêtre fermée (clique)"; bd.style.color=ok?"#8fe08f":"#e0b05a";
   if(!ok) return; let st; try{ st=scan(); }catch(e){ return; } try{ R.win.postMessage({type:"bbj-drafter",state:st},"*"); }catch(e){} },500);
 })();
