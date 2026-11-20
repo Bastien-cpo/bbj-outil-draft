@@ -379,7 +379,9 @@ function isProDuo(a,b){ return (PRO[a]?PRO[a].p:0)>=PRO_DUO_MIN&&(PRO[b]?PRO[b].
 function teamDuo(a,b){ return (STATS[a]&&STATS[a].g>=3)&&(STATS[b]&&STATS[b].g>=3); }
 function provenDuo(cfg,a,ra,b,rb){
   const k=[a,b].sort().join("+");
-  const pd=proDuoInfo(a,ra,b,rb); if(pd&&pd.n>=8) return "pro"; // au moins 8 games ensemble en pro (Worlds + été 2026)
+  // Un duo, c'est une vraie complémentarité : jamais avec une anti-synergie mesurée, et jouer souvent ensemble en pro ne suffit pas
+  const q=synVal(cfg,a,ra,b,rb); if(q&&q.v<0.5) return null;
+  const pd=proDuoInfo(a,ra,b,rb); if(pd&&pd.n>=8&&((q&&q.v>=1)||(pd.n>=12&&pd.w/pd.n>=0.55))) return "pro"; // ensemble en pro ET (synergie mesurée ou gagnant ensemble)
   // solo Q : seulement si le duo gagne nettement plus ensemble (≥ +2,5 % de WR) sur un gros volume
   if((ra==="A"&&rb==="S")||(ra==="S"&&rb==="A")){ const ad=ra==="A"?a:b, su=ra==="A"?b:a;
     const x=BOT_SYN.find(z=>z[0]===ad&&z[1]===su); if(x&&x[3]>=450&&x[2]>=2.5) return "solo Q"; }
@@ -464,7 +466,9 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
         if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
       const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
       const s=0.6*poolV+0.4*reason+0.45*it.v;
-      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v};
+      // Très dangereux pour notre compo : gros counter de notre lane, ou mécanique qui nous punit fort
+      const danger=(cw!=null&&cw>=54)||td.v>=0.6||(syn>=4&&ctxv>=0.55);
+      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v, danger};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
   });
@@ -496,7 +500,7 @@ function pickIdeas(cfg,series,draft,lineup,n=6){
   if(draft.side!=="R"){ const seen={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>!seen[x.name]&&(seen[x.name]=1)).slice(0,n)}; } // ordre strict du score
   const roles=Object.keys(r), out=[];
   roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,5).forEach(a=>r[y].list.slice(0,5).forEach(b=>{ if(a.name===b.name) return;
-    const q=synVal(cfg,a.name,x,b.name,y), pd=proDuoInfo(a.name,x,b.name,y), team=teamDuo(a.name,b.name);
+    const q=synVal(cfg,a.name,x,b.name,y), pd=provenDuo(cfg,a.name,x,b.name,y)?proDuoInfo(a.name,x,b.name,y):null, team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.n} games ensemble en pro`); if(team) why.push("déjà joués en équipe");
     out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));

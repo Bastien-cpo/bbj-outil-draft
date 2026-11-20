@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.0
+- Duos : jamais avec une anti-synergie mesurée ; jouer souvent ensemble en pro ne suffit plus (il faut une synergie mesurée ou un bon winrate ensemble). Fini Lulu + Lee Sin, Olaf + Lee Sin, Lulu + Ahri.
+- Alerte « support exposé » retirée (affichage épuré).
+- Picks adverses prédits : cercle rouge autour de ceux qui sont très dangereux pour notre compo (gros counter de notre lane, grappin/anti-dash qui nous punit, forte synergie avec leurs picks).
+
 ## v11.9
 - Correctif : un champion présélectionné pour l'adversaire ne décale plus les prédictions des cases suivantes (plus de rôle en double).
 

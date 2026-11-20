@@ -190,8 +190,6 @@ function viewCenter(){
   const who=editing?"CORRECTION":(ours?ourName():theirName());
   let h=`<div class="turn ${s}${ours?" ours":""}${editing?" edit":""}"><span class="tw">${esc(who)}</span><span class="ta">${editing?(t==="ban"?"ban":"pick"):(t==="ban"?"BAN":"PICK")}</span></div>`+locked;
 
-  if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
-    if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -261,7 +259,7 @@ function boardCol(team,d,ro){
   const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
-  if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
+  if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why,danger:c.danger}))})):null; }catch(e){ pools=null; } }
   // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
   let ideas=null; const pk0=d.actions.findIndex(a=>!a);
   if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
@@ -275,7 +273,7 @@ function boardCol(team,d,ro){
     // un champion présélectionné (pas encore confirmé) occupe la case : il « consomme » la ligne de son rôle pour ne pas décaler les suivantes
     if(!a&&p&&pools&&pools.length>pi){ const rs=CHAMPS[p]?CHAMPS[p].roles:[]; let j=pools.findIndex((q,k)=>k>=pi&&rs[0]===q.role); if(j<0) j=pools.findIndex((q,k)=>k>=pi&&rs.includes(q.role)); if(j<0) j=pi; pools.splice(pi,0,pools.splice(j,1)[0]); pi++; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
-      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
+      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc${c.danger?" dgr":""}" title="${esc((c.danger?"⚠ Très dangereux pour votre compo · ":"")+c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;

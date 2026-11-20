@@ -233,10 +233,11 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .rrow.ideas{opacity:.92}.idea{display:flex;flex-direction:column;align-items:center;width:58px;position:relative;font-size:10px;cursor:help}.idea em{position:absolute;top:-2px;right:4px;font-style:normal;font-weight:700;font-size:11px;color:var(--gold)}.idea b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}.idea.duo{flex-direction:row;width:auto;gap:2px;padding-right:18px}.idea.duo em{right:0;top:0}
 .pk.ideas .prc{position:relative}.pk.ideas .prc em{position:absolute;top:-4px;right:-4px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas{overflow:hidden}.pk.ideas .prb{flex-wrap:nowrap;width:100%;position:relative;padding-top:4px;gap:4px}.pk.ideas .pair{position:relative;display:inline-flex;align-items:center;gap:0;padding:2px 11px 2px 2px;border-radius:16px;background:#1a2130;border:1px solid #2c3647;flex:none}.pk.ideas .pair .av+.av{margin-left:-6px}.pk.ideas .pair em{position:absolute;top:-5px;right:-3px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas .prc{flex:none}
 .pk.ideas.tall{flex:2 1 0;min-height:130px}.pk.ideas .pair.v{flex-direction:column;padding:3px 2px 3px;border-radius:14px}.pk.ideas .pair.v .av+.av{margin-left:0;margin-top:-4px}.pk.ideas .pair.v em{position:static;margin-top:2px;background:none;padding:0}
+.prc.dgr .av{box-shadow:0 0 0 2px #e0453c,0 0 8px rgba(224,69,60,.7);opacity:1}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.9 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.0 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -894,7 +895,9 @@ function isProDuo(a,b){ return (PRO[a]?PRO[a].p:0)>=PRO_DUO_MIN&&(PRO[b]?PRO[b].
 function teamDuo(a,b){ return (STATS[a]&&STATS[a].g>=3)&&(STATS[b]&&STATS[b].g>=3); }
 function provenDuo(cfg,a,ra,b,rb){
   const k=[a,b].sort().join("+");
-  const pd=proDuoInfo(a,ra,b,rb); if(pd&&pd.n>=8) return "pro"; // au moins 8 games ensemble en pro (Worlds + été 2026)
+  // Un duo, c'est une vraie complémentarité : jamais avec une anti-synergie mesurée, et jouer souvent ensemble en pro ne suffit pas
+  const q=synVal(cfg,a,ra,b,rb); if(q&&q.v<0.5) return null;
+  const pd=proDuoInfo(a,ra,b,rb); if(pd&&pd.n>=8&&((q&&q.v>=1)||(pd.n>=12&&pd.w/pd.n>=0.55))) return "pro"; // ensemble en pro ET (synergie mesurée ou gagnant ensemble)
   // solo Q : seulement si le duo gagne nettement plus ensemble (≥ +2,5 % de WR) sur un gros volume
   if((ra==="A"&&rb==="S")||(ra==="S"&&rb==="A")){ const ad=ra==="A"?a:b, su=ra==="A"?b:a;
     const x=BOT_SYN.find(z=>z[0]===ad&&z[1]===su); if(x&&x[3]>=450&&x[2]>=2.5) return "solo Q"; }
@@ -979,7 +982,9 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
         if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
       const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
       const s=0.6*poolV+0.4*reason+0.45*it.v;
-      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v};
+      // Très dangereux pour notre compo : gros counter de notre lane, ou mécanique qui nous punit fort
+      const danger=(cw!=null&&cw>=54)||td.v>=0.6||(syn>=4&&ctxv>=0.55);
+      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v, danger};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
   });
@@ -1011,7 +1016,7 @@ function pickIdeas(cfg,series,draft,lineup,n=6){
   if(draft.side!=="R"){ const seen={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>!seen[x.name]&&(seen[x.name]=1)).slice(0,n)}; } // ordre strict du score
   const roles=Object.keys(r), out=[];
   roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,5).forEach(a=>r[y].list.slice(0,5).forEach(b=>{ if(a.name===b.name) return;
-    const q=synVal(cfg,a.name,x,b.name,y), pd=proDuoInfo(a.name,x,b.name,y), team=teamDuo(a.name,b.name);
+    const q=synVal(cfg,a.name,x,b.name,y), pd=provenDuo(cfg,a.name,x,b.name,y)?proDuoInfo(a.name,x,b.name,y):null, team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.n} games ensemble en pro`); if(team) why.push("déjà joués en équipe");
     out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));
@@ -1496,8 +1501,6 @@ function viewCenter(){
   const who=editing?"CORRECTION":(ours?ourName():theirName());
   let h=`<div class="turn ${s}${ours?" ours":""}${editing?" edit":""}"><span class="tw">${esc(who)}</span><span class="ta">${editing?(t==="ban"?"ban":"pick"):(t==="ban"?"BAN":"PICK")}</span></div>`+locked;
 
-  if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
-    if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -1567,7 +1570,7 @@ function boardCol(team,d,ro){
   const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
-  if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
+  if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why,danger:c.danger}))})):null; }catch(e){ pools=null; } }
   // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
   let ideas=null; const pk0=d.actions.findIndex(a=>!a);
   if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
@@ -1581,7 +1584,7 @@ function boardCol(team,d,ro){
     // un champion présélectionné (pas encore confirmé) occupe la case : il « consomme » la ligne de son rôle pour ne pas décaler les suivantes
     if(!a&&p&&pools&&pools.length>pi){ const rs=CHAMPS[p]?CHAMPS[p].roles:[]; let j=pools.findIndex((q,k)=>k>=pi&&rs[0]===q.role); if(j<0) j=pools.findIndex((q,k)=>k>=pi&&rs.includes(q.role)); if(j<0) j=pi; pools.splice(pi,0,pools.splice(j,1)[0]); pi++; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
-      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
+      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc${c.danger?" dgr":""}" title="${esc((c.danger?"⚠ Très dangereux pour votre compo · ":"")+c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
