@@ -433,16 +433,22 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const cands=new Set(Object.keys(pool));
     CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
+    // Score = 60 % pool (son op.gg solo Q) + 40 % réflexion : counter de nos picks, synergie avec les leurs, méta, mécaniques qui nous punissent
+    const ourObjs=ours.map(o=>({name:o.name,role:o.flex?null:o.role}));
     const list=[...cands].filter(c=>!un.has(c)&&CHAMPS[c]&&CHAMPS[c].roles.includes(role)).map(c=>{
       const m=metaInfo(c,role), why=[]; let ctxv, cw=null;
       if(mine){ cw=laneWR(I,c,mine.name,role); ctxv=cw==null?0.5:clamp01(0.5+(cw-50)/12); if(cw!=null&&cw>=53) why.push(`Counter de votre ${mine.name} (${cw} %)`); }
       else { const bi=blindInfo(cfg,c,role); ctxv=bi.v; if(bi.badge==="B") why.push("Blindable"); }
-      const p=pool[c]; let s;
-      if(p){ s=0.55*p.com+0.2*m.v+0.25*ctxv; why.unshift(`${pl.name.split("#")[0]} : ${p.g} g.${p.wr!=null?` (${p.wr} %)`:""}`); }
-      else { // pas dans son op.gg : gros malus, mais un champion très populaire (ex. Olaf) reste possible sans entraînement
-        const pr=PRO[c], pop=Math.max(clamp01((m.pres||0)/25), pr?clamp01((pr.p+pr.b)/400):0); // populaire en solo Q ou en pro
-        s=pl?0.04+0.22*pop+0.05*m.v+0.05*ctxv:0.3+0.3*m.v+0.25*ctxv;
+      let syn=0, synW=null; theirs.forEach(t=>{ const q=synVal(cfg,c,role,t.name,t.flex?null:t.role); if(q&&q.v>syn){ syn=q.v; synW=t.name; } });
+      if(syn>=2) why.push(`Synergie avec leur ${synW} (+${syn} %)`);
+      const td=traitDanger(c,ourObjs); why.push(...td.why);
+      const reason=clamp01(0.35*ctxv+0.2*clamp01(0.5+syn/8)+0.2*m.v+0.25*td.v);
+      const p=pool[c]; let poolV;
+      if(p){ poolV=p.com; why.unshift(`${pl.name.split("#")[0]} : ${p.g} g.${p.wr!=null?` (${p.wr} %)`:""}`); }
+      else { const pr=PRO[c], pop=Math.max(clamp01((m.pres||0)/25), pr?clamp01((pr.p+pr.b)/400):0); // populaire en solo Q ou en pro
+        poolV=pl?0.2*pop:0.5*m.v;
         if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
+      const s=0.6*poolV+0.4*reason;
       return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
@@ -467,6 +473,21 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
   const used={}, res=[]; // variété : un champion apparaît au plus 2 fois
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
   return res;
+}
+// ---- Idées de picks pendant la phase de bans 1 : first pick (bleu) ou duo R1-R2 (rouge) ----
+function pickIdeas(cfg,series,draft,lineup,n=6){
+  const r=recommendPicks(cfg,series,draft,lineup,5), flat=[];
+  Object.keys(r).forEach(role=>r[role].list.forEach(x=>flat.push(x)));
+  if(draft.side!=="R"){ const per={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>(per[x.role]=(per[x.role]||0)+1)<=2).slice(0,n)}; }
+  const roles=Object.keys(r), out=[];
+  roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,4).forEach(a=>r[y].list.slice(0,4).forEach(b=>{ if(a.name===b.name) return;
+    const q=synVal(cfg,a.name,x,b.name,y), pd=proDuoInfo(a.name,x,b.name,y), team=teamDuo(a.name,b.name);
+    const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
+    const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.n} games ensemble en pro`); if(team) why.push("déjà joués en équipe");
+    out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));
+  const used={}, res=[]; out.sort((p,q)=>q.score-p.score);
+  for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
+  return {kind:"R", list:res};
 }
 function nextIsDouble(draft){ const i=draft.actions.findIndex(a=>!a); if(i<0||i>=19) return false;
   return STEPS[i][0]==="pick"&&STEPS[i+1][0]==="pick"&&STEPS[i][1]===draft.side&&STEPS[i+1][1]===draft.side; }

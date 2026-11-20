@@ -191,6 +191,10 @@ function viewCenter(){
 
   if(!editing){ let ex=null; try{ ex=botExposure(cfg,live.series,d,prep,prep.lineup); }catch(e){}
     if(ex&&(ours||ex.kind==="post")) h+=`<div class="expo ${ex.kind}"><b>⚠ ${esc(ex.msg)}</b>${ex.threats.length?`<div class="exth">${ex.threats.map(t=>`<span title="${esc(t.why.join(" · "))}">${av(t.name,"sm")}<b>${esc(t.name)}</b><em>${esc(t.why[0]||"")}</em></span>`).join("")}</div>`:""}</div>`; }
+  if(!editing&&i<6&&t==="ban"){ let I=null; try{ I=pickIdeas(cfg,live.series,d,prep.lineup,6); }catch(e){}
+    if(I&&I.list.length) h+=`<div class="rrow ideas"><div class="rl"><b>${I.kind==="B"?"First pick":"Picks 1-2"}</b><span>idées</span></div><div class="bubs">${I.kind==="B"
+      ?I.list.map(x=>`<span class="idea" title="${esc(ROLE_NAMES[x.role]+" · "+x.why.slice(0,3).join(" · "))}">${av(x.name,"md")}<em>${x.score}</em><b>${esc(x.name)}</b></span>`).join("")
+      :I.list.map(x=>`<span class="idea duo" title="${esc(x.why.join(" · "))}">${av(x.a.name,"md")}${av(x.b.name,"md")}<em>${x.score}</em></span>`).join("")}</div></div>`; }
   if(ours&&!editing) h+=`<div class="sugg">${t==="ban"?banBubbles():duoRow()+pickBubbles()}</div>`;
   return h+grid();
 }
@@ -260,10 +264,10 @@ function boardCol(team,d,ro){
   const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
-  if(!ro&&team!==d.side){ try{ pools=enemyPoolLeft(cfg,live.series,d,prep,5); }catch(e){ pools=null; } }
+  if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
-      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" : "+c.g+" games"+(c.wr!=null?", "+c.wr+" %":""))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
+      return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;

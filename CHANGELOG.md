@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.5
+- Phase de bans 1 : idées de first pick (bleu) ou de duo R1-R2 (rouge), selon le score de l'outil, mises à jour à chaque ban.
+- Picks adverses prédits : 60 % leur pool solo Q, 40 % réflexion (counter de nos picks, synergie avec leurs picks, méta, mécaniques qui nous punissent). Recalculés à chaque pick et ban, des deux côtés.
+
 ## v11.4
 - Drafter : un champion montré mais pas encore confirmé n'est plus compté (l'outil attend la confirmation).
 - Corrections manuelles d'un pick/ban (raté ou erroné) gardées : Drafter ne les écrase plus, et elles partent dans l'historique.
