@@ -269,7 +269,7 @@ function boardCol(team,d,ro){
     if(!a&&!p&&ideas&&ideas.list.length&&ii<(ideas.kind==="B"?1:2)){ const part=ideas.kind==="B"?ideas.list:ideas.list.slice(ii*3,ii*3+3); ii++;
       return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":`Idées picks 1-2${ii===2?" (suite)":""}`}</div><div class="prb">${ideas.kind==="B"
         ?part.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
-        :part.map(c=>`<span class="prc pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"md")}${av(c.b.name,"md")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+        :part.map(c=>`<span class="prc pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
