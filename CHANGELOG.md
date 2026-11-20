@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.1
+- Correctif urgent : la v12.0 bloquait les suggestions côté rouge en picks 1-2 (erreur dans le calcul des duos).
+
 ## v12.0
 - Duos : jamais avec une anti-synergie mesurée ; jouer souvent ensemble en pro ne suffit plus (il faut une synergie mesurée ou un bon winrate ensemble). Fini Lulu + Lee Sin, Olaf + Lee Sin, Lulu + Ahri.
 - Alerte « support exposé » retirée (affichage épuré).

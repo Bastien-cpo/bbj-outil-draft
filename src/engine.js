@@ -138,7 +138,7 @@ function synPairs(cfg){
 }
 let _synIdx=null,_synKey=null;
 function synVal(cfg,a,ra,b,rb){
-  const key=cfg.synManual.length; if(_synKey!==key){ _synIdx={}; synPairs(cfg).forEach(x=>{ [[x[0],x[1],x[2],x[3]],[x[2],x[3],x[0],x[1]]].forEach(([p,pr,q,qr])=>{ (_synIdx[p+"|"+q]=_synIdx[p+"|"+q]||[]).push({pr,qr,v:x[4],src:x[5]}); }); }); _synKey=key; }
+  cfg=cfg&&cfg.synManual?cfg:{synManual:[]}; const key=cfg.synManual.length; if(_synKey!==key){ _synIdx={}; synPairs(cfg).forEach(x=>{ [[x[0],x[1],x[2],x[3]],[x[2],x[3],x[0],x[1]]].forEach(([p,pr,q,qr])=>{ (_synIdx[p+"|"+q]=_synIdx[p+"|"+q]||[]).push({pr,qr,v:x[4],src:x[5]}); }); }); _synKey=key; }
   const L=(_synIdx[a+"|"+b]||[]).filter(x=>(!x.pr||!ra||x.pr===ra)&&(!x.qr||!rb||x.qr===rb));
   if(!L.length) return null;
   let v=L.reduce((s,x)=>s+x.v,0)/L.length;
@@ -264,7 +264,7 @@ function scorePick(cfg,c,role,ctx){
   let duoPart=null;
   if(ctx.redDuo&&!ctx.allies.length){ // rouge : duo enchaîné en picks 1-2
     for(const r2 of (ctx.open||[])){ if(r2===role) continue; const pid2=ctx.lineup[r2]; if(!pid2) continue;
-      const pt=poolOf(ctx.cfg||{tiers:{}},pid2,r2).find(b=>!ctx.un.has(b)&&b!==c&&provenDuo(null,c,role,b,r2)); if(pt){ duoPart=pt; break; } }
+      const pt=poolOf(ctx.cfg||{tiers:{}},pid2,r2).find(b=>!ctx.un.has(b)&&b!==c&&provenDuo(cfg,c,role,b,r2)); if(pt){ duoPart=pt; break; } }
     if(duoPart) parts.push(["Duo",1,W.synergie*0.6]);
   }
   // Cohérence de compo (calibrage pro : une compo sans faiblesse est le meilleur prédicteur de victoire)
