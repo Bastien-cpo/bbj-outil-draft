@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.2
+- Duos pro recalculés sur 12 746 games 2025-2026 (ligues majeures + LCK CL, EMEA Masters, LFL…), récentes pondérées plus fort, refontes exclues (Mel avant 26.22, Nami avant 26.11, Shyvana, Gwen, Bel'Veth…).
+- Un duo pro = ≥ 20 games effectives, jamais perdant ensemble, et soit choisi exprès ensemble (co-occurrence ≥ 2, même rotation de draft), soit nettement gagnant (+4 pts sur ≥ 35 games). 19 duos retenus.
+- Le gain de victoire pro ensemble devient une source de synergie (positive ou négative).
+
 ## v12.1
 - Correctif urgent : la v12.0 bloquait les suggestions côté rouge en picks 1-2 (erreur dans le calcul des duos).
 
