@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.7
+- Idées de picks sur une seule ligne, dans l'ordre strict du score (plus de limite de 2 par rôle).
+- Côté rouge : paires R1-R2 en bulles partagées (deux champions + score commun), autant que la largeur le permet.
+
 ## v11.6
 - Idées de first pick (bleu) / paires R1-R2 (rouge) affichées en bulles dans nos premières cases, par score.
 - Lecture des bans adverses : bannir les counters d'un champion = ils le préparent ; un champion qu'ils bannissaient dans une game précédente et laissent ouvert = pick prévu (first pick s'ils passent bleus). Les bans visant nos conforts comptent peu.

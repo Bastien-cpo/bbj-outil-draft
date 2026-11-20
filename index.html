@@ -231,11 +231,11 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .exth{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.exth span{display:flex;align-items:center;gap:5px}.exth em{font-style:normal;opacity:.75;font-size:12px}
 .wbar.rev{transform:scaleX(-1)}.wbar.rev b{transform:scaleX(-1)}
 .rrow.ideas{opacity:.92}.idea{display:flex;flex-direction:column;align-items:center;width:58px;position:relative;font-size:10px;cursor:help}.idea em{position:absolute;top:-2px;right:4px;font-style:normal;font-weight:700;font-size:11px;color:var(--gold)}.idea b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}.idea.duo{flex-direction:row;width:auto;gap:2px;padding-right:18px}.idea.duo em{right:0;top:0}
-.pk.ideas .prc{position:relative}.pk.ideas .prc em{position:absolute;top:-4px;right:-4px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas .prb{flex-wrap:wrap;row-gap:4px}.pk.ideas .prc.pair{display:inline-flex;gap:1px;margin-right:8px}
+.pk.ideas .prc{position:relative}.pk.ideas .prc em{position:absolute;top:-4px;right:-4px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas{overflow:hidden}.pk.ideas .prb{flex-wrap:nowrap;width:100%;position:relative;padding-top:4px;gap:6px}.pk.ideas .pair{position:relative;display:inline-flex;align-items:center;gap:0;padding:2px 14px 2px 3px;border-radius:16px;background:#1a2130;border:1px solid #2c3647;flex:none}.pk.ideas .pair .av+.av{margin-left:-5px}.pk.ideas .pair em{position:absolute;top:-5px;right:-3px;font-style:normal;font-weight:700;font-size:10px;color:var(--gold);background:#0b0e14;border-radius:6px;padding:0 2px}.pk.ideas .prc{flex:none}
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.6 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.7 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1007,9 +1007,9 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
 function pickIdeas(cfg,series,draft,lineup,n=6){
   const r=recommendPicks(cfg,series,draft,lineup,5), flat=[];
   Object.keys(r).forEach(role=>r[role].list.forEach(x=>flat.push(x)));
-  if(draft.side!=="R"){ const per={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>(per[x.role]=(per[x.role]||0)+1)<=2).slice(0,n)}; }
+  if(draft.side!=="R"){ const seen={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>!seen[x.name]&&(seen[x.name]=1)).slice(0,n)}; } // ordre strict du score
   const roles=Object.keys(r), out=[];
-  roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,4).forEach(a=>r[y].list.slice(0,4).forEach(b=>{ if(a.name===b.name) return;
+  roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,5).forEach(a=>r[y].list.slice(0,5).forEach(b=>{ if(a.name===b.name) return;
     const q=synVal(cfg,a.name,x,b.name,y), pd=proDuoInfo(a.name,x,b.name,y), team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.n} games ensemble en pro`); if(team) why.push("déjà joués en équipe");
@@ -1358,7 +1358,8 @@ function render(){
   $("#view").innerHTML=v(); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
 }
 // Chaque ligne de suggestions montre autant de bulles entières que la largeur le permet
-function fitRows(){ document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
+function fitRows(){ document.querySelectorAll(".fit1").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.display=""); const W=b.clientWidth; k.forEach(c=>{ if(c.offsetLeft+c.offsetWidth>W+1) c.style.display="none"; }); });
+  document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
   const t=k.length?k[0].offsetTop:0; k.forEach(c=>{ if(c.offsetTop>t+4) c.style.visibility="hidden"; }); }); }
 let _fitT=null; window.addEventListener("resize",()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitRows,80); });
 
@@ -1568,13 +1569,13 @@ function boardCol(team,d,ro){
   if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
   // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
   let ideas=null; const pk0=d.actions.findIndex(a=>!a);
-  if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,6); }catch(e){ ideas=null; } }
+  if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
   let ii=0;
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
-    if(!a&&!p&&ideas&&ideas.list.length&&ii<(ideas.kind==="B"?1:2)){ const part=ideas.kind==="B"?ideas.list:ideas.list.slice(ii*3,ii*3+3); ii++;
-      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":`Idées picks 1-2${ii===2?" (suite)":""}`}</div><div class="prb">${ideas.kind==="B"
-        ?part.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
-        :part.map(c=>`<span class="prc pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+    if(!a&&!p&&ideas&&ideas.list.length&&ii<1){ ii++;
+      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
+        ?ideas.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
+        :ideas.list.map(c=>`<span class="pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;

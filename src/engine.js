@@ -493,9 +493,9 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
 function pickIdeas(cfg,series,draft,lineup,n=6){
   const r=recommendPicks(cfg,series,draft,lineup,5), flat=[];
   Object.keys(r).forEach(role=>r[role].list.forEach(x=>flat.push(x)));
-  if(draft.side!=="R"){ const per={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>(per[x.role]=(per[x.role]||0)+1)<=2).slice(0,n)}; }
+  if(draft.side!=="R"){ const seen={}; return {kind:"B", list:flat.sort((a,b)=>b.score-a.score).filter(x=>!seen[x.name]&&(seen[x.name]=1)).slice(0,n)}; } // ordre strict du score
   const roles=Object.keys(r), out=[];
-  roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,4).forEach(a=>r[y].list.slice(0,4).forEach(b=>{ if(a.name===b.name) return;
+  roles.forEach((x,i)=>roles.slice(i+1).forEach(y=>r[x].list.slice(0,5).forEach(a=>r[y].list.slice(0,5).forEach(b=>{ if(a.name===b.name) return;
     const q=synVal(cfg,a.name,x,b.name,y), pd=proDuoInfo(a.name,x,b.name,y), team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?Math.min(4,Math.log2(pd.n)):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`${pd.n} games ensemble en pro`); if(team) why.push("déjà joués en équipe");

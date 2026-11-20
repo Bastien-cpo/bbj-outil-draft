@@ -53,7 +53,8 @@ function render(){
   $("#view").innerHTML=v(); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
 }
 // Chaque ligne de suggestions montre autant de bulles entières que la largeur le permet
-function fitRows(){ document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
+function fitRows(){ document.querySelectorAll(".fit1").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.display=""); const W=b.clientWidth; k.forEach(c=>{ if(c.offsetLeft+c.offsetWidth>W+1) c.style.display="none"; }); });
+  document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
   const t=k.length?k[0].offsetTop:0; k.forEach(c=>{ if(c.offsetTop>t+4) c.style.visibility="hidden"; }); }); }
 let _fitT=null; window.addEventListener("resize",()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitRows,80); });
 
@@ -263,13 +264,13 @@ function boardCol(team,d,ro){
   if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why}))})):null; }catch(e){ pools=null; } }
   // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
   let ideas=null; const pk0=d.actions.findIndex(a=>!a);
-  if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,6); }catch(e){ ideas=null; } }
+  if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
   let ii=0;
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
-    if(!a&&!p&&ideas&&ideas.list.length&&ii<(ideas.kind==="B"?1:2)){ const part=ideas.kind==="B"?ideas.list:ideas.list.slice(ii*3,ii*3+3); ii++;
-      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":`Idées picks 1-2${ii===2?" (suite)":""}`}</div><div class="prb">${ideas.kind==="B"
-        ?part.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
-        :part.map(c=>`<span class="prc pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
+    if(!a&&!p&&ideas&&ideas.list.length&&ii<1){ ii++;
+      return `<div class="pk empty pred ideas"><div class="prl">${ideas.kind==="B"?"Idées de first pick":"Idées de paires R1-R2"}</div><div class="prb fit1">${ideas.kind==="B"
+        ?ideas.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+ROLE_NAMES[c.role]+" · score "+c.score+" · "+c.why.slice(0,3).join(" · "))}">${av(c.name,"md")}<em>${c.score}</em></span>`).join("")
+        :ideas.list.map(c=>`<span class="pair" title="${esc(c.a.name+" + "+c.b.name+" · score "+c.score+" · "+c.why.join(" · "))}">${av(c.a.name,"sm")}${av(c.b.name,"sm")}<em>${c.score}</em></span>`).join("")}</div></div>`; }
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
