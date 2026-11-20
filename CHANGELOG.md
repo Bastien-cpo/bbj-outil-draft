@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.6
+- Fin de draft : boutons « Partie suivante » et « Fin de série ».
+- « Fin de série » archive la série et lance le script du PC (lien bbj-export://, à installer une fois) : il exporte les parties du client LoL et renvoie leurs stats à l'outil, qui les range dans la série (résultats compris).
+
 ## v12.5
 - Relais Drafter : quand Drafter ouvre la game suivante dans une nouvelle fenêtre (lien « Partie N »), le relais l'ouvre lui-même, s'y réinstalle et garde la même fenêtre d'outil : plus besoin de recliquer le favori. L'ancienne fenêtre se tait.
 - L'outil ignore une game précédente de la même room (deux fenêtres Drafter ouvertes).

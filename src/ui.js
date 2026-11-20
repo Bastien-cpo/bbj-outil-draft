@@ -259,7 +259,7 @@ function finalHtml(d,ro){
     ${A.lanes.length?`<div class="lanes">${A.lanes.map(l=>`<span class="lane ${l.wr>=53?"w":l.wr<=47?"l":""}" ${l.detail?`title="${esc(l.detail)}"`:""}>${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} : ${(()=>{ const o=av(l.ours,"xs")+(l.ours2?av(l.ours2,"xs"):""), t=av(l.theirs,"xs")+(l.theirs2?av(l.theirs2,"xs"):""); return us==="R"?t+" vs "+o:o+" vs "+t; })()} <b title="Notre winrate">${l.wr}%</b></span>`).join("")}</div>`:""}
     ${[["Early (0-14 min)",A.plan.early],["Mid game (14-25 min)",A.plan.mid],["Late game",A.plan.late]].filter(x=>x[1]&&x[1].length).map(x=>`<div class="ph"><em>${x[0]}</em><ul class="plan">${x[1].map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}
     ${d===live.draft||live.series.games.includes(d)?`<div class="row c res"><span class="muted">Résultat :</span><button class="btn sm ${d.result==="W"?"on w":""}" data-act="result" data-v="W">Victoire</button><button class="btn sm ${d.result==="L"?"on l":""}" data-act="result" data-v="L">Défaite</button></div>`:""}
-    ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Valider la game → game ${live.series.games.length+2}</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
+    ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Partie suivante → game ${live.series.games.length+2}</button><button class="btn big" data-act="endseries" title="Archive la série et lance l'export des stats depuis le client LoL">Fin de série</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
 }
 function boardCol(team,d,ro){
   const i=ro?-1:targetIndex(); const active=!ro&&i>=0&&STEPS[i][1]===team;
@@ -506,6 +506,11 @@ document.addEventListener("click",e=>{
   else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }
+  else if(act==="endseries"){ const n=live.series.games.length+(live.draft.actions.every(Boolean)?1:0); archiveSeries(true);
+    if(history.series[0]) history.series[0].pendingExport={n, at:Date.now()};
+    ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); persist("history");
+    const a=document.createElement("a"); a.href="bbj-export://run?n="+n; document.body.appendChild(a); a.click(); a.remove();
+    flash("Série archivée · export des "+n+" games lancé sur ton PC"); ui.tab="hist"; render(); }
   else if(act==="newseries"){ archiveSeries(); ui.viewGame=null; ui.edit=null; ui.pending=null; live={series:{locked:[],games:[]},draft:{side:live.draft.side,actions:Array(20).fill(null)}}; persist("live"); render(); }
   else if(act==="clearprep"){ clearPrep(); flash("Préparation remise à zéro"); render(); }
   else if(act==="result"){ const g=ui.viewGame!=null?live.series.games[ui.viewGame]:live.draft; g.result=g.result===b.dataset.v?null:b.dataset.v; persist("live"); render(); }
@@ -567,4 +572,16 @@ async function initSnapshot(){
   }catch(e){}
 }
 if(new URLSearchParams(location.search).get("embed")) document.body.classList.add("embed");
-loadLocal(); render(); initDb(); initSnapshot();
+// Stats envoyées par le script « Fin de série » du PC (lien #import=...) : rattachées à la série archivée qui les attend
+const bbjBC=("BroadcastChannel" in window)?new BroadcastChannel("bbj-outil"):null;
+if(bbjBC) bbjBC.onmessage=e=>{ if(e.data==="reload"){ loadLocal(); render(); flash("Stats de la série importées"); } };
+function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(!m) return;
+  window.history.replaceState(null,"",location.pathname+location.search);
+  let data; try{ const b=m[1].replace(/-/g,"+").replace(/_/g,"/"), bin=atob(b+"===".slice((b.length+3)%4)); data=JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))); }catch(e){ flash("Import illisible"); return; }
+  const G=(data.games||[]).slice().sort((a,b)=>a.at-b.at); if(!G.length) return;
+  const S=history.series||[]; let s=S.find(x=>x.pendingExport)||S.find(x=>x.games.length===G.length&&!x.games.some(g=>g.stats))||S[0]; if(!s) return;
+  const games=s.games, off=Math.max(0,G.length-games.length), list=G.slice(off);
+  games.forEach((g,i)=>{ const x=list[i]; if(!x) return; g.stats={gameId:x.gameId,min:x.min,us:x.us,them:x.them,objUs:x.objUs,objThem:x.objThem}; if(!g.result&&x.win!=null) g.result=x.win?"W":"L"; });
+  delete s.pendingExport; persist("history"); saveLocal(); if(bbjBC) bbjBC.postMessage("reload");
+  ui.tab="hist"; flash(`Stats de ${Math.min(list.length,games.length)} games ajoutées à la série vs ${s.opponent}`); render(); }
+loadLocal(); render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
