@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v11.4
+- Drafter : un champion montré mais pas encore confirmé n'est plus compté (l'outil attend la confirmation).
+- Corrections manuelles d'un pick/ban (raté ou erroné) gardées : Drafter ne les écrase plus, et elles partent dans l'historique.
+- Pick raté cliquable pour le corriger.
+
 ## v11.3
 - Analyse de fin de draft : côté rouge, BBJ et notre % de victoire passent à droite, l'adversaire à gauche (cartes et lanes aussi).
 

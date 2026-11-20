@@ -233,7 +233,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v11.3 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v11.4 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
 <datalist id="champs"></datalist>
@@ -1381,6 +1381,8 @@ function applyDrafter(st){
     if(!o&&s!==side){ const r=enemyRole(c,taken[s]); if(r) role=r; }
     if(laneOf[s][c]){ role=laneOf[s][c]; flex=false; fx=undefined; }
     taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
+  // Corrections manuelles (champion raté, erreur) : elles priment sur ce que renvoie Drafter
+  const man=live.draft.manual||{}; Object.keys(man).forEach(k=>{ if(man[k]) acts[+k]=man[k]; });
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
   if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
@@ -1529,7 +1531,7 @@ function boardCol(team,d,ro){
     if(!a&&!p&&pools&&pools[pi]){ const q=pools[pi++];
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc" title="${esc(c.name+" : "+c.g+" games"+(c.wr!=null?", "+c.wr+" %":""))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
-    if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}"><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté (en attente d'échange)</span></div></div>`;
+    if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
@@ -1718,7 +1720,7 @@ function addChamp(name,role){
   if(t==="pick"){ const taken=teamPicks(live.draft,s).filter(p=>!p.flex&&p!==old).map(p=>p.role);
     a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false;
     if(s!==live.draft.side&&!role&&!old){ const r=enemyRole(n,teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role)); if(r) a.role=r; } }
-  live.draft.actions[i]=a; ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
+  live.draft.actions[i]=a; if(ui.edit!=null||(old&&old.miss)){ (live.draft.manual=live.draft.manual||{})[i]=a; } ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
 }
 function parseManual(txt){
   return txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{ const k=l.indexOf(":"); const name=k>0?l.slice(0,k).trim():""; const rest=k>0?l.slice(k+1):l;
@@ -1742,7 +1744,7 @@ document.addEventListener("click",e=>{
         if(i>=0&&STEPS[i][0]==="pick"&&STEPS[i][1]===live.draft.side&&!unavailable(live.series,live.draft).has(dn.name)){ ui.pending=dn; render(); } } } }
   else if(act==="editslot"){ const k=+b.dataset.k; if(!live.draft.actions[k]) return; ui.edit=k; ui.pending=null; render(); }
   else if(act==="canceledit"){ ui.edit=null; ui.pending=null; render(); }
-  else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; ui.edit=null; ui.pending=null; persist("live"); render(); }
+  else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; if(live.draft.manual) delete live.draft.manual[ui.edit]; ui.edit=null; ui.pending=null; persist("live"); render(); }
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0) live.draft.actions[i]=null; ui.pending=null; persist("live"); render(); }
