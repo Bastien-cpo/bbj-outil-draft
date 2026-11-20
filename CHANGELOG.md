@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.4
+- Historique : la vue d'une game affiche ses stats importées du client (KDA, or, CS, dégâts, vision par rôle, objectifs, durée) et le vrai nom de l'adversaire de la série.
+- « Retour » disponible aussi une fois la draft finie ; il efface aussi une correction manuelle.
+- Revue de bugs : 550 drafts aléatoires sur le moteur + parcours complet de l'interface et du relais Drafter, sans erreur.
+
 ## v12.3
 - Duos nommés : une paire choisie exprès ensemble en pro (co-occurrence ≥ 2, même rotation) garde l'étiquette « duo » même si elle performe mal (Yunara + Lulu, Lucian + Milio…). 28 duos.
 - Le bonus de duo suit sa performance : bonus jusqu'à +3 pour un duo gagnant, malus jusqu'à −2,5 pour un duo perdant ensemble.
