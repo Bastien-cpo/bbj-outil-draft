@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.0 — 21/11/2026 · première version officielle partagée à l'équipe
+- Numérotation remise à zéro : cette version (anciennement v12.26) devient la 1.0. Les entrées ci-dessous (v11 à v12.26) retracent le développement avant la sortie.
+- Guide de l'outil réécrit pour les joueurs de l'équipe ; « Fin de série » et l'envoi des stats restent gérés par Bastien.
+
 ## v12.26
 - L'outil s'ouvre toujours sur l'onglet Draft.
 - Une draft en cours depuis plus de 6 h est effacée à l'ouverture (l'outil repart propre) ; un rechargement en pleine draft la garde.
