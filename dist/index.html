@@ -430,7 +430,12 @@ Zoe;M;AP;2,2,1,0,0,3`;
 // ===== Votre équipe (Parthenon, captures du 16/11/2026) =====
 const TEAM_SUMMARY = {games:69, wr:60.9, blue:[24,19], red:[18,8], gd15:775, duree:"30m42s"};
 // champion:games:winrate%
-const STATS_RAW = `Ambessa:12:50|Corki:11:64|Ornn:10:60|Syndra:9:33|Jinx:9:78|Tristana:9:78|Nautilus:9:78|Trundle:8:75|Lee Sin:8:75|Wukong:7:71|Anivia:7:71|Sion:7:43|Garen:7:71|Viktor:7:71|Sylas:6:83|Lulu:6:67|Blitzcrank:6:50|Kai'Sa:6:50|Olaf:6:67|Darius:6:50|Swain:5:80|Sivir:5:40|Vi:5:100|Skarner:5:60|Milio:5:80|Jhin:5:60|Annie:5:80|Orianna:5:80|K'Sante:4:50|Taliyah:4:50|Ryze:4:75|Xayah:4:50|Ahri:4:75|Akali:4:75|Seraphine:4:100|Xin Zhao:4:75|Jarvan IV:4:75|Ashe:3:67|Leona:3:100|Ezreal:3:67|Nunu:3:67|Kog'Maw:3:67|Dr. Mundo:3:33|Aurora:2:50|Zeri:2:100|Braum:2:50|Alistar:2:50|Kassadin:2:50|Galio:2:50|Zilean:2:0|Maokai:2:50|Nocturne:2:100|Pantheon:2:50|Mordekaiser:2:0|Vex:1:0|Cho'Gath:1:100|Sejuani:1:0|Yunara:1:0|Yuumi:1:100|Miss Fortune:1:100|Cassiopeia:1:0|Karma:1:100|Yone:1:0|Mel:1:100|Kalista:1:100|Taric:1:100|Sett:1:0|LeBlanc:1:100|Volibear:1:0|Soraka:1:0|Zaahen:1:0|Lucian:1:100|Renekton:1:0|Caitlyn:1:0|Sona:1:100|Malphite:1:0|Shyvana:1:0|Rek'Sai:1:0|Rakan:1:0|Poppy:1:0|Diana:1:0|Vayne:1:0|Elise:1:0|Viego:1:0|Azir:1:0|Morgana:1:0|Shaco:1:0`;
+// Parthenon (scrims juin-nov 2026, 72 games) + Drafter 19/11 : par champion, toute l'équipe
+const STATS_RAW = `Corki:14:64|Ambessa:14:57|Nautilus:14:57|Tristana:11:82|Trundle:11:73|Ornn:11:64|Lee Sin:10:70|Darius:10:60|Syndra:10:30|Jinx:9:78|Garen:8:75|Lulu:8:50|Viktor:8:75|Olaf:8:62|Leona:7:57|Wukong:7:71|Anivia:7:71|Sion:7:43|Milio:7:71|Orianna:6:67|Jarvan IV:6:83|Swain:6:83|Sylas:6:83|Sivir:6:33|Vi:6:83|Blitzcrank:6:50|Kai'Sa:6:50|K'Sante:5:60|Skarner:5:60|Akali:5:60|Jhin:5:60|Annie:5:80|Ashe:4:50|Taliyah:4:50|Dr. Mundo:4:25|Ryze:4:75|Xayah:4:50|Ahri:4:75|Seraphine:4:100|Xin Zhao:4:75|Renekton:4:50|Kassadin:3:67|Yunara:3:0|Miss Fortune:3:67|Zaahen:3:33|Ezreal:3:67|Nunu:3:67|Kog'Maw:3:67|Karma:3:67|Zilean:3:33|Taric:2:100|Cho'Gath:2:50|Aurora:2:50|Yone:2:50|Zeri:2:100|Braum:2:50|Alistar:2:50|Malphite:2:0|Aatrox:2:100|Rakan:2:50|Galio:2:50|Maokai:2:50|Nocturne:2:100|Pantheon:2:50|Mordekaiser:2:0|Vex:1:0|Sejuani:1:0|Yuumi:1:100|Jax:1:100|Cassiopeia:1:0|Bard:1:100|Thresh:1:0|Mel:1:100|Kalista:1:100|Sett:1:0|LeBlanc:1:100|Volibear:1:0|Soraka:1:0|Lucian:1:100|Caitlyn:1:0|Sona:1:100|Shyvana:1:0|Nami:1:100|Rek'Sai:1:0|Poppy:1:0|Diana:1:0|Vayne:1:0|Elise:1:0|Malzahar:1:0|Viego:1:0|Azir:1:0|Morgana:1:0|Shaco:1:0`;
+// Par joueur et par rôle : joueur|rôle|champion|games|victoires
+const TEAM_P_RAW = `Bastien|A|Ashe|3|2;Bastien|A|Caitlyn|1|0;Bastien|A|Corki|13|8;Bastien|A|Ezreal|3|2;Bastien|A|Jhin|5|3;Bastien|A|Jinx|9|7;Bastien|A|Kai'Sa|6|3;Bastien|A|Kalista|1|1;Bastien|A|Lucian|1|1;Bastien|A|Miss Fortune|1|1;Bastien|A|Sivir|5|2;Bastien|A|Syndra|2|1;Bastien|A|Tristana|10|8;Bastien|A|Vayne|1|0;Bastien|A|Xayah|4|2;Bastien|A|Yunara|3|0;Bastien|A|Zeri|2|2;Billy|J|Ambessa|2|1;Billy|J|Cho'Gath|2|1;Billy|J|Diana|1|0;Billy|J|Dr. Mundo|1|1;Billy|J|Elise|1|0;Billy|J|Jarvan IV|6|5;Billy|J|Lee Sin|10|7;Billy|J|Maokai|2|1;Billy|J|Mordekaiser|1|0;Billy|J|Nocturne|2|2;Billy|J|Nunu|3|2;Billy|J|Pantheon|2|1;Billy|J|Rek'Sai|1|0;Billy|J|Sejuani|1|0;Billy|J|Shaco|1|0;Billy|J|Shyvana|1|0;Billy|J|Sion|5|2;Billy|J|Skarner|5|3;Billy|J|Sylas|2|1;Billy|J|Trundle|1|1;Billy|J|Vi|6|5;Billy|J|Viego|1|0;Billy|J|Volibear|1|0;Billy|J|Wukong|7|5;Billy|J|Xin Zhao|4|3;Billy|S|Bard|1|1;Billy|S|Rakan|1|1;Billy|S|Thresh|1|0;Fayk|J|Darius|2|2;Fayk|J|Dr. Mundo|1|0;Fayk|J|Malphite|1|0;Fayk|J|Ornn|1|1;Fayk|J|Trundle|1|1;Fayk|T|Ambessa|8|5;Fayk|T|Darius|8|4;Fayk|T|Dr. Mundo|2|0;Fayk|T|Garen|8|6;Fayk|T|K'Sante|4|2;Fayk|T|Malphite|1|0;Fayk|T|Mordekaiser|1|0;Fayk|T|Olaf|7|4;Fayk|T|Ornn|10|6;Fayk|T|Sett|1|0;Fayk|T|Sion|2|1;Fayk|T|Trundle|9|6;Fayk|T|Zaahen|1|0;JH|M|Ahri|4|3;JH|M|Akali|5|3;JH|M|Ambessa|2|0;JH|M|Anivia|7|5;JH|M|Annie|5|4;JH|M|Aurora|2|1;JH|M|Azir|1|0;JH|M|Cassiopeia|1|0;JH|M|Galio|2|1;JH|M|Kassadin|3|2;JH|M|LeBlanc|1|1;JH|M|Malzahar|1|0;JH|M|Mel|1|1;JH|M|Orianna|6|4;JH|M|Renekton|1|0;JH|M|Ryze|4|3;JH|M|Swain|2|2;JH|M|Sylas|4|4;JH|M|Syndra|8|2;JH|M|Taliyah|4|2;JH|M|Tristana|1|1;JH|M|Vex|1|0;JH|M|Viktor|8|6;JH|M|Yone|1|0;Léo|S|Alistar|2|1;Léo|S|Blitzcrank|6|3;Léo|S|Braum|2|1;Léo|S|Karma|1|1;Léo|S|Kog'Maw|3|2;Léo|S|Leona|5|4;Léo|S|Lulu|8|4;Léo|S|Milio|5|4;Léo|S|Morgana|1|0;Léo|S|Nautilus|10|8;Léo|S|Poppy|1|0;Léo|S|Rakan|1|0;Léo|S|Seraphine|4|4;Léo|S|Sona|1|1;Léo|S|Soraka|1|0;Léo|S|Swain|4|3;Léo|S|Taric|2|2;Léo|S|Yuumi|1|1;Léo|S|Zilean|2|0;Yeyozz|T|Aatrox|1|1;Yeyozz|T|Ambessa|1|1;Yeyozz|T|Jax|1|1;Yeyozz|T|K'Sante|1|1;Yeyozz|T|Renekton|1|0;Yeyozz|T|Yone|1|1;Yeyozz|T|Zaahen|2|1`;
+// Duos de l'équipe (≥ 3 games) : rôles|A+B|games|victoires
+const TEAM_DUO_RAW = `AS|Corki+Leona|3|1;AS|Corki+Nautilus|3|2;AS|Corki+Swain|3|2;AS|Jinx+Lulu|3|2;AS|Jinx+Milio|4|3;AS|Kai'Sa+Nautilus|4|2;AS|Tristana+Nautilus|4|3;AS|Yunara+Lulu|3|0;JS|Jarvan IV+Nautilus|3|3;JS|Skarner+Milio|4|2;TJ|Darius+Sion|3|1`;
 
 // Tier lists (confiance) — S > A > B > C > D
 const TIERS_RAW = { // tier lists à jour du 17/11 (confiance actuelle des joueurs)
@@ -575,6 +580,11 @@ OPGG_META_RAW.trim().split("\n").forEach(line=>{ const [k,v]=line.split("="); co
   v.split("|").forEach(x=>{ const [n,wr,pk,bn]=x.split(":"); const c=findChamp(n); if(!c) return; ((OPGG[c]=OPGG[c]||{})[r]=OPGG[c][r]||{})[lvl==="master"?"m":"e"]=[+wr,+pk,+bn]; }); });
 const STATS = {};
 STATS_RAW.split("|").forEach(s=>{const [n,g,w]=s.split(":"); STATS[n]={g:+g,wr:+w};});
+// Games de l'équipe par joueur/rôle/champion et duos joués ensemble (Parthenon)
+const TEAM_P = {}; TEAM_P_RAW.split(";").forEach(s=>{const [p,r,c,g,w]=s.split("|"); ((TEAM_P[p]=TEAM_P[p]||{})[r]=TEAM_P[p][r]||{})[c]={g:+g,w:+w};});
+const TEAM_DUO = {}; TEAM_DUO_RAW.split(";").forEach(s=>{const [r,k,g,w]=s.split("|"); const [a,b]=k.split("+"); TEAM_DUO[r+"|"+a+"|"+b]={g:+g,w:+w};});
+function teamDuoAdj(c,role,a,ra){ const x=TEAM_DUO[role+ra+"|"+c+"|"+a]||TEAM_DUO[ra+role+"|"+a+"|"+c]; if(!x||x.g<3) return 0;
+  return Math.max(-2,Math.min(2,((x.w+1.5)/(x.g+3)-0.5)*8)); }
 const clamp01=x=>Math.max(0,Math.min(1,x));
 function metaInfo(c,role){
   const o=OPGG[c]||{}; let d=role?o[role]:null;
@@ -618,6 +628,7 @@ const playerMain = id=>(PLAYERS.find(p=>p.id===id)||{}).main;
 // Stats Parthenon : rattachées au joueur titulaire du rôle où le champion a son meilleur tier
 const STATS_OWNER = (()=>{ const cfg0=defaultConfig(), out={};
   for(const c in STATS){ let best=null,bv=-1;
+    PLAYERS.forEach(p=>{ const x=((TEAM_P[p.id]||{})[p.main]||{})[c]; if(x&&x.g>bv){bv=x.g;best=p.id;} }); if(best){ out[c]=best; continue; } bv=-1;
     PLAYERS.filter(p=>p.id!=="Yeyozz").forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
     if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&p.id!=="Yeyozz")||{}).id; }
     out[c]=best; }
@@ -641,17 +652,19 @@ function tierFor(cfg,pid,role,c){
 // La tier list ne sert que de repère quand il n'y a aucune game.
 function affinity(cfg,pid,role,c){
   const t=tierFor(cfg,pid,role,c);
-  const st=STATS[c]&&STATS_OWNER[c]===pid&&playerMain(pid)===role?STATS[c]:null;
+  const st=((TEAM_P[pid]||{})[role]||{})[c]||null; // ses games en équipe à ce rôle (Parthenon)
   const sq=sqCounts(c,role)?(OUR_SQ[pid]||{})[c]:null;
   const tg=st?st.g:0, sg=sq?sq.g:0, eff=tg*4+sg;
   let v=1-Math.exp(-eff/70);
-  // léger ajustement par les résultats (lissé)
-  const wins=(st?st.g*st.wr/100:0)*4+(sq?sq.g*sq.wr/100:0); if(eff>0){ const wr=(wins+0.5*20)/(eff+20); v=clamp01(v+(wr-0.5)*0.6); }
+  // léger ajustement par les résultats en solo Q (lissé)
+  if(sg){ const wr=(sg*sq.wr/100+0.5*20)/(sg+20); v=clamp01(v+(wr-0.5)*0.6); }
   // la tier list = confiance actuelle du joueur : elle pèse 20 % (l'outil doit aussi proposer le champion le plus adapté), un champion absent de sa liste perd un peu
   if(!eff) v=t?TIER_VAL[t]*0.5:0.15;
   else if(t) v=clamp01(0.8*v+0.2*TIER_VAL[t]);
   else v*=0.9;
-  return {v, tier:t||"-", games:tg, wr:st?st.wr:null, sq:sq||null};
+  // résultats en scrim : bonus/malus lissé, au plus ±15 % (peu de games → presque neutre)
+  if(tg) v=clamp01(v*(1+Math.max(-0.15,Math.min(0.15,(st.w+3)/(tg+6)-0.5))));
+  return {v, tier:t||"-", games:tg, wr:st?Math.round(100*st.w/tg):null, sq:sq||null};
 }
 
 // ---- Synergies & matchups ----
@@ -681,6 +694,7 @@ function synergy(cfg,c,role,allies){
     const d=provenDuo(cfg,c,role,a.name,a.role);
     const w=((role==="A"&&a.role==="S")||(role==="S"&&a.role==="A")||(role==="J"&&a.role==="S")||(role==="S"&&a.role==="J"))?1.5:1;
     if(d){ const pd=d==="pro"?proDuoInfo(c,role,a.name,a.role):null, adj=d==="pro"?duoAdj(pd):3; s+=adj*w; duos.push(a.name+" ("+d+(pd&&pd.lift<=-1?`, perd ${pd.lift} pts ensemble`:"")+")"); }
+    s+=teamDuoAdj(c,role,a.name,a.role)*w; // duo déjà joué par l'équipe : compte dans le score, sans affichage
     if(!x) return;
     s+=x.v*w; if(Math.abs(x.v)>=1) (x.v>0?why:bad).push(a.name+" "+(x.v>0?"+":"")+x.v+"%"); });
   return {v:clamp01(0.5+s/10), why, bad, duos};

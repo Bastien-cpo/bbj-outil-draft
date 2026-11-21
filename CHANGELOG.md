@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.11
+- Affinité : les 72 scrims du Parthénon (+ 19/11) sont comptés par joueur et par rôle ; leurs résultats donnent un bonus/malus lissé d'au plus ±15 % (ex. Syndra chez JH, 2 V sur 7, baisse ; peu de games = presque neutre). Les tier lists de l'outil restent la référence, pas celles du Parthénon.
+- Synergie : les duos déjà joués par l'équipe (≥ 3 games) comptent dans le score, sans affichage (Yunara + Lulu 0/3 en malus ; Jinx + Milio, Tristana + Nautilus en bonus).
+
 ## v12.10
 - Tuto : titre « Bienvenue dans l'outil draft de BBJ », phrase d'intro retirée ; il ne s'ouvre plus tout seul, seulement avec le bouton Tuto.
 

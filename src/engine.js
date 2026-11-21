@@ -54,6 +54,11 @@ OPGG_META_RAW.trim().split("\n").forEach(line=>{ const [k,v]=line.split("="); co
   v.split("|").forEach(x=>{ const [n,wr,pk,bn]=x.split(":"); const c=findChamp(n); if(!c) return; ((OPGG[c]=OPGG[c]||{})[r]=OPGG[c][r]||{})[lvl==="master"?"m":"e"]=[+wr,+pk,+bn]; }); });
 const STATS = {};
 STATS_RAW.split("|").forEach(s=>{const [n,g,w]=s.split(":"); STATS[n]={g:+g,wr:+w};});
+// Games de l'équipe par joueur/rôle/champion et duos joués ensemble (Parthenon)
+const TEAM_P = {}; TEAM_P_RAW.split(";").forEach(s=>{const [p,r,c,g,w]=s.split("|"); ((TEAM_P[p]=TEAM_P[p]||{})[r]=TEAM_P[p][r]||{})[c]={g:+g,w:+w};});
+const TEAM_DUO = {}; TEAM_DUO_RAW.split(";").forEach(s=>{const [r,k,g,w]=s.split("|"); const [a,b]=k.split("+"); TEAM_DUO[r+"|"+a+"|"+b]={g:+g,w:+w};});
+function teamDuoAdj(c,role,a,ra){ const x=TEAM_DUO[role+ra+"|"+c+"|"+a]||TEAM_DUO[ra+role+"|"+a+"|"+c]; if(!x||x.g<3) return 0;
+  return Math.max(-2,Math.min(2,((x.w+1.5)/(x.g+3)-0.5)*8)); }
 const clamp01=x=>Math.max(0,Math.min(1,x));
 function metaInfo(c,role){
   const o=OPGG[c]||{}; let d=role?o[role]:null;
@@ -97,6 +102,7 @@ const playerMain = id=>(PLAYERS.find(p=>p.id===id)||{}).main;
 // Stats Parthenon : rattachées au joueur titulaire du rôle où le champion a son meilleur tier
 const STATS_OWNER = (()=>{ const cfg0=defaultConfig(), out={};
   for(const c in STATS){ let best=null,bv=-1;
+    PLAYERS.forEach(p=>{ const x=((TEAM_P[p.id]||{})[p.main]||{})[c]; if(x&&x.g>bv){bv=x.g;best=p.id;} }); if(best){ out[c]=best; continue; } bv=-1;
     PLAYERS.filter(p=>p.id!=="Yeyozz").forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
     if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&p.id!=="Yeyozz")||{}).id; }
     out[c]=best; }
@@ -120,17 +126,19 @@ function tierFor(cfg,pid,role,c){
 // La tier list ne sert que de repère quand il n'y a aucune game.
 function affinity(cfg,pid,role,c){
   const t=tierFor(cfg,pid,role,c);
-  const st=STATS[c]&&STATS_OWNER[c]===pid&&playerMain(pid)===role?STATS[c]:null;
+  const st=((TEAM_P[pid]||{})[role]||{})[c]||null; // ses games en équipe à ce rôle (Parthenon)
   const sq=sqCounts(c,role)?(OUR_SQ[pid]||{})[c]:null;
   const tg=st?st.g:0, sg=sq?sq.g:0, eff=tg*4+sg;
   let v=1-Math.exp(-eff/70);
-  // léger ajustement par les résultats (lissé)
-  const wins=(st?st.g*st.wr/100:0)*4+(sq?sq.g*sq.wr/100:0); if(eff>0){ const wr=(wins+0.5*20)/(eff+20); v=clamp01(v+(wr-0.5)*0.6); }
+  // léger ajustement par les résultats en solo Q (lissé)
+  if(sg){ const wr=(sg*sq.wr/100+0.5*20)/(sg+20); v=clamp01(v+(wr-0.5)*0.6); }
   // la tier list = confiance actuelle du joueur : elle pèse 20 % (l'outil doit aussi proposer le champion le plus adapté), un champion absent de sa liste perd un peu
   if(!eff) v=t?TIER_VAL[t]*0.5:0.15;
   else if(t) v=clamp01(0.8*v+0.2*TIER_VAL[t]);
   else v*=0.9;
-  return {v, tier:t||"-", games:tg, wr:st?st.wr:null, sq:sq||null};
+  // résultats en scrim : bonus/malus lissé, au plus ±15 % (peu de games → presque neutre)
+  if(tg) v=clamp01(v*(1+Math.max(-0.15,Math.min(0.15,(st.w+3)/(tg+6)-0.5))));
+  return {v, tier:t||"-", games:tg, wr:st?Math.round(100*st.w/tg):null, sq:sq||null};
 }
 
 // ---- Synergies & matchups ----
@@ -160,6 +168,7 @@ function synergy(cfg,c,role,allies){
     const d=provenDuo(cfg,c,role,a.name,a.role);
     const w=((role==="A"&&a.role==="S")||(role==="S"&&a.role==="A")||(role==="J"&&a.role==="S")||(role==="S"&&a.role==="J"))?1.5:1;
     if(d){ const pd=d==="pro"?proDuoInfo(c,role,a.name,a.role):null, adj=d==="pro"?duoAdj(pd):3; s+=adj*w; duos.push(a.name+" ("+d+(pd&&pd.lift<=-1?`, perd ${pd.lift} pts ensemble`:"")+")"); }
+    s+=teamDuoAdj(c,role,a.name,a.role)*w; // duo déjà joué par l'équipe : compte dans le score, sans affichage
     if(!x) return;
     s+=x.v*w; if(Math.abs(x.v)>=1) (x.v>0?why:bad).push(a.name+" "+(x.v>0?"+":"")+x.v+"%"); });
   return {v:clamp01(0.5+s/10), why, bad, duos};
