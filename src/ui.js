@@ -421,6 +421,20 @@ function reqStatus(){ const q=prep.request; if(!q) return "Entre les pseudos (av
 function dupWarn(){ const v=ROLES.map(r=>prep.lineup[r]); const d=v.filter((p,k)=>v.indexOf(p)!==k); return d.length?`<div class="warn">⚠ ${esc(d.join(", "))} est placé sur deux rôles.</div>`:""; }
 
 // ---------- Pools ----------
+// Mini fiche d'un champion : uniquement nos parties en scrim/compétition (Parthenon)
+function champSheet(pid,role,c){
+  const R=(TEAM_STATS[pid]||{}), x=(R[role]||{})[c], other=Object.keys(R).filter(r=>r!==role&&R[r][c]);
+  let h=`<div class="sheet">${av(c,"lg")}<div><b>${esc(c)}</b><div class="muted">${esc(pid)} · ${ROLE_NAMES[role]} · scrims et compétition</div>`;
+  if(!x) return h+`<div class="muted">Aucune partie en scrim ou compétition sur ce champion.</div></div></div>`;
+  const [g,w,k,dd,a,sh,gd,pf]=x, kda=dd?((k+a)/dd).toFixed(1):"∞", wr=Math.round(100*w/g);
+  const col=v=>v>=65?"good":v>=45?"mid":"bad";
+  h+=`<div class="sst"><span><em>Games</em><b>${g}</b> <i>${w}V-${g-w}D</i></span><span><em>Winrate</em><b class="${col(wr)}">${wr} %</b></span>
+   <span><em>KDA</em><b>${kda}</b> <i>${k}/${dd}/${a}</i></span><span><em>Dégâts</em><b>${sh} %</b> <i>de l'équipe</i></span>
+   <span><em>Or à 15 min</em><b class="${gd>=0?"good":"bad"}">${gd>=0?"+":""}${gd}</b></span><span><em>Performance</em><b class="${col(pf)}">${pf}/100</b></span></div>`;
+  if(g<4) h+=`<div class="muted">Peu de games : à prendre avec prudence.</div>`;
+  if(other.length) h+=`<div class="muted">Aussi joué en ${other.map(r=>ROLE_NAMES[r]+` (${R[r][c][0]} g.)`).join(", ")}.</div>`;
+  return h+`</div></div>`;
+}
 function viewPools(){
   const p=PLAYERS.find(x=>x.id===ui.poolPlayer)||PLAYERS[0], role=p.main;
   const names=poolOf(cfg,p.id,role); const rows={S:[],A:[],B:[],C:[],D:[],"?":[]};
@@ -429,9 +443,9 @@ function viewPools(){
   const cell=x=>`<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
      <span class="pm">${x.a.games?`<b>${x.a.games}</b> g.`:""}${x.a.sq?` <i>SQ ${x.a.sq.g}</i>`:""}</span></button>`;
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
-  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon) et games en solo Q (SQ). Clique un champion pour changer son tier.</p>
+  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon) et games en solo Q (SQ). Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
    ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
-   ${ui.tierPop?`<div class="pop"><b>${esc(ui.tierPop)}</b>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div>`:""}
+   ${ui.tierPop?`<div class="pop">${champSheet(p.id,role,ui.tierPop)}<div class="poprow"><span class="muted">Tier :</span>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}" class="${(cfg.tiers[p.id]||{})[ui.tierPop]===t?"on":""}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;
 }
 

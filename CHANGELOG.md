@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.17
+- Yeyozz (remplaçant top) : tier list tirée de son op.gg 2026 + 2025 (S : Jax, Darius, Aatrox ; A : Zaahen, Ambessa, K'Sante, Olaf ; B : Mordekaiser, Renekton, Yone, Dr. Mundo ; C : Sett, Urgot, Nasus, Camille).
+- Onglet Pool : cliquer un champion ouvre une mini fiche sur nos parties en scrim/compétition uniquement (games, V-D, winrate, KDA, part des dégâts, or à 15 min, score de performance /100). Les boutons de tier restent dans la fiche.
+- Score de performance : 35 % winrate lissé, 25 % KDA et 20 % part des dégâts (comparés à la moyenne du rôle), 20 % écart d'or à 15 min.
+
 ## v12.16
 - Bans : la préparation suit leurs bans. S'ils bannissent l'un de nos counters d'un de leurs conforts (ex. Kassadin de JH → Cassiopeia de Para), ce confort remonte avec « ⚠ Ils ont banni X, notre counter : pick probable ».
 
