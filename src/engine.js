@@ -57,6 +57,31 @@ STATS_RAW.split("|").forEach(s=>{const [n,g,w]=s.split(":"); STATS[n]={g:+g,wr:+
 // Games de l'équipe par joueur/rôle/champion et duos joués ensemble (Parthenon)
 const TEAM_P = {}; TEAM_P_RAW.split(";").forEach(s=>{const [p,r,c,g,w]=s.split("|"); ((TEAM_P[p]=TEAM_P[p]||{})[r]=TEAM_P[p][r]||{})[c]={g:+g,w:+w};});
 const TEAM_DUO = {}; TEAM_DUO_RAW.split(";").forEach(s=>{const [r,k,g,w]=s.split("|"); const [a,b]=k.split("+"); TEAM_DUO[r+"|"+a+"|"+b]={g:+g,w:+w};});
+// Stats scrim/compétition : base Parthenon + chaque série exportée ensuite (Fin de série → historique, stats du client)
+const _dmy=s=>{ const m=/(\d+)\/(\d+)\/(\d+)/.exec(s||""); return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""; };
+function teamStats(hist){
+  const T=JSON.parse(JSON.stringify(TEAM_STATS_BASE));
+  ((hist&&hist.series)||[]).forEach(s=>{ if(!(_dmy(s.date)>TEAM_STATS_UNTIL)) return;
+    (s.games||[]).forEach(g=>{ const st=g.stats; if(!st||!st.us||!g.result) return;
+      const mine={}; (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===g.side&&a.role) mine[a.role]=a.name; });
+      const tot=ROLES.reduce((x,r)=>x+(st.us[r]?st.us[r].dmg:0),0); // part des dégâts de notre équipe
+      ROLES.forEach(r=>{ const u=st.us[r], c=mine[r], pid=(s.lineup||{})[r]; if(!u||!c||!pid) return;
+        const x=((T[pid]=T[pid]||{})[r]=T[pid][r]||{})[c]=((T[pid][r]||{})[c])||[0,0,0,0,0,0,0,0];
+        x[0]++; x[1]+=g.result==="W"?1:0; x[2]+=u.k; x[3]+=u.d; x[4]+=u.a; x[5]+=tot?u.dmg/tot:0; }); }); });
+  return T;
+}
+// Score de performance /100 : 50 = niveau habituel du joueur à ce rôle ; 45 % winrate (lissé), 20 % KDA, 15 % part des dégâts, 20 % or à 15 min,
+// comparés à SA moyenne sur tous ses champions au rôle ; les petits échantillons sont ramenés vers 50
+function champPerf(T,pid,role,c){
+  const C=(T[pid]||{})[role]||{}, x=C[c]; if(!x) return null;
+  const t=[0,0,0,0,0,0,0,0]; Object.values(C).forEach(y=>y.forEach((v,i)=>t[i]+=v));
+  const cl=v=>Math.max(-1,Math.min(1,v)), [g,w,k,d,a,sh,gd,gn]=x;
+  const bk=(t[2]+t[4])/Math.max(1,t[3]), bs=t[5]/t[0], bg=t[7]?t[6]/t[7]:0;
+  const wr=(w+2)/(g+4), kda=(k+a)/Math.max(1,d), s=sh/g;
+  let v=0.45*cl((wr-0.5)/0.2)+0.2*cl((kda/bk-1)/0.4)+0.15*cl((s/bs-1)/0.25);
+  v+=gn?0.2*cl((gd/gn-bg)/2000):0.2*cl((wr-0.5)/0.2); // sans or à 15 min : le winrate prend sa place
+  return Math.round(50+50*cl(v*1.5)*g/(g+2));
+}
 function teamDuoAdj(c,role,a,ra){ const x=TEAM_DUO[role+ra+"|"+c+"|"+a]||TEAM_DUO[ra+role+"|"+a+"|"+c]; if(!x||x.g<3) return 0;
   return Math.max(-2,Math.min(2,((x.w+1.5)/(x.g+3)-0.5)*8)); }
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -821,4 +846,4 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};

@@ -423,15 +423,15 @@ function dupWarn(){ const v=ROLES.map(r=>prep.lineup[r]); const d=v.filter((p,k)
 // ---------- Pools ----------
 // Mini fiche d'un champion : uniquement nos parties en scrim/compétition (Parthenon)
 function champSheet(pid,role,c){
-  const R=(TEAM_STATS[pid]||{}), x=(R[role]||{})[c], other=Object.keys(R).filter(r=>r!==role&&R[r][c]);
+  const T=teamStats(history), R=(T[pid]||{}), x=(R[role]||{})[c], other=Object.keys(R).filter(r=>r!==role&&R[r][c]);
   let h=`<div class="sheet">${av(c,"lg")}<div><b>${esc(c)}</b><div class="muted">${esc(pid)} · ${ROLE_NAMES[role]} · scrims et compétition</div>`;
   if(!x) return h+`<div class="muted">Aucune partie en scrim ou compétition sur ce champion.</div></div></div>`;
-  const [g,w,k,dd,a,sh,gd,pf]=x, kda=dd?((k+a)/dd).toFixed(1):"∞", wr=Math.round(100*w/g);
+  const [g,w,K,D,A,sh,gd,gn]=x, f=v=>Math.round(v/g*10)/10, k=f(K), dd=f(D), a=f(A), kda=D?((K+A)/D).toFixed(1):"∞", wr=Math.round(100*w/g), pf=champPerf(T,pid,role,c), sp=Math.round(100*sh/g), gm=gn?Math.round(gd/gn):null;
   const col=v=>v>=65?"good":v>=45?"mid":"bad";
   h+=`<div class="sst"><span><em>Games</em><b>${g}</b> <i>${w}V-${g-w}D</i></span><span><em>Winrate</em><b class="${col(wr)}">${wr} %</b></span>
-   <span><em>KDA</em><b>${kda}</b> <i>${k}/${dd}/${a}</i></span><span><em>Dégâts</em><b>${sh} %</b> <i>de l'équipe</i></span>
-   <span><em>Or à 15 min</em><b class="${gd>=0?"good":"bad"}">${gd>=0?"+":""}${gd}</b></span><span><em>Performance</em><b class="${col(pf)}">${pf}/100</b></span></div>`;
-  if(g<4) h+=`<div class="muted">Peu de games : à prendre avec prudence.</div>`;
+   <span><em>KDA</em><b>${kda}</b> <i>${k}/${dd}/${a}</i></span><span><em>Dégâts</em><b>${sp} %</b> <i>de l'équipe</i></span>
+   <span><em>Or à 15 min</em>${gm==null?"<b>—</b>":`<b class="${gm>=0?"good":"bad"}">${gm>=0?"+":""}${gm}</b>`}</span><span><em>Performance</em><b class="${col(pf)}" title="50 = son niveau habituel à ce rôle">${pf}/100</b></span></div>`;
+  if(g<4) h+=`<div class="muted">Peu de games : note ramenée vers 50.</div>`;
   if(other.length) h+=`<div class="muted">Aussi joué en ${other.map(r=>ROLE_NAMES[r]+` (${R[r][c][0]} g.)`).join(", ")}.</div>`;
   return h+`</div></div>`;
 }

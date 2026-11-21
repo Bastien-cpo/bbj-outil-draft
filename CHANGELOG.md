@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.18
+- Fiches du Pool : les séries exportées avec « Fin de série » (historique de l'outil, stats du client) s'ajoutent automatiquement à la base Parthénon (jusqu'au 17/11). Plus besoin de repasser par le Parthénon.
+- Score de performance revu : 50 = niveau habituel du joueur à ce rôle (comparé à sa propre moyenne, plus à toute la partie). 45 % winrate lissé, 20 % KDA, 15 % part des dégâts, 20 % or à 15 min (remplacé par le winrate quand l'export n'a pas l'or à 15 min). Les petits échantillons sont ramenés vers 50.
+
 ## v12.17
 - Yeyozz (remplaçant top) : tier list tirée de son op.gg 2026 + 2025 (S : Jax, Darius, Aatrox ; A : Zaahen, Ambessa, K'Sante, Olaf ; B : Mordekaiser, Renekton, Yone, Dr. Mundo ; C : Sett, Urgot, Nasus, Camille).
 - Onglet Pool : cliquer un champion ouvre une mini fiche sur nos parties en scrim/compétition uniquement (games, V-D, winrate, KDA, part des dégâts, or à 15 min, score de performance /100). Les boutons de tier restent dans la fiche.
