@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.26
+- L'outil s'ouvre toujours sur l'onglet Draft.
+- Une draft en cours depuis plus de 6 h est effacée à l'ouverture (l'outil repart propre) ; un rechargement en pleine draft la garde.
+- Guide de l'outil réécrit pour un nouvel utilisateur, avec une partie « Gérer l'outil pendant une série » (favori Drafter, Fin de série, préparation d'un PC).
+
 ## v12.25
 - Analyse de draft : les 4 matchups (top, jungle, mid, botlane) toujours affichés, même proches de 50 % ; sans duel mesuré, estimation par l'écart de winrate des champions, marquée « ≈ » (et comptée moins fort dans l'estimation de victoire).
 - Plan de jeu : uniquement les conseils marqués (lane à 55 % ou plus / 45 % ou moins, net écart de profil entre les compos) ; plus aucune phrase générique.

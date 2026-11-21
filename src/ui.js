@@ -17,7 +17,7 @@ const curStep=()=>live.draft.actions.findIndex(a=>!a);
 const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id}</option>`).join("");
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
-function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer}})); }catch(e){} }
+function saveLocal(){ try{ if(live.draft.actions.some(Boolean)||live.series.games.length) live.ts=Date.now(); localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{poolPlayer:ui.poolPlayer}})); }catch(e){} }
 // Fayk → Romain, Billy → Fabien (vrais prénoms) : anciennes lineups, historique et préparation
 const RENAMED={Fayk:"Romain",Billy:"Fabien"};
 function fixLineup(l){ if(l) for(const r in l) if(RENAMED[l[r]]) l[r]=RENAMED[l[r]]; return l; }
@@ -25,7 +25,7 @@ function fixNames(){ if(prep) fixLineup(prep.lineup); ((history&&history.series)
 function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } if(c.wv<9){ c.weights={affinite:25, force:25, synergie:25, matchup:25}; c.wv=9; }
   const RN={Fayk:"Romain",Billy:"Fabien"}; for(const o in RN) if(c.tiers[o]){ if(!c.tiers[RN[o]]) c.tiers[RN[o]]=c.tiers[o]; delete c.tiers[o]; }
   const d0=defaultConfig().tiers; PLAYERS.forEach(p=>{ if(!c.tiers[p.id]) c.tiers[p.id]=d0[p.id]; }); return c; }
-function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); fixNames(); } }catch(e){} }
+function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); if(d.live&&d.live.ts&&Date.now()-d.live.ts<6*3600e3) live=Object.assign(live,d.live); /* une draft de plus de 6 h est terminée : on repart propre */ if(d.history) history=d.history; Object.assign(ui,d.ui||{}); ui.tab="draft"; fixNames(); } }catch(e){} }
 const pending={}, writing={}, timers={};
 function persist(key){ saveLocal(); if(!sync.db||sync.readOnly) return; clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key),450); pending[key]=true; }
 async function flush(key){
