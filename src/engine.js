@@ -308,7 +308,7 @@ function scorePick(cfg,c,role,ctx){
   const parts=[["Affinité",af.v,W.affinite*(isSub?1.6:1)],["Méta",fo,W.force*mMeta]];
   if(ctx.allies.length) parts.push(["Synergie",sy.v,W.synergie*(duo?1.6:1)*(n<=3?1.2:1)]);
   const tW=[1,0.7,0.4,0.15,0][Math.min(4,n-1)]*(ctx.firstPick?1.2:1);
-  let tim=null; if(tW>0){ tim=timingScore(cfg,c,role,ctx); parts.push(["Timing",tim,W.force*tW]); }
+  let tim=null; if(tW>0){ tim=timingScore(cfg,c,role,ctx); /* un confort S/A du joueur peut sortir tôt : le timing pro ne doit pas l'enterrer */ const tt=af.tier; if(tt==="S") tim=Math.max(tim,0.75); else if(tt==="A") tim=Math.max(tim,0.5); parts.push(["Timing",tim,W.force*tW]); }
   let duoPart=null;
   if(ctx.redDuo&&!ctx.allies.length){ // rouge : duo enchaîné en picks 1-2
     for(const r2 of (ctx.open||[])){ if(r2===role) continue; const pid2=ctx.lineup[r2]; if(!pid2) continue;
