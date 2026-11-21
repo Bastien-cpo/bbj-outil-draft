@@ -191,7 +191,7 @@ function viewDraft(){
   const d=live.draft, gameNo=live.series.games.length+1;
   const top=`<div class="dtop">
     <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
-    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
+    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s&&sideOk()?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
     <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
     <button class="btn sm" data-act="newseries">Nouvelle série</button></div>`;
   if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
@@ -258,7 +258,7 @@ function finalHtml(d,ro){
   const A=analyzeFinal(cfg,d,prep,prep.lineup); const us=d.side;
   const card=(lbl,T)=>`<div class="acard"><em>${esc(lbl)}</em><div>${T.tags.strong.map(x=>`<span class="tag ok">${esc(x)}</span>`).join("")||'<span class="muted">—</span>'}</div>
     ${T.tags.weak.length?`<div>${T.tags.weak.map(x=>`<span class="tag ko">${esc(x)}</span>`).join("")}</div>`:""}
-    ${T.synList.length?`<div class="muted">Synergies : ${T.synList.map(esc).join(" · ")}</div>`:""}</div>`;
+    ${(()=>{ const p=T.synList.filter(x=>!/\(-/.test(x)), n=T.synList.filter(x=>/\(-/.test(x)); return (p.length?`<div class="muted">Synergies : ${p.map(esc).join(" · ")}</div>`:"")+(n.length?`<div class="muted">Anti-synergies : ${n.map(esc).join(" · ")}</div>`:""); })()}</div>`;
   return `<div class="final"><div class="winbox"><div class="wl">${esc(us==="R"?theirName():ourName())}</div><div class="wbar${us==="R"?" rev":""}"><i style="width:${A.win}%"></i><b>${A.win} %</b></div><div class="wl r">${esc(us==="R"?ourName():theirName())}</div></div>
     ${A.plan.key&&A.plan.key.length?`<div class="row c">${A.plan.key.map(k=>`<span class="tag ok">${esc(k)}</span>`).join("")}</div>`:""}
     <div class="acards">${us==="R"?card(theirName(),A.them)+card(ourName(),A.us):card(ourName(),A.us)+card(theirName(),A.them)}</div>
@@ -462,7 +462,7 @@ function viewSettings(){
    <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
    <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
-   <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22 ajusté avec les notes du patch 26.23 (buffs : Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi ; nerfs : LeBlanc, Master Yi, Syndra), Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
+   <section class="card"><h3>Sources</h3><p class="muted">Méta : OP.GG Maître+ et Émeraude+ patch 26.22, ajusté avec le patch ${PATCH_NEXT.v} (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Pro : gol.gg (ordre de pick, position de pick). Duos pro : 12 746 games pro 2025-2026, récentes pondérées plus fort, reworks exclus. Matchups : lolalytics Maître+ 26.22, complétés par lolstats.gg. Synergies : lolstats.gg (botlane), metabot.gg (autres rôles). Nos games : Parthénon (72 scrims jusqu'au 17/11) puis les séries exportées avec « Fin de série ». Solo Q : op.gg, tous les comptes de chaque joueur.</p></section>
    ${synEditor()}${ctrEditor()}${bookmarkCard()}
    <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
 }

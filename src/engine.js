@@ -539,8 +539,8 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
       if(x==="A"&&y==="S"&&(tA||tS)){ edge=botEdge(cfg,a.name,b.name,tA,tS); }
       const pd=proDuoInfo(a.name,x,b.name,y), pw=pd?pd.w/pd.n:0.5;
       const sc=Math.round((a.score+b.score)/2+(p?Math.max(0,p.v):0)+(team?5:0)+ans*4+(edge?edge.v*1.5:0)+(pd?2*duoAdj(pd):0));
-      out.push({a,b,score:sc,syn:p?p.v:null,roles:[x,y],team,answer:ans>0,edge,pro:pd?{n:pd.raw||pd.n,wr:Math.round(pw*100)}:null}); })); });
-  out.sort((p,q)=>q.score-p.score);
+      out.push({a,b,score:Math.min(100,sc),raw:sc,syn:p?p.v:null,roles:[x,y],team,answer:ans>0,edge,pro:pd?{n:pd.raw||pd.n,wr:Math.round(pw*100)}:null}); })); });
+  out.sort((p,q)=>(q.raw??q.score)-(p.raw??p.score));
   const used={}, res=[]; // variété : un champion apparaît au plus 2 fois
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
   return res;
@@ -555,8 +555,8 @@ function pickIdeas(cfg,series,draft,lineup,n=6){
     const q=synVal(cfg,a.name,x,b.name,y), pd=provenDuo(cfg,a.name,x,b.name,y)?proDuoInfo(a.name,x,b.name,y):null, team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?duoAdj(pd):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`duo pro, ${pd.raw} games ensemble (${pd.lift>=0?"+":""}${pd.lift} pts vs attendu)`); if(team) why.push("déjà joués en équipe");
-    out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));
-  const used={}, res=[]; out.sort((p,q)=>q.score-p.score);
+    out.push({a,b,roles:[x,y],score:Math.min(100,Math.round(sc)),raw:sc,why}); }))));
+  const used={}, res=[]; out.sort((p,q)=>q.raw-p.raw);
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
   return {kind:"R", list:res};
 }
@@ -653,8 +653,9 @@ function banPlan(cfg,prep,lineup,un,tb){
       const ocAll=ourCounters(cfg,x.c,pl.role,lineup), oc=ocAll.filter(o=>!(un&&un.has(o.champ)));
       // Lecture de leurs bans : s'ils bannissent notre counter de ce champion, ils préparent sans doute ce pick → il remonte
       const hit=tb?ocAll.filter(o=>tb.has(o.champ)):[];
-      if(hit.length){ const k=Math.max(...hit.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
-        s=s*(1+0.4*Math.max(0.3,k))+0.1; why.unshift(`⚠ Ils ont banni ${hit.map(o=>o.champ).join(", ")}, notre counter : pick probable`); tags.unshift("Préparé par leurs bans"); }
+      if(hit.length){ /* s'ils bannissent un de nos conforts S/A, c'est surtout pour nous gêner : signal faible */
+        const k=Math.max(...hit.map(o=>{ const t=tierFor(cfg,o.player,pl.role,o.champ); return clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v*(t==="S"||t==="A"?0.35:1); }));
+        if(k>=0.12){ s=s*(1+0.5*k)+0.12*k; why.unshift(`⚠ Ils ont banni ${hit.map(o=>o.champ).join(", ")}, notre counter : pick probable`); tags.unshift("Préparé par leurs bans"); } }
       if(oc.length){ const k=Math.max(...oc.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
         if(k>0.05){ s*=1-0.3*k*[0.4,0.7,1,1,1][rk-1]; /* le meilleur joueur adverse joue mieux autour d’un counter */ why.push(`On peut le laisser : ${oc.slice(0,2).map(o=>`${o.champ} (${o.player}, ${o.wr} %)`).join(", ")} le contre`); tags.push("Contrable par nous"); } }
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
@@ -845,7 +846,7 @@ function analyzeFinal(cfg,draft,prep,lineup){
   add("Méta / force des picks",(U.meta-T.meta)*20, `Vous ${Math.round(U.meta*100)} · eux ${Math.round(T.meta*100)}`);
   add("Synergies",Math.max(-6,Math.min(6,(U.syn-T.syn)*0.6)), `Vous ${U.syn>0?"+":""}${Math.round(U.syn*10)/10} % · eux ${T.syn>0?"+":""}${Math.round(T.syn*10)/10} %`);
   const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*(l.role==="T"?0.9:0.6),0);
-  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
+  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
   add("Cohérence de compo",(T.tags.weak.length-U.tags.weak.length)*1.5+(U.tags.strong.length-T.tags.strong.length)*0.5, `${U.tags.weak.length} faiblesse(s) chez vous · ${T.tags.weak.length} chez eux`);
   const total=factors.reduce((s,f)=>s+f.pts,0);
   // Calibrage pro 2026 : l'écart prédit était trop large (40 % annoncé → 46 % réel) → resserré, borné 35–65 %

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
+<head><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23d4ad52'/%3E%3C/svg%3E">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BBJ Outil Draft</title>
@@ -94,7 +94,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .opp{border-top:1px solid var(--line);padding:6px 0}.opp select{padding:3px 6px;font-size:12px}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0}.chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px 2px 3px;font-size:12px}
 /* pools */
-.ptabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:8px}.ptabs button{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:600;display:flex;flex-direction:column;align-items:center}
+.ptabs{flex-wrap:wrap;display:flex;gap:4px;overflow-x:auto;margin-bottom:8px}.ptabs button{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:600;display:flex;flex-direction:column;align-items:center}
 .ptabs button em{font-style:normal;font-size:10px;color:var(--mu);font-weight:500}.ptabs button.on{border-color:var(--gold);color:var(--gold)}
 .trow{display:flex;gap:8px;align-items:stretch;border-bottom:1px solid var(--line);padding:6px 0}
 .tl{width:42px;flex:none;display:grid;place-items:center;font:700 26px Rajdhani,sans-serif;border-radius:8px}
@@ -205,7 +205,7 @@ body.drafting .arena{height:calc(100vh - 128px);align-items:stretch}
 .duom{position:absolute;top:-2px;left:0;background:var(--gold);color:#111;font:700 9px Inter;border-radius:6px;padding:0 3px;line-height:13px}
 .ph{margin:6px 0}.ph em{font-style:normal;color:var(--gold);font-weight:600;font-size:13px}
 .bubs.fill.duos{--bw:74px;grid-template-columns:repeat(auto-fill,74px)}.bubs.fill.duos .duob{width:74px;padding:4px;justify-content:center}.duob.team{border-color:rgba(212,173,82,.6)}
-.pk.pred{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:4px 8px;border-style:dashed}.prl{font-size:11px;color:var(--mut,#8a93a6)}.prb{display:flex;gap:4px}.prc .av{opacity:.85}.prc:hover .av{opacity:1;box-shadow:0 0 0 2px var(--gold)}
+.pk.pred{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:4px 8px;border-style:dashed}.prl{font-size:11px;color:var(--mu)}.prb{display:flex;gap:4px}.prc .av{opacity:.85}.prc:hover .av{opacity:1;box-shadow:0 0 0 2px var(--gold)}
 .gtab.w{border-color:#3fa66b}.gtab.l{border-color:#c0504d}.res .btn.on.w{background:#2f7d52;color:#fff}.res .btn.on.l{background:#9b3b38;color:#fff}.hs h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.hg{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;flex-wrap:wrap}.hg:hover{background:rgba(255,255,255,.04)}.hg b.w{color:#4cc27f}.hg b.l{color:#e06460}.hp{display:flex;gap:3px}
 .hopp{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--tx);font:inherit;padding:1px 6px;width:14ch}.hopp:hover,.hopp:focus{border-color:var(--line);outline:none}
 .drstat.on{background:#2f7d52;color:#fff;border-color:#2f7d52}.drstat.off{border-color:#c0504d}.drp ol{margin:6px 0 10px 18px;line-height:1.9}.bm{cursor:grab}.relaycode{width:100%;height:70px;font:11px monospace}
@@ -227,7 +227,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 .pk.miss .miss{display:flex;align-items:center;justify-content:center;width:56px;height:56px;font-size:24px;color:#888;border:1px dashed #555;border-radius:8px}
 .ban .miss{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px;color:#888;border:1px dashed #555;border-radius:6px}
 .moment{text-align:center;font-size:12px;color:var(--gold);margin:-2px 0 2px}
-@media(max-width:560px){.bubs.fill{--bw:58px}}
+@media(max-width:560px){.bubs.fill{--bw:58px}.prb{flex-wrap:nowrap;gap:2px;max-width:100%;overflow:hidden}.prb .prc{flex:0 1 auto;min-width:0}.prb .av.md{width:30px;height:30px}html,body{overflow-x:hidden}}
 .expo{margin:6px 0 8px;padding:8px 10px;border-radius:10px;border:1px solid #d9a33a;background:rgba(217,163,58,.12);font-size:13px}
 .expo.post{border-color:#e0605a;background:rgba(224,96,90,.12)}
 .exth{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.exth span{display:flex;align-items:center;gap:5px}.exth em{font-style:normal;opacity:.75;font-size:12px}
@@ -242,7 +242,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.23 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.24 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -1079,8 +1079,8 @@ function recommendDuos(cfg,series,draft,lineup,n=20){
       if(x==="A"&&y==="S"&&(tA||tS)){ edge=botEdge(cfg,a.name,b.name,tA,tS); }
       const pd=proDuoInfo(a.name,x,b.name,y), pw=pd?pd.w/pd.n:0.5;
       const sc=Math.round((a.score+b.score)/2+(p?Math.max(0,p.v):0)+(team?5:0)+ans*4+(edge?edge.v*1.5:0)+(pd?2*duoAdj(pd):0));
-      out.push({a,b,score:sc,syn:p?p.v:null,roles:[x,y],team,answer:ans>0,edge,pro:pd?{n:pd.raw||pd.n,wr:Math.round(pw*100)}:null}); })); });
-  out.sort((p,q)=>q.score-p.score);
+      out.push({a,b,score:Math.min(100,sc),raw:sc,syn:p?p.v:null,roles:[x,y],team,answer:ans>0,edge,pro:pd?{n:pd.raw||pd.n,wr:Math.round(pw*100)}:null}); })); });
+  out.sort((p,q)=>(q.raw??q.score)-(p.raw??p.score));
   const used={}, res=[]; // variété : un champion apparaît au plus 2 fois
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
   return res;
@@ -1095,8 +1095,8 @@ function pickIdeas(cfg,series,draft,lineup,n=6){
     const q=synVal(cfg,a.name,x,b.name,y), pd=provenDuo(cfg,a.name,x,b.name,y)?proDuoInfo(a.name,x,b.name,y):null, team=teamDuo(a.name,b.name);
     const sc=(a.score+b.score)/2+(q?Math.max(-3,Math.min(6,q.v)):0)+(pd?duoAdj(pd):0)+(team?3:0);
     const why=[`${a.name} ${a.score} + ${b.name} ${b.score}`]; if(q&&q.v>=1) why.push(`synergie +${q.v} %`); if(pd) why.push(`duo pro, ${pd.raw} games ensemble (${pd.lift>=0?"+":""}${pd.lift} pts vs attendu)`); if(team) why.push("déjà joués en équipe");
-    out.push({a,b,roles:[x,y],score:Math.round(sc),why}); }))));
-  const used={}, res=[]; out.sort((p,q)=>q.score-p.score);
+    out.push({a,b,roles:[x,y],score:Math.min(100,Math.round(sc)),raw:sc,why}); }))));
+  const used={}, res=[]; out.sort((p,q)=>q.raw-p.raw);
   for(const x of out){ if(res.length>=n) break; if((used[x.a.name]||0)>=2||(used[x.b.name]||0)>=2) continue; used[x.a.name]=(used[x.a.name]||0)+1; used[x.b.name]=(used[x.b.name]||0)+1; res.push(x); }
   return {kind:"R", list:res};
 }
@@ -1193,8 +1193,9 @@ function banPlan(cfg,prep,lineup,un,tb){
       const ocAll=ourCounters(cfg,x.c,pl.role,lineup), oc=ocAll.filter(o=>!(un&&un.has(o.champ)));
       // Lecture de leurs bans : s'ils bannissent notre counter de ce champion, ils préparent sans doute ce pick → il remonte
       const hit=tb?ocAll.filter(o=>tb.has(o.champ)):[];
-      if(hit.length){ const k=Math.max(...hit.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
-        s=s*(1+0.4*Math.max(0.3,k))+0.1; why.unshift(`⚠ Ils ont banni ${hit.map(o=>o.champ).join(", ")}, notre counter : pick probable`); tags.unshift("Préparé par leurs bans"); }
+      if(hit.length){ /* s'ils bannissent un de nos conforts S/A, c'est surtout pour nous gêner : signal faible */
+        const k=Math.max(...hit.map(o=>{ const t=tierFor(cfg,o.player,pl.role,o.champ); return clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v*(t==="S"||t==="A"?0.35:1); }));
+        if(k>=0.12){ s=s*(1+0.5*k)+0.12*k; why.unshift(`⚠ Ils ont banni ${hit.map(o=>o.champ).join(", ")}, notre counter : pick probable`); tags.unshift("Préparé par leurs bans"); } }
       if(oc.length){ const k=Math.max(...oc.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
         if(k>0.05){ s*=1-0.3*k*[0.4,0.7,1,1,1][rk-1]; /* le meilleur joueur adverse joue mieux autour d’un counter */ why.push(`On peut le laisser : ${oc.slice(0,2).map(o=>`${o.champ} (${o.player}, ${o.wr} %)`).join(", ")} le contre`); tags.push("Contrable par nous"); } }
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
@@ -1385,7 +1386,7 @@ function analyzeFinal(cfg,draft,prep,lineup){
   add("Méta / force des picks",(U.meta-T.meta)*20, `Vous ${Math.round(U.meta*100)} · eux ${Math.round(T.meta*100)}`);
   add("Synergies",Math.max(-6,Math.min(6,(U.syn-T.syn)*0.6)), `Vous ${U.syn>0?"+":""}${Math.round(U.syn*10)/10} % · eux ${T.syn>0?"+":""}${Math.round(T.syn*10)/10} %`);
   const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*(l.role==="T"?0.9:0.6),0);
-  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
+  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
   add("Cohérence de compo",(T.tags.weak.length-U.tags.weak.length)*1.5+(U.tags.strong.length-T.tags.strong.length)*0.5, `${U.tags.weak.length} faiblesse(s) chez vous · ${T.tags.weak.length} chez eux`);
   const total=factors.reduce((s,f)=>s+f.pts,0);
   // Calibrage pro 2026 : l'écart prédit était trop large (40 % annoncé → 46 % réel) → resserré, borné 35–65 %
@@ -1587,7 +1588,7 @@ function viewDraft(){
   const d=live.draft, gameNo=live.series.games.length+1;
   const top=`<div class="dtop">
     <div class="gtabs">${live.series.games.map((g,k)=>`<button class="gtab ${ui.viewGame===k?"on":""} ${g.result==="W"?"w":g.result==="L"?"l":""}" data-act="viewgame" data-k="${k}">G${k+1}${g.result?(g.result==="W"?" ✓":" ✗"):""}</button>`).join("")}<button class="gtab ${ui.viewGame==null?"on":""}" data-act="viewgame" data-k="-1">Game ${gameNo}</button></div>
-    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
+    ${ui.viewGame==null?`<div class="seg">${["B","R"].map(s=>`<button data-act="side" data-v="${s}" class="${d.side===s&&sideOk()?"on "+s:""}">${s==="B"?"Blue":"Red"}</button>`).join("")}</div>`:""}
     <div class="sl2">${ROLES.map(r=>`<span class="lu"><em>${ROLE_NAMES[r]}</em>${esc(prep.lineup[r])}</span>`).join("")}<button class="lnk" data-act="goprep">modifier</button></div>
     <button class="btn sm" data-act="newseries">Nouvelle série</button></div>`;
   if(ui.viewGame!=null){ const g=live.series.games[ui.viewGame];
@@ -1654,7 +1655,7 @@ function finalHtml(d,ro){
   const A=analyzeFinal(cfg,d,prep,prep.lineup); const us=d.side;
   const card=(lbl,T)=>`<div class="acard"><em>${esc(lbl)}</em><div>${T.tags.strong.map(x=>`<span class="tag ok">${esc(x)}</span>`).join("")||'<span class="muted">—</span>'}</div>
     ${T.tags.weak.length?`<div>${T.tags.weak.map(x=>`<span class="tag ko">${esc(x)}</span>`).join("")}</div>`:""}
-    ${T.synList.length?`<div class="muted">Synergies : ${T.synList.map(esc).join(" · ")}</div>`:""}</div>`;
+    ${(()=>{ const p=T.synList.filter(x=>!/\(-/.test(x)), n=T.synList.filter(x=>/\(-/.test(x)); return (p.length?`<div class="muted">Synergies : ${p.map(esc).join(" · ")}</div>`:"")+(n.length?`<div class="muted">Anti-synergies : ${n.map(esc).join(" · ")}</div>`:""); })()}</div>`;
   return `<div class="final"><div class="winbox"><div class="wl">${esc(us==="R"?theirName():ourName())}</div><div class="wbar${us==="R"?" rev":""}"><i style="width:${A.win}%"></i><b>${A.win} %</b></div><div class="wl r">${esc(us==="R"?ourName():theirName())}</div></div>
     ${A.plan.key&&A.plan.key.length?`<div class="row c">${A.plan.key.map(k=>`<span class="tag ok">${esc(k)}</span>`).join("")}</div>`:""}
     <div class="acards">${us==="R"?card(theirName(),A.them)+card(ourName(),A.us):card(ourName(),A.us)+card(theirName(),A.them)}</div>
@@ -1858,7 +1859,7 @@ function viewSettings(){
    <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
    <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
-   <section class="card"><h3>Sources</h3><p class="muted">Force : OP.GG patch 26.22 ajusté avec les notes du patch 26.23 (buffs : Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi ; nerfs : LeBlanc, Master Yi, Syndra), Maître+ et Émeraude+ (WR, pick et ban par rôle), plus le patch ${PATCH_NEXT.v} annoncé (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Drafts pro (gol.gg, 857 games : Worlds 2026, ligues majeures de l'été, EWC) : ordre de pick par rôle, position de pick de chaque champion, duos joués ensemble. Matchups par rôle et croisés en bot (ADC contre support) : lolalytics Maître+ patch 26.22, complétés par lolstats.gg Platine+ quand une paire manque. Synergies : lolstats.gg Maître+ (botlane), metabot.gg Émeraude+ (support-jungle, jungle-mid, jungle-top, top-mid) et synergies pro connues. Duos proposés uniquement s'ils ont été joués au moins 8 fois ensemble en pro en 2026 (Worlds et ligues d'été) ; un duo très joué ensemble en solo Q avec un gros gain de WR renforce seulement la synergie.</p></section>
+   <section class="card"><h3>Sources</h3><p class="muted">Méta : OP.GG Maître+ et Émeraude+ patch 26.22, ajusté avec le patch ${PATCH_NEXT.v} (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Pro : gol.gg (ordre de pick, position de pick). Duos pro : 12 746 games pro 2025-2026, récentes pondérées plus fort, reworks exclus. Matchups : lolalytics Maître+ 26.22, complétés par lolstats.gg. Synergies : lolstats.gg (botlane), metabot.gg (autres rôles). Nos games : Parthénon (72 scrims jusqu'au 17/11) puis les séries exportées avec « Fin de série ». Solo Q : op.gg, tous les comptes de chaque joueur.</p></section>
    ${synEditor()}${ctrEditor()}${bookmarkCard()}
    <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
 }

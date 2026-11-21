@@ -2,6 +2,16 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.24 — passe de test
+- Scores des paires et duos plafonnés à 100 (on voyait 102-106).
+- Analyse finale : « undefined 48.5 % » remplacé par « Botlane 48.5 % ».
+- Analyse finale : les anti-synergies (valeurs négatives) ne sont plus listées comme « Synergies ».
+- Bans : quand ils bannissent un de nos conforts S/A qui contre un de leurs champions, le signal « préparé par leurs bans » est affaibli (ils visent surtout notre joueur) ; il n'apparaît plus qu'au-delà d'un seuil.
+- Sélecteur Blue/Red : plus de côté surligné tant que le côté n'a pas été choisi.
+- Mobile : bulles de prédiction adverses qui dépassaient la colonne, page qui débordait à droite, onglets joueurs du Pool coupés (Yeyozz, Bounty) → corrigés.
+- Réglages : texte « Sources » mis à jour (duos pro 2025-2026, Parthénon + Fin de série, solo Q multi-comptes).
+- Icône d'onglet ajoutée (erreur 404 favicon).
+
 ## v12.23
 - Fiches adverses recentrées sur le joueur : retirés « Hors de son op.gg », « Pool large » et « Style ». Gardé : one-trick, pool resserré, nouveau « Pool réduit » (4 champions ou moins à 10 games).
 - Flex clarifié : « Viktor — il le joue, et Para aussi (mid) ».
