@@ -657,7 +657,7 @@ function banPlan(cfg,prep,lineup,un,tb){
         const k=Math.max(...hit.map(o=>{ const t=tierFor(cfg,o.player,pl.role,o.champ); return clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v*(t==="S"||t==="A"?0.35:1); }));
         if(k>=0.12){ s=s*(1+0.5*k)+0.12*k; why.unshift(`⚠ Ils ont banni ${hit.map(o=>o.champ).join(", ")}, notre counter : pick probable`); tags.unshift("Préparé par leurs bans"); } }
       if(oc.length){ const k=Math.max(...oc.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
-        if(k>0.05){ s*=1-0.3*k*[0.4,0.7,1,1,1][rk-1]; /* le meilleur joueur adverse joue mieux autour d’un counter */ why.push(`On peut le laisser : ${oc.slice(0,2).map(o=>`${o.champ} (${o.player}, ${o.wr} %)`).join(", ")} le contre`); tags.push("Contrable par nous"); } }
+        if(k>0.05){ s*=1-0.3*k*[0.4,0.7,1,1,1][rk-1]; /* le meilleur joueur adverse joue mieux autour d’un counter */ tags.push("Contrable par nous"); } }
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
     });
   });
@@ -776,48 +776,44 @@ function analyzeDraft(cfg,draft){
   const us=draft.side, them=us==="B"?"R":"B"; const I=ctrIndex(cfg);
   const ours=teamPicks(draft,us), theirs=teamPicks(draft,them);
   const lanes=[];
-  ROLES.forEach(r=>{ const a=ours.find(p=>p.role===r&&!p.flex), b=theirs.find(p=>p.role===r&&!p.flex); if(!a||!b) return;
-    const g=ctrGet(I,a.name,b.name,r), l=ctrGet(I,b.name,a.name,r); const wr=g?g[2]:l?100-l[2]:null; if(wr!=null) lanes.push({role:r,ours:a.name,theirs:b.name,wr:Math.round(wr*10)/10}); });
-  { const g=r=>({o:(ours.find(p=>p.role===r&&!p.flex)||{}).name, t:(theirs.find(p=>p.role===r&&!p.flex)||{}).name});
-    const A=g("A"), S=g("S"); if(A.o&&S.o&&A.t&&S.t){ const b=botEdge(cfg,A.o,S.o,A.t,S.t); if(b.why.length){ const wr=Math.round((50+b.v/2)*10)/10;
-      for(let i=lanes.length-1;i>=0;i--) if(lanes[i].role==="A"||lanes[i].role==="S") lanes.splice(i,1);
-      lanes.push({role:"B",ours:A.o,ours2:S.o,theirs:A.t,theirs2:S.t,wr,detail:b.why.join(" · ")}); } } }
+  // Les 4 lanes sont toujours affichées (top, jungle, mid, botlane), même proches de 50 % ; sans duel mesuré, estimation par l'écart de winrate des deux champions (marquée ≈)
+  const pick=(L,r)=>(L.find(p=>p.role===r&&!p.flex)||L.find(p=>p.role===r)||{}).name;
+  const est=(a,b,r)=>{ const x=metaInfo(a,r).wr, y=metaInfo(b,r).wr; return x&&y?Math.round((50+(x-y)/2)*10)/10:50; };
+  ["T","J","M"].forEach(r=>{ const a=pick(ours,r), b=pick(theirs,r); if(!a||!b) return;
+    const g=ctrGet(I,a,b,r), l=ctrGet(I,b,a,r); const wr=g?g[2]:l?100-l[2]:null;
+    lanes.push({role:r,ours:a,theirs:b,wr:wr!=null?Math.round(wr*10)/10:est(a,b,r),est:wr==null}); });
+  { const A={o:pick(ours,"A"),t:pick(theirs,"A")}, S={o:pick(ours,"S"),t:pick(theirs,"S")};
+    if(A.o&&S.o&&A.t&&S.t){ const b=botEdge(cfg,A.o,S.o,A.t,S.t);
+      lanes.push(b.why.length?{role:"B",ours:A.o,ours2:S.o,theirs:A.t,theirs2:S.t,wr:Math.round((50+b.v/2)*10)/10,detail:b.why.join(" · ")}
+        :{role:"B",ours:A.o,ours2:S.o,theirs:A.t,theirs2:S.t,wr:Math.round(((est(A.o,A.t,"A")+est(S.o,S.t,"S"))/2)*10)/10,est:true}); } }
   const plan=gamePlan(ours.map(p=>p.name),theirs.map(p=>p.name),lanes);
   return {us:compTags(ours.map(p=>p.name)), them:compTags(theirs.map(p=>p.name)), lanes, plan};
 }
 // Plan de jeu par phase, à partir du profil des deux compos et des lanes
 function gamePlan(us,them,lanes){
+  // Seulement des conseils marqués : une vraie dominance de lane ou un net écart de profil entre les compos. Rien de générique.
   const early=[], mid=[], late=[];
   if(us.length<4||them.length<4) return {early,mid,late,key:[]};
-  const pu=compProfile(us).p, pt=compProfile(them).p, d=a=>pu[a]-pt[a];
-  const win=lanes.filter(l=>l.wr>=53).sort((a,b)=>b.wr-a.wr), lose=lanes.filter(l=>l.wr<=47).sort((a,b)=>a.wr-b.wr);
-  const isBot=l=>l.role==="A"||l.role==="S"||l.role==="B";
-  const has=r=>win.find(l=>l.role===r||(r==="bot"&&isBot(l))), hurt=r=>lose.find(l=>l.role===r||(r==="bot"&&isBot(l)));
-  const earlyUs=d("early")>=2, earlyThem=d("early")<=-2, scaleUs=d("scaling")>=2, scaleThem=d("scaling")<=-2;
-  // Early (0-14 min)
-  if(has("T")||(earlyUs&&!hurt("T"))) early.push("Jouer côté top pour les larves du néant (void grubs) : le jungler et le top prennent la première prio"+(has("T")?` (${has("T").ours} gagne sa lane, ${has("T").wr} %)`:"")+".");
-  if(has("bot")) early.push(`Botlane gagnante (${has("bot").ours}${has("bot").ours2?" + "+has("bot").ours2:""}, ${has("bot").wr} %) : premier dragon et plaques bot, le jungler finit son clear côté bot.`);
-  if(earlyUs) early.push("Vous êtes plus forts en early : envahir ou contester leur jungle, forcer les premiers objectifs avant 14 min.");
-  if(earlyThem) early.push("Ils sont plus forts en early : warder sa jungle, ne pas contester les premiers objectifs à perte, échanger côté opposé (larves contre dragon).");
-  if(hurt("T")) early.push(`Top en difficulté (${hurt("T").ours} ${hurt("T").wr} %) : jouer sous tour, ne pas faire les larves sans prio top.`);
-  if(hurt("bot")) early.push(`Botlane difficile (${hurt("bot").ours}${hurt("bot").ours2?" + "+hurt("bot").ours2:""}, ${hurt("bot").wr} %) : céder le premier dragon si besoin, prendre les larves en échange.`);
-  if(hurt("M")) early.push(`Mid difficile (${hurt("M").ours} ${hurt("M").wr} %) : le jungler couvre le mid, prio mid faible pour les escarmouches.`);
-  if(!early.length) early.push("Early équilibré : jouer sur la lane qui a la prio et échanger les objectifs plutôt que de les forcer.");
-  // Mid game (14-25 min)
-  if(d("teamfight")>=2||d("engage")>=2) mid.push("Votre teamfight est meilleur : stacker les dragons et forcer les fights à 5 sur chaque dragon.");
-  else if(d("teamfight")<=-2) mid.push("Leur teamfight est meilleur : éviter les fights à 5 sur les dragons, jouer les side lanes et les picks.");
-  if(d("poke")>=2) mid.push("Avantage de poke : user avant chaque objectif, prendre les tours en siège, Héraut pour les plaques.");
-  else if(d("poke")<=-2) mid.push("Ils ont plus de poke : ne pas rester en siège face à eux, engager vite ou contourner.");
-  if(pu.engage>=pt.engage+2&&pu.early>=pt.early) mid.push("Compo de pick : vision profonde et catch d'un joueur avant chaque objectif.");
-  if(d("peel")<=-2) mid.push("Peu de réception : vos carries restent derrière, attention aux plongeurs.");
-  if(!mid.length) mid.push("Mid game équilibré : contrôler la vision du prochain objectif 1 min avant son apparition.");
-  // Late (25 min +)
-  if(scaleUs) late.push("Vous scalez mieux : pas de coin-flip, échanger les objectifs, viser l'âme du dragon et le Baron en fin de partie.");
-  if(scaleThem) late.push("Ils scalent mieux : finir avant 30 min, utiliser le Baron dès qu'un fight est gagné.");
-  if(!scaleUs&&!scaleThem) late.push("Scaling équivalent : le Baron et l'âme du dragon décident, garder la vision autour de la rivière.");
+  const pu=compProfile(us).p, pt=compProfile(them).p, d=a=>pu[a]-pt[a], T=3;
+  const real=lanes.filter(l=>!l.est), win=real.filter(l=>l.wr>=55).sort((a,b)=>b.wr-a.wr), lose=real.filter(l=>l.wr<=45).sort((a,b)=>a.wr-b.wr);
+  const has=r=>win.find(l=>l.role===r), hurt=r=>lose.find(l=>l.role===r), nm=l=>l.ours+(l.ours2?" + "+l.ours2:"");
+  const earlyUs=d("early")>=T, earlyThem=d("early")<=-T, scaleUs=d("scaling")>=T, scaleThem=d("scaling")<=-T;
+  if(has("T")) early.push(`Top gagnant (${nm(has("T"))}, ${has("T").wr} %) : prio top pour les larves du néant.`);
+  if(has("B")) early.push(`Botlane gagnante (${nm(has("B"))}, ${has("B").wr} %) : premier dragon et plaques bot.`);
+  if(hurt("T")) early.push(`Top en difficulté (${nm(hurt("T"))}, ${hurt("T").wr} %) : pas de larves sans prio top.`);
+  if(hurt("B")) early.push(`Botlane difficile (${nm(hurt("B"))}, ${hurt("B").wr} %) : céder le premier dragon, prendre les larves en échange.`);
+  if(hurt("M")) early.push(`Mid difficile (${nm(hurt("M"))}, ${hurt("M").wr} %) : le jungler couvre le mid.`);
+  if(earlyUs) early.push("Compo nettement plus forte en early : envahir et forcer les objectifs avant 14 min.");
+  if(earlyThem) early.push("Ils sont nettement plus forts en early : warder sa jungle, échanger côté opposé.");
+  if(d("teamfight")>=T) mid.push("Teamfight nettement supérieur : forcer les fights à 5 sur chaque dragon.");
+  else if(d("teamfight")<=-T) mid.push("Leur teamfight est nettement meilleur : éviter les fights à 5, jouer les side lanes et les picks.");
+  if(d("poke")>=T) mid.push("Gros avantage de poke : user avant chaque objectif, siège des tours.");
+  else if(d("poke")<=-T) mid.push("Ils ont beaucoup plus de poke : engager vite ou contourner, ne pas rester en siège.");
+  if(d("peel")<=-T) mid.push("Très peu de réception : vos carries restent derrière, attention aux plongeurs.");
+  if(scaleUs) late.push("Vous scalez nettement mieux : pas de coin-flip, viser l'âme et le Baron.");
+  if(scaleThem) late.push("Ils scalent nettement mieux : finir avant 30 min, Baron dès qu'un fight est gagné.");
   const key=[]; if(earlyUs) key.push("Jouer l'avance early"); if(earlyThem) key.push("Survivre à leur early");
-  if(scaleUs) key.push("Scaling"); if(scaleThem) key.push("Finir vite");
-  if(d("teamfight")>=2) key.push("Stacker les drakes"); if(has("T")||earlyUs) key.push("Void grubs"); if(d("poke")>=2) key.push("Siège");
+  if(scaleUs) key.push("Scaling"); if(scaleThem) key.push("Finir vite"); if(d("teamfight")>=T) key.push("Stacker les drakes"); if(d("poke")>=T) key.push("Siège");
   return {early,mid,late,key};
 }
 // ---- Analyse de fin de draft : forces, faiblesses et estimation des chances de victoire ----
@@ -845,8 +841,8 @@ function analyzeFinal(cfg,draft,prep,lineup){
   else add("Expérience des joueurs",0, "Pas de préparation adverse : facteur non comparé");
   add("Méta / force des picks",(U.meta-T.meta)*20, `Vous ${Math.round(U.meta*100)} · eux ${Math.round(T.meta*100)}`);
   add("Synergies",Math.max(-6,Math.min(6,(U.syn-T.syn)*0.6)), `Vous ${U.syn>0?"+":""}${Math.round(U.syn*10)/10} % · eux ${T.syn>0?"+":""}${Math.round(T.syn*10)/10} %`);
-  const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*(l.role==="T"?0.9:0.6),0);
-  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} ${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
+  const lanePts=A.lanes.reduce((s,l)=>s+(l.wr-50)*(l.role==="T"?0.9:0.6)*(l.est?0.4:1),0);
+  add("Matchups de lane",Math.max(-8,Math.min(8,lanePts)), A.lanes.length?A.lanes.map(l=>`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} ${l.est?"≈":""}${l.wr} %`).join(" · "):"Pas de donnée de matchup sur ces lanes");
   add("Cohérence de compo",(T.tags.weak.length-U.tags.weak.length)*1.5+(U.tags.strong.length-T.tags.strong.length)*0.5, `${U.tags.weak.length} faiblesse(s) chez vous · ${T.tags.weak.length} chez eux`);
   const total=factors.reduce((s,f)=>s+f.pts,0);
   // Calibrage pro 2026 : l'écart prédit était trop large (40 % annoncé → 46 % réel) → resserré, borné 35–65 %

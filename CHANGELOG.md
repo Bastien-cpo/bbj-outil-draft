@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.25
+- Analyse de draft : les 4 matchups (top, jungle, mid, botlane) toujours affichés, même proches de 50 % ; sans duel mesuré, estimation par l'écart de winrate des champions, marquée « ≈ » (et comptée moins fort dans l'estimation de victoire).
+- Plan de jeu : uniquement les conseils marqués (lane à 55 % ou plus / 45 % ou moins, net écart de profil entre les compos) ; plus aucune phrase générique.
+- Bans conseillés : seule l'étiquette « Contrable par nous » reste (nos counters au survol) ; icônes « Counter » et phrase « On peut le laisser » retirées.
+
 ## v12.24 — passe de test
 - Scores des paires et duos plafonnés à 100 (on voyait 102-106).
 - Analyse finale : « undefined 48.5 % » remplacé par « Botlane 48.5 % ».
