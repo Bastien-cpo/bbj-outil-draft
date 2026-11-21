@@ -606,13 +606,13 @@ function banPlan(cfg,prep,lineup){
       // Un ban vise d'abord un vrai confort du compte (volume + rendement) ; la force sur le patch ne compte que s'il sait le jouer
       const vol=Math.min(1,Math.log1p(x.g)/Math.log1p(120));
       const comfort=vol*(0.55+0.3*perf+0.15*kd)*(0.6+0.4*Math.min(1,share/0.2)); // part de ses games : un 4e champion pèse moins qu'un main
-      let s=0.75*comfort+0.22*meta*Math.min(1,x.g/20);
+      // Bans 1-3 : on tâte le terrain → uniquement l'affinité du compte avec le champion (pas la méta)
+      let s=comfort;
       if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${x.g} games, ${Math.round(x.g/Math.max(1,second.g)*10)/10}× plus que son 2e champion (${second.c}, ${second.g} g.)`); }
       else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué (${x.g} g., ${Math.round(share*100)} % de ses parties)`); }
       else if(share>=0.15) why.push(`Gros confort : ${x.g} g., ${Math.round(share*100)} % de ses parties`);
       if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games${x.kda?`, KDA ${x.kda}`:""}`);
       else if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
-      if(meta>=0.6&&m.wr) why.push(`Fort sur le patch : ${m.wr} % WR, ${m.pres} % de présence en solo Q`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
       // classement 1 à 5 du joueur (LP/pic > rendement > pool méta) : plus il est fort, plus ses champions valent un ban
       const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.12,0.06,0.02,0,-0.04][rk-1]*vol;
@@ -666,9 +666,8 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
       if(pl) why.push(`Joué par ${pl.name} (${pl.g} games)`);
       return {name:c, s, why, prep:false}; }).sort((a,b)=>b.s-a.s);
     if(!plan.length) return pro.slice(0,n);
-    const pattern="PPPPXPPPXP", out=[]; let a=0,b=0;
-    for(const ch of pattern){ if(out.length>=n) break; if(ch==="P"&&a<plan.length) out.push(plan[a++]); else if(b<pro.length) out.push(pro[b++]); else if(a<plan.length) out.push(plan[a++]); }
-    return out;
+    // Bans 1-3 (phase 1) : uniquement les conforts adverses ; les suggestions pro/méta ne viennent qu'après, en complément
+    return plan.concat(pro).slice(0,n);
   }
   // Phase 2 : un seul calcul avec la prédiction — score = probabilité qu'ils le pickent × danger pour vous
   const weak=weaknesses(ours.map(p=>p.name)); const out=[];

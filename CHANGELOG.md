@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.14
+- Bans 1 à 3 : uniquement l'affinité des adversaires (volume, part de leurs games, winrate, KDA), sans méta ; les suggestions pro/méta passent après. En fearless, les champions déjà joués sortent et les conforts restants prennent le relais à chaque game.
+- Bans 4 et 5 : inchangés (adaptés aux picks, counters, blindables).
+
 ## v12.13
 - Plan de bans : réflexion globale, plus de quota d'un ban par joueur (un joueur au-dessus du lot avec deux gros conforts peut prendre deux bans).
 - Score de ban centré sur le confort du compte : volume de games, part de ses parties, winrate et KDA ; la force sur le patch ne compte que s'il joue le champion (ex. EQX : Ahri, Jhin, Olaf, Rell devant ; Leona, 4e champion de Sakuya, redescend).
