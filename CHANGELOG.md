@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.19
+- Note de performance : le winrate (lissé) devient le facteur majeur (50 %) ; KDA, part des dégâts, or à 15 min et écart de CS avec le vis-à-vis comptent 12,5 % chacun (comparés à la moyenne du joueur à ce rôle). Écart de CS ajouté à la base Parthénon et lu dans les exports.
+- Onglet Pool : chaque champion affiche le même format, games en équipe (scrims + compétition, mis en avant) et solo Q à côté, même à 0 ; pastille de note de performance en coin quand il y a des games en équipe.
+
 ## v12.18
 - Fiches du Pool : les séries exportées avec « Fin de série » (historique de l'outil, stats du client) s'ajoutent automatiquement à la base Parthénon (jusqu'au 17/11). Plus besoin de repasser par le Parthénon.
 - Score de performance revu : 50 = niveau habituel du joueur à ce rôle (comparé à sa propre moyenne, plus à toute la partie). 45 % winrate lissé, 20 % KDA, 15 % part des dégâts, 20 % or à 15 min (remplacé par le winrate quand l'export n'a pas l'or à 15 min). Les petits échantillons sont ramenés vers 50.

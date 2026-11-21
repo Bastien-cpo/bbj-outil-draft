@@ -440,10 +440,12 @@ function viewPools(){
   const names=poolOf(cfg,p.id,role); const rows={S:[],A:[],B:[],C:[],D:[],"?":[]};
   names.forEach(c=>{ const t=(cfg.tiers[p.id]||{})[c]; rows[t||"?"].push({c,a:affinity(cfg,p.id,role,c)}); });
   for(const k in rows) rows[k].sort((x,y)=>y.a.v-x.a.v);
-  const cell=x=>`<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
-     <span class="pm">${x.a.games?`<b>${x.a.games}</b> g.`:""}${x.a.sq?` <i>SQ ${x.a.sq.g}</i>`:""}</span></button>`;
+  const TS=teamStats(history), mine=(TS[p.id]||{})[role]||{};
+  const cell=x=>{ const t=mine[x.c], sq=(OUR_SQ[p.id]||{})[x.c], pf=t?champPerf(TS,p.id,role,x.c):null;
+    return `<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
+     <span class="pm2"><span class="tm${t?"":" none"}" title="Scrims + compétition"><b>${t?t[0]:0}</b><em>équipe</em></span><span class="sq" title="Solo Q (op.gg)"><b>${sq?sq.g:0}</b><em>SQ</em></span></span>${pf!=null?`<span class="pfb ${pf>=65?"good":pf>=45?"mid":"bad"}">${pf}</span>`:""}</button>`; };
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
-  <section class="card"><p class="muted">Sous chaque champion : games en scrim/compétition (Parthenon) et games en solo Q (SQ). Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
+  <section class="card"><p class="muted">Sous chaque champion : à gauche les games en équipe (scrims + compétition), à droite la solo Q. Pastille = note de performance en équipe. Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
    ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
    ${ui.tierPop?`<div class="pop">${champSheet(p.id,role,ui.tierPop)}<div class="poprow"><span class="muted">Tier :</span>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}" class="${(cfg.tiers[p.id]||{})[ui.tierPop]===t?"on":""}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;

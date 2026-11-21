@@ -66,20 +66,24 @@ function teamStats(hist){
       const mine={}; (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===g.side&&a.role) mine[a.role]=a.name; });
       const tot=ROLES.reduce((x,r)=>x+(st.us[r]?st.us[r].dmg:0),0); // part des dégâts de notre équipe
       ROLES.forEach(r=>{ const u=st.us[r], c=mine[r], pid=(s.lineup||{})[r]; if(!u||!c||!pid) return;
-        const x=((T[pid]=T[pid]||{})[r]=T[pid][r]||{})[c]=((T[pid][r]||{})[c])||[0,0,0,0,0,0,0,0];
-        x[0]++; x[1]+=g.result==="W"?1:0; x[2]+=u.k; x[3]+=u.d; x[4]+=u.a; x[5]+=tot?u.dmg/tot:0; }); }); });
+        const x=((T[pid]=T[pid]||{})[r]=T[pid][r]||{})[c]=((T[pid][r]||{})[c])||[0,0,0,0,0,0,0,0,0,0];
+        x[0]++; x[1]+=g.result==="W"?1:0; x[2]+=u.k; x[3]+=u.d; x[4]+=u.a; x[5]+=tot?u.dmg/tot:0;
+        if(st.them&&st.them[r]){ x[8]=(x[8]||0)+u.cs-st.them[r].cs; x[9]=(x[9]||0)+1; } }); }); });
   return T;
 }
-// Score de performance /100 : 50 = niveau habituel du joueur à ce rôle ; 45 % winrate (lissé), 20 % KDA, 15 % part des dégâts, 20 % or à 15 min,
-// comparés à SA moyenne sur tous ses champions au rôle ; les petits échantillons sont ramenés vers 50
+// Score de performance /100 : le winrate (lissé) est le facteur majeur (50 %) ; puis, à parts égales (12,5 % chacun), les stats en partie
+// comparées à la moyenne du joueur à ce rôle : KDA, part des dégâts, or à 15 min, écart de CS avec son vis-à-vis.
+// Une stat absente (ex. or à 15 min dans les exports) est ignorée et son poids redistribué ; les petits échantillons sont ramenés vers 50.
 function champPerf(T,pid,role,c){
   const C=(T[pid]||{})[role]||{}, x=C[c]; if(!x) return null;
-  const t=[0,0,0,0,0,0,0,0]; Object.values(C).forEach(y=>y.forEach((v,i)=>t[i]+=v));
-  const cl=v=>Math.max(-1,Math.min(1,v)), [g,w,k,d,a,sh,gd,gn]=x;
-  const bk=(t[2]+t[4])/Math.max(1,t[3]), bs=t[5]/t[0], bg=t[7]?t[6]/t[7]:0;
-  const wr=(w+2)/(g+4), kda=(k+a)/Math.max(1,d), s=sh/g;
-  let v=0.45*cl((wr-0.5)/0.2)+0.2*cl((kda/bk-1)/0.4)+0.15*cl((s/bs-1)/0.25);
-  v+=gn?0.2*cl((gd/gn-bg)/2000):0.2*cl((wr-0.5)/0.2); // sans or à 15 min : le winrate prend sa place
+  const t=Array(10).fill(0); Object.values(C).forEach(y=>y.forEach((v,i)=>t[i]+=v||0));
+  const cl=v=>Math.max(-1,Math.min(1,v)), [g,w,k,d,a,sh,gd,gn,cs,cn]=x.concat([0,0]).slice(0,10);
+  const parts=[[0.5,cl(((w+2)/(g+4)-0.5)/0.2)]];
+  const bk=(t[2]+t[4])/Math.max(1,t[3]); parts.push([0.125,cl((((k+a)/Math.max(1,d))/bk-1)/0.4)]);
+  parts.push([0.125,cl(((sh/g)/(t[5]/t[0])-1)/0.25)]);
+  if(gn) parts.push([0.125,cl((gd/gn-(t[7]?t[6]/t[7]:0))/2000)]);
+  if(cn) parts.push([0.125,cl((cs/cn-(t[9]?t[8]/t[9]:0))/30)]);
+  const W=parts.reduce((s,p)=>s+p[0],0), v=parts.reduce((s,p)=>s+p[0]*p[1],0)/W;
   return Math.round(50+50*cl(v*1.5)*g/(g+2));
 }
 function teamDuoAdj(c,role,a,ra){ const x=TEAM_DUO[role+ra+"|"+c+"|"+a]||TEAM_DUO[ra+role+"|"+a+"|"+c]; if(!x||x.g<3) return 0;
