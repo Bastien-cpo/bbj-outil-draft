@@ -50,7 +50,7 @@ function renderSync(){ const el=$("#sync"); if(el){ el.textContent=sync.note; el
 function render(){
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===ui.tab));
   const v={draft:viewDraft,prep:viewPrep,pools:viewPools,hist:viewHistory,settings:viewSettings}[ui.tab]||viewDraft;
-  $("#view").innerHTML=v(); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
+  $("#view").innerHTML=v()+(ui.tuto?tutoModal():""); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
 }
 // Chaque ligne de suggestions montre autant de bulles entières que la largeur le permet
 function fitRows(){ document.querySelectorAll(".fit1").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.display=""); const W=b.clientWidth; k.forEach(c=>{ if(c.offsetLeft+c.offsetWidth>W+1) c.style.display="none"; }); });
@@ -339,6 +339,19 @@ function offPool(p,k=3){
     return {c, s:0.65*pop+0.35*sim, why:pro>=sq?`très présent en pro, ${pr.p+pr.b} drafts`:`très joué en solo Q, ${m.pres} %`};
   }).filter(x=>x&&x.s>=0.5).sort((a,b)=>b.s-a.s).slice(0,k);
 }
+// Tuto intégré (icône livre en haut) : s'ouvre tout seul à la première ouverture de l'outil
+function tutoModal(){ const R=(a,b)=>`<tr><td><b>${a}</b></td><td>${b}</td></tr>`;
+  return `<div class="scmodal" data-act="tutoclose"><div class="scbox tutobox" data-act="none">
+  <div class="row" style="justify-content:space-between"><h2>Bienvenue dans BBJ Outil Draft</h2><button class="btn" data-act="tutoclose">✕</button></div>
+  <p>L'outil suit notre draft Drafter en direct et propose à chaque tour les meilleurs bans et picks pour nous cinq. Il ne décide pas : il met sous les yeux ce qu'on oublie en 30 secondes.</p>
+  <h3>Installation (une fois)</h3><ol><li>Afficher la barre des favoris (Ctrl + Maj + B).</li><li>Onglet <b>Réglages</b> : glisser le bouton « Favori Drafter » dans la barre.</li><li>Autoriser les pop-ups pour drafter.lol.</li></ol>
+  <p>Pendant la draft : dans la room Drafter, cliquer le favori. L'outil s'ouvre dans sa fenêtre et le badge <b>● BBJ synchro</b> apparaît. Les games suivantes suivent toutes seules ; recliquer seulement après un F5 sur Drafter.</p>
+  <h3>Une draft</h3><ol><li><b>Côté</b> : détecté si une équipe s'appelle BBJ sur Drafter, sinon un clic Blue / Red.</li><li><b>Bans phase 1</b> : bans conseillés au centre ; nos premières cases montrent les meilleurs first picks (bleu) ou paires R1-R2 (rouge).</li><li><b>Picks</b> : par rôle libre, nos champions classés (détail au survol) ; étoile = nos tiers S/A/B. En face, leurs picks probables, <b>cercle rouge</b> = dangereux pour nous.</li><li><b>Bans phase 2</b> : contre notre compo ou ce qu'ils préparent.</li><li><b>Analyse finale</b>, puis <b>Partie suivante</b> (fearless appliqué) ou <b>Fin de série</b> (série et stats publiées pour l'équipe).</li></ol>
+  <p>Drafter s'est trompé ? Cliquer la case, choisir le bon champion, Confirmer.</p>
+  <h3>Le score d'un pick (sur 100)</h3><table>${R("Affinité 25","Notre tier list + nos games en équipe et en solo Q")}${R("Méta 25","60 % pro, 40 % solo Q Master+, buffs / nerfs du patch")}${R("Synergie 25","Avec nos champions déjà pris ; bonus si duo gagnant, malus s'il perd")}${R("Matchup ou blind 25","Laner adverse connu → counter à 100 % ; pas encore connu → blindabilité à 100 %. Top +35 %")}</table>
+  <p>Jusqu'à 92 = normal ; 93-98 = gros counter + synergie + joueur en confiance ; 98-100 = en plus, casse la compo adverse.</p>
+  <h3>Les onglets</h3><table>${R("Préparation","Adversaire et ses 5 pseudos : fiches et plan de bans")}${R("Pools","Ta tier list (S à D) : à tenir à jour, c'est la base des suggestions")}${R("Historique","Séries, résultats et stats des games")}${R("Réglages","Favori Drafter, poids du calcul")}</table>
+  <p class="muted">Ce tuto se rouvre avec le bouton <b>Tuto</b> en haut.</p></div></div>`; }
 function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
@@ -485,6 +498,8 @@ document.addEventListener("click",e=>{
   const sc=e.target.closest("[data-act]"); if(sc&&sc.dataset.act==="none") return;
   if(sc&&sc.dataset.act==="scout"){ ui.scout=sc.dataset.r; render(); return; }
   if(sc&&sc.dataset.act==="scoutclose"){ ui.scout=null; render(); return; }
+  if(sc&&sc.dataset.act==="tuto"){ ui.tuto=true; render(); return; }
+  if(sc&&sc.dataset.act==="tutoclose"){ ui.tuto=false; render(); return; }
   const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
   if(act==="side"){ live.draft.side=b.dataset.v; live.sideManual=curGameNo(); live.sideHow="manuel"; persist("live"); render(); }
   else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
@@ -587,4 +602,4 @@ function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(
   games.forEach((g,i)=>{ const x=list[i]; if(!x) return; g.stats={gameId:x.gameId,min:x.min,us:x.us,them:x.them,objUs:x.objUs,objThem:x.objThem}; if(!g.result&&x.win!=null) g.result=x.win?"W":"L"; });
   delete s.pendingExport; persist("history"); saveLocal(); if(bbjBC) bbjBC.postMessage("reload");
   ui.tab="hist"; flash(`Stats de ${Math.min(list.length,games.length)} games ajoutées à la série vs ${s.opponent}`); render(); }
-loadLocal(); render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
+loadLocal(); try{ if(!localStorage.getItem(LS+"-tuto")){ ui.tuto=true; localStorage.setItem(LS+"-tuto","1"); } }catch(e){} render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
