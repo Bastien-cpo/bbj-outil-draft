@@ -1,5 +1,7 @@
 # BBJ Outil Draft
 
+**Guides :** [Guide de l'outil](guides/GUIDE.md) · [Installer le favori Drafter](guides/FAVORI.md)
+
 Outil d'aide à la draft League of Legends (fearless) pour l'équipe BBJ : suggestions de bans et de picks, préparation contre un adversaire (op.gg), analyse de fin de draft, historique des scrims, synchro en direct avec Drafter.
 
 ## Organisation
