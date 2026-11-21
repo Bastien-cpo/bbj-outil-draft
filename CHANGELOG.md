@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.13
+- Plan de bans : réflexion globale, plus de quota d'un ban par joueur (un joueur au-dessus du lot avec deux gros conforts peut prendre deux bans).
+- Score de ban centré sur le confort du compte : volume de games, part de ses parties, winrate et KDA ; la force sur le patch ne compte que s'il joue le champion (ex. EQX : Ahri, Jhin, Olaf, Rell devant ; Leona, 4e champion de Sakuya, redescend).
+
 ## v12.12
 - Nouveau joueur remplaçant : Bounty (coach, support). Tier list tirée de son op.gg 2026 (S : Soraka, Leona, Taric, Milio).
 - Remplaçant dans la lineup (Bounty ou Yeyozz) : son affinité pèse 1,6× dans le score, pour prioriser son confort.

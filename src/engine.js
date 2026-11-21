@@ -602,16 +602,20 @@ function banPlan(cfg,prep,lineup){
       const why=[], tags=[]; const share=x.g/total;
       const m=metaInfo(x.c,pl.role), meta=m.v;
       const wrS=x.wr==null?0.5:((x.wr/100)*x.g+0.5*20)/(x.g+20);
-      const perf=clamp01((wrS-0.45)/0.12);
-      let s=0.35*meta+0.25*perf+0.4*Math.pow(share,0.6);
+      const perf=clamp01((wrS-0.45)/0.12), kd=x.kda==null?0.5:clamp01((x.kda-1.8)/2.2);
+      // Un ban vise d'abord un vrai confort du compte (volume + rendement) ; la force sur le patch ne compte que s'il sait le jouer
+      const vol=Math.min(1,Math.log1p(x.g)/Math.log1p(120));
+      const comfort=vol*(0.55+0.3*perf+0.15*kd)*(0.6+0.4*Math.min(1,share/0.2)); // part de ses games : un 4e champion pèse moins qu'un main
+      let s=0.75*comfort+0.22*meta*Math.min(1,x.g/20);
       if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${x.g} games, ${Math.round(x.g/Math.max(1,second.g)*10)/10}× plus que son 2e champion (${second.c}, ${second.g} g.)`); }
       else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué (${x.g} g., ${Math.round(share*100)} % de ses parties)`); }
       else if(share>=0.15) why.push(`Gros confort : ${x.g} g., ${Math.round(share*100)} % de ses parties`);
-      if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games`);
+      if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games${x.kda?`, KDA ${x.kda}`:""}`);
+      else if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
       if(meta>=0.6&&m.wr) why.push(`Fort sur le patch : ${m.wr} % WR, ${m.pres} % de présence en solo Q`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
       // classement 1 à 5 du joueur (LP/pic > rendement > pool méta) : plus il est fort, plus ses champions valent un ban
-      const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.15,0.08,0.03,0,-0.05][rk-1]*Math.min(1,share*3+(i===0?0.4:0));
+      const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.12,0.06,0.02,0,-0.04][rk-1]*vol;
       if(rk===1){ tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur n°1 en face : ${R[pl.name].reason}`); }
       else why.push(`${pl.name.split("#")[0]} : joueur n°${rk} sur 5 en face`);
       const oc=ourCounters(cfg,x.c,pl.role,lineup);
@@ -619,10 +623,9 @@ function banPlan(cfg,prep,lineup){
     });
   });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].score<x.score) best[x.name]=x; });
-  // diversité : chaque ban supplémentaire sur un même joueur compte un peu moins
-  const sorted=Object.values(best).sort((a,b)=>b.score-a.score), per={};
-  sorted.forEach(x=>{ const n=per[x.player]||0; x.prio=x.score-7*n; per[x.player]=n+1; });
-  return sorted.sort((a,b)=>b.prio-a.prio);
+  // Réflexion globale : pas de quota par joueur ; si un joueur domine avec deux gros conforts, ses deux champions passent devant
+  const sorted=Object.values(best).sort((a,b)=>b.score-a.score); sorted.forEach(x=>x.prio=x.score);
+  return sorted;
 }
 // Bans : phase 1 = préparation + bans des pros ; phase 2 = counters encore pickables, faiblesses de notre compo, conforts adverses
 function weaknesses(names){
