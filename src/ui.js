@@ -1,12 +1,12 @@
 // ===== Interface v4 =====
 const $=s=>document.querySelector(s);
 const LS="bbj-draft-v3";
-const DEF_LINEUP={T:"Fayk",J:"Billy",M:"JH",A:"Bastien",S:"Léo"};
+const DEF_LINEUP={T:"Romain",J:"Fabien",M:"JH",A:"Bastien",S:"Léo"};
 let cfg=defaultConfig();
 let prep={opponent:"", link:"", players:[], lineup:{...DEF_LINEUP}, updatedAt:null};
 let live={series:{locked:[],games:[]}, draft:{side:"B",actions:Array(20).fill(null)}};
 let history={series:[]}; // séries terminées (archivées par « Nouvelle série »)
-let ui={tab:"draft", poolPlayer:"Fayk", hover:null, synQ:"", ctrQ:"", tierPop:null, manual:false, pending:null, edit:null, viewGame:null, gridQ:"", gridRole:"all"};
+let ui={tab:"draft", poolPlayer:"Romain", hover:null, synQ:"", ctrQ:"", tierPop:null, manual:false, pending:null, edit:null, viewGame:null, gridQ:"", gridRole:"all"};
 let sync={db:null, ok:false, readOnly:false, note:"Local"};
 
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -18,9 +18,14 @@ const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
 function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer}})); }catch(e){} }
+// Fayk → Romain, Billy → Fabien (vrais prénoms) : anciennes lineups, historique et préparation
+const RENAMED={Fayk:"Romain",Billy:"Fabien"};
+function fixLineup(l){ if(l) for(const r in l) if(RENAMED[l[r]]) l[r]=RENAMED[l[r]]; return l; }
+function fixNames(){ if(prep) fixLineup(prep.lineup); ((history&&history.series)||[]).forEach(s=>fixLineup(s.lineup)); if(RENAMED[ui.poolPlayer]) ui.poolPlayer=RENAMED[ui.poolPlayer]; }
 function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } if(c.wv<9){ c.weights={affinite:25, force:25, synergie:25, matchup:25}; c.wv=9; }
+  const RN={Fayk:"Romain",Billy:"Fabien"}; for(const o in RN) if(c.tiers[o]){ if(!c.tiers[RN[o]]) c.tiers[RN[o]]=c.tiers[o]; delete c.tiers[o]; }
   const d0=defaultConfig().tiers; PLAYERS.forEach(p=>{ if(!c.tiers[p.id]) c.tiers[p.id]=d0[p.id]; }); return c; }
-function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); } }catch(e){} }
+function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); fixNames(); } }catch(e){} }
 const pending={}, writing={}, timers={};
 function persist(key){ saveLocal(); if(!sync.db||sync.readOnly) return; clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key),450); pending[key]=true; }
 async function flush(key){
@@ -37,7 +42,7 @@ async function initDb(){
   if(!db) return;
   sync.db=db; sync.note="Connexion à la base de l'équipe…"; renderSync();
   const t=setTimeout(()=>{ sync.note="Base d'équipe injoignable : enregistré sur cet appareil"; renderSync(); },10000);
-  const apply={config:v=>{cfg=migrate(Object.assign(defaultConfig(),v));}, prep:v=>{prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},v);}, live:v=>{live=v;}, history:v=>{history=Object.assign({series:[]},v);}};
+  const apply={config:v=>{cfg=migrate(Object.assign(defaultConfig(),v));}, prep:v=>{prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},v); fixNames();}, live:v=>{live=v;}, history:v=>{history=Object.assign({series:[]},v); fixNames();}};
   ["config","prep","live","history"].forEach(key=>{
     db.doc("team/"+key).onSnapshot(snap=>{
       if(!snap.metadata.fromCache){ clearTimeout(t); sync.ok=true; if(!sync.readOnly) sync.note="Synchronisé avec l'équipe"; }
@@ -441,11 +446,11 @@ function viewPools(){
   names.forEach(c=>{ const t=(cfg.tiers[p.id]||{})[c]; rows[t||"?"].push({c,a:affinity(cfg,p.id,role,c)}); });
   for(const k in rows) rows[k].sort((x,y)=>y.a.v-x.a.v);
   const TS=teamStats(history), mine=(TS[p.id]||{})[role]||{};
-  const cell=x=>{ const t=mine[x.c], sq=(OUR_SQ[p.id]||{})[x.c], pf=t?champPerf(TS,p.id,role,x.c):null;
+  const cell=x=>{ const t=mine[x.c], sq=(OUR_SQ[p.id]||{})[x.c];
     return `<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
-     <span class="pm2"><span class="tm${t?"":" none"}" title="Scrims + compétition"><b>${t?t[0]:0}</b><em>équipe</em></span><span class="sq" title="Solo Q (op.gg)"><b>${sq?sq.g:0}</b><em>SQ</em></span></span>${pf!=null?`<span class="pfb ${pf>=65?"good":pf>=45?"mid":"bad"}">${pf}</span>`:""}</button>`; };
+     <span class="pm2"><span class="tm${t?"":" none"}" title="Scrims + compétition"><b>${t?t[0]:0}</b><em>équipe</em></span><span class="sq" title="Solo Q (op.gg)"><b>${sq?sq.g:0}</b><em>SQ</em></span></span></button>`; };
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
-  <section class="card"><p class="muted">Sous chaque champion : à gauche les games en équipe (scrims + compétition), à droite la solo Q. Pastille = note de performance en équipe. Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
+  <section class="card"><p class="muted">Sous chaque champion : à gauche les games en équipe (scrims + compétition), à droite la solo Q. Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
    ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
    ${ui.tierPop?`<div class="pop">${champSheet(p.id,role,ui.tierPop)}<div class="poprow"><span class="muted">Tier :</span>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}" class="${(cfg.tiers[p.id]||{})[ui.tierPop]===t?"on":""}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;
@@ -600,7 +605,7 @@ async function initSnapshot(){
   try{ const r=await fetch("team.json",{cache:"no-store"}); if(!r.ok) return; const s=await r.json(); if(!s||!s.at) return;
     let seen=0; try{ seen=+localStorage.getItem(LS+"-snap")||0; }catch(e){}
     if(s.at<=seen) return;
-    if(s.config) cfg=migrate(Object.assign(defaultConfig(),s.config)); if(s.prep) prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},s.prep); if(s.history) history=Object.assign({series:[]},s.history);
+    if(s.config) cfg=migrate(Object.assign(defaultConfig(),s.config)); if(s.prep) prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},s.prep); if(s.history) history=Object.assign({series:[]},s.history); fixNames();
     try{ localStorage.setItem(LS+"-snap",String(s.at)); }catch(e){}
     sync.note="Données de l'équipe du "+new Date(s.at).toLocaleDateString("fr-FR"); saveLocal(); render(); renderSync();
   }catch(e){}
