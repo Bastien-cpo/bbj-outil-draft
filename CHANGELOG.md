@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.16
+- Bans : la préparation suit leurs bans. S'ils bannissent l'un de nos counters d'un de leurs conforts (ex. Kassadin de JH → Cassiopeia de Para), ce confort remonte avec « ⚠ Ils ont banni X, notre counter : pick probable ».
+
 ## v12.15
 - Bans 1-3 : notre équipe compte aussi. Si le joueur concerné a un counter qu'il maîtrise (et encore disponible en fearless), le confort adverse descend (jusqu'à −30 %, moins si c'est leur meilleur joueur) et reste affiché avec « On peut le laisser : … le contre ».
 
