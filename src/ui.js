@@ -320,18 +320,17 @@ function scoutProfile(p,P){
   const top=AXES.slice().sort((a,b)=>ax[b]-ax[a]).filter(a=>ax[a]>=1.6).slice(0,3);
   const dm={}; L.forEach(x=>{ const k=(CHAMPS[x.c]||{}).dmg||"?"; dm[k]=(dm[k]||0)+w(x); }); const dmg=Object.keys(dm).sort((a,b)=>dm[b]-dm[a])[0];
   const s1=w(L[0]||{g:0}), s3=L.slice(0,3).reduce((s,x)=>s+w(x),0);
-  const shape=s1>=0.45?`One-trick ${L[0].c} : ${Math.round(s1*100)} % de ses games`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:`Pool large : ${L.length} champions joués`;
-  // champion qu'il joue souvent mais avec de mauvais résultats : il risque de le prendre, inutile de le bannir
-  const trap=L.filter(x=>x.wr!=null&&x.g>=Math.max(20,tot*0.06)&&x.wr<=47).sort((a,b)=>a.wr-b.wr)[0];
-  const early=ax.early-ax.scaling;
-  // Flex : champions de son pool jouables à son rôle mais surtout joués ailleurs (ADC qui joue Syndra, top qui joue des mids…)
-  // Flex = champion présent dans le pool affiché de deux de leurs joueurs (chacun à son rôle, ≥ 5 games)
+  // Forme du pool : seulement quand elle aide la draft (one-trick ou pool réduit) ; en fearless sur 3 games, 3-5 champions suffisent, un pool large n'apprend rien
+  const deep=L.filter(x=>x.g>=10);
+  const shape=s1>=0.45?`One-trick ${L[0].c} : ${Math.round(s1*100)} % de ses games`:deep.length<=4&&deep.length?`Pool réduit : ${deep.map(x=>x.c).join(", ")} (les seuls à 10 games ou plus)`:s3>=0.7?`Pool resserré : ${L.slice(0,3).map(x=>x.c).join(", ")} font ${Math.round(s3*100)} % de ses games`:"";
+  // À laisser : seulement une vraie sous-performance (gros volume, winrate très bas ET mauvaises stats)
+  const trap=L.filter(x=>x.wr!=null&&x.g>=25&&x.wr<=43&&(x.kda==null||x.kda<2.2)).sort((a,b)=>a.wr-b.wr)[0];
+  // Flex = champion présent dans le pool de deux de leurs joueurs (chacun à son rôle, ≥ 5 games)
   const shown=q=>q.list.slice(0,15).filter(y=>y.g>=5);
   const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q!==p&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
-  const off={}; (p.all||[]).forEach(x=>{ const c=CHAMPS[x.c]; if(x.g>=10&&c&&!c.roles.includes(p.role)){ const r=c.roles[0]; (off[r]=off[r]||[]).push(x.c); } });
-  const offR=Object.keys(off).sort((a,b)=>off[b].length-off[a].length)[0];
-  const lines=[shape, top.length?`Style : ${top.map(a=>AXIS_FR[a]).join(", ")}${Math.abs(early)>=0.5?(early>0?" · cherche l'early":" · joue le scaling"):""}`:"", fx.length?`Flex : ${fx.map(x=>`${x.c} (aussi ${x.o.map(q=>`${q.name.split("#")[0]} en ${ROLE_NAMES[q.role].toLowerCase()}`).join(", ")})`).join(" · ")}`:"", trap?`À laisser : il joue souvent ${trap.c} (${trap.g} games) mais seulement ${trap.wr} % de victoires, pas besoin de le bannir`:""];
-  const op=offPool(p); if(op.length) lines.push(`Hors de son op.gg, peut sortir : ${op.map(x=>`${x.c} (${x.why})`).join(" · ")}`);
+  const lines=[shape,
+    fx.length?`Flex : ${fx.map(x=>`${x.c} — il le joue, et ${x.o.map(q=>`${q.name.split("#")[0]} aussi (${ROLE_NAMES[q.role].toLowerCase()})`).join(", ")}`).join(" · ")}`:"",
+    trap?`À laisser : ${trap.c} sous-performe nettement (${trap.g} games, ${trap.wr} %${trap.kda?`, KDA ${trap.kda}`:""})`:""];
   return lines.filter(Boolean);
 }
 // Champions absents de son op.gg mais crédibles à son rôle : très présents en pro ou très joués en solo Q, proches de son style

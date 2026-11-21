@@ -512,8 +512,10 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
       const p=pool[c]; let poolV;
       if(p){ poolV=p.com; why.unshift(`${pl.name.split("#")[0]} : ${p.g} g.${p.wr!=null?` (${p.wr} %)`:""}`); }
       else { const pr=PRO[c], pop=Math.max(clamp01((m.pres||0)/25), pr?clamp01((pr.p+pr.b)/400):0); // populaire en solo Q ou en pro
-        poolV=pl?0.2*pop:0.5*m.v;
-        if(pop>=0.5) why.push(m.pres>=12?`Hors de son op.gg, mais très joué sur le patch (${m.pres} %)`:`Hors de son op.gg, mais très populaire en pro`); else if(pl) why.push("Hors de son op.gg"); }
+        // hors de son pool : pris en compte légèrement, surtout en fin de draft (picks 4-5) et s'il casse notre compo
+        const late=theirs.length>=3, tdv=traitDanger(c,ourObjs).v;
+        poolV=pl?(late?0.15+0.25*tdv:0.05)*pop:0.5*m.v;
+        if(pl&&late&&tdv>=0.4&&pop>=0.3) why.push("Hors de son pool, mais punit votre compo"); else if(pl&&pop>=0.5) why.push("Hors de son pool"); }
       const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
       const s=0.6*poolV+0.4*reason+0.45*it.v;
       // Très dangereux pour notre compo : gros counter de notre lane, ou mécanique qui nous punit fort

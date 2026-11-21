@@ -2,6 +2,13 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.23
+- Fiches adverses recentrées sur le joueur : retirés « Hors de son op.gg », « Pool large » et « Style ». Gardé : one-trick, pool resserré, nouveau « Pool réduit » (4 champions ou moins à 10 games).
+- Flex clarifié : « Viktor — il le joue, et Para aussi (mid) ».
+- « À laisser » seulement en vraie sous-performance : ≥ 25 games, ≤ 43 % de victoires et KDA < 2,2.
+- Prédiction : un champion hors de leur pool compte très peu en début de draft, un peu plus en fin de draft (picks 4-5), surtout s'il punit notre compo.
+- Préparation EQX : notes raccourcies (picks récents sans stats, plus de titulaire/remplaçant).
+
 ## v12.22
 - Préparation : raisons des bans conseillés resserrées, chacune appuyée par une stat (games, winrate, KDA, part de ses parties) ; plus de « joueur n°X sur 5 ».
 - Bug visuel corrigé : le champ du joueur 5 ne dépasse plus du cadre.
