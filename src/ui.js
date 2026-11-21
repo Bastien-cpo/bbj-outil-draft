@@ -18,7 +18,7 @@ const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
 function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer}})); }catch(e){} }
-function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } return c; }
+function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } if(c.wv<9){ c.weights={affinite:25, force:25, synergie:25, matchup:25}; c.wv=9; } return c; }
 function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); } }catch(e){} }
 const pending={}, writing={}, timers={};
 function persist(key){ saveLocal(); if(!sync.db||sync.readOnly) return; clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key),450); pending[key]=true; }

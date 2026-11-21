@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.8
+- Poids du score de pick : affinité 25, méta 25, synergie 25, matchup/blind 25 (le top garde +35 %).
+- Matchup/blind = une seule unité : laner adverse connu → 100 % counter ; pas encore connu → 100 % blindabilité (first pick bleu = blind pur).
+
 ## v12.7
 - « Fin de série » envoie aussi la série au script du PC, qui l'ajoute avec les stats du client à team.json sur GitHub : toute l'équipe la voit sans passer par Claude (clé GitHub à poser une fois dans Documents\BBJ\github-token.txt).
 

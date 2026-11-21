@@ -88,7 +88,7 @@ function defaultConfig(){
     for(const t in src) src[t].split(",").filter(Boolean).forEach(c=>{ if(CHAMPS[c]) tiers[p.id][c]=t; }); });
   return {
     tiers,
-    weights:{affinite:30, force:25, synergie:25, matchup:20},
+    weights:{affinite:25, force:25, synergie:25, matchup:25},
     excludeD:true, synManual:[], ctrManual:[], ctrOff:[], wv:8,
     roleOrder:["J","A","S","M","T"] // ordre habituel des rôles en draft (du plus tôt au plus tard)
   };
@@ -208,7 +208,7 @@ function matchup(cfg,c,role,enemies){
   });
   if(laner) return {v:clamp01(0.5+s), good, bad, mode:"lane", laner:laner.name};
   const bl=blindability(cfg,c,role);
-  return {v:clamp01(0.55*bl+0.45*(0.5+s)), good, bad, mode:"blind", blind:bl};
+  return {v:bl, good, bad, mode:"blind", blind:bl};
 }
 function compProfile(names){
   const p={}; AXES.forEach(a=>p[a]=0); let ad=0,ap=0;
@@ -281,10 +281,11 @@ function scorePick(cfg,c,role,ctx){
   // Premier pick bleu : léger ajustement d'après les B1 pro 2026
   let b1=0; if(ctx.firstPick&&side==="B"){ b1=b1Adj(c); if(b1) parts.push(["1er pick pro",clamp01(0.5+b1*4),W.force*0.35]); }
   let expo=0; const topK=role==="T"?1.35:1; // le matchup top compte plus (calibrage pro + habitudes de l'équipe)
-  if(mu.mode==="lane") parts.push(["Matchup",mu.v,W.matchup*topK*(ctx.enemyAfter===0?1.8:1.3)]);
+  // Une seule unité « Matchup / Blind » (poids 25) : son laner adverse est connu → 100 % counter ; pas encore connu → 100 % blindabilité
+  if(mu.mode==="lane") parts.push(["Matchup",mu.v,W.matchup*topK]);
   else {
     const open=ctx.theirOpen||ROLES; expo=open.includes(role)?Math.min(1,(ctx.enemyAfter||0)/Math.max(1,open.length)):0;
-    if(expo>0) parts.push(["Blind",mu.v,W.matchup*topK*(0.6+1.4*expo)*(side==="B"&&n>=4?1.3:1)]);
+    if(expo>0) parts.push(["Blind",mu.v,W.matchup*topK]);
   }
   const tw=parts.reduce((s,p)=>s+p[2],0)||1;
   const raw=parts.reduce((s,p)=>s+p[1]*p[2],0)/tw;
