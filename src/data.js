@@ -194,13 +194,16 @@ const TIERS_RAW = { // tier lists à jour du 17/11 (confiance actuelle des joueu
   M: {S:"Ahri,Kassadin,Orianna,Ryze,Syndra,Viktor", A:"Akali,Anivia,Annie,Aurora,Galio,Sylas,Twisted Fate,Yone", B:"Azir,Cassiopeia,LeBlanc,Lissandra,Mel,Swain,Taliyah,Vladimir,Zed", C:"Ambessa,Diana,Naafiri,Renekton,Vex", D:""},
   A: {S:"Corki,Tristana", A:"Ashe,Ezreal,Jhin,Jinx,Kai'Sa,Sivir,Xayah", B:"Caitlyn,Kalista,Lucian,Miss Fortune,Smolder,Syndra,Vayne,Yunara,Zeri,Ziggs", C:"Kog'Maw,Mel,Samira,Senna,Seraphine,Twitch,Varus", D:"Aphelios,Draven,Nilah"},
   S: {S:"Lulu,Nautilus,Zilean", A:"Blitzcrank,Braum,Milio,Morgana,Nami,Seraphine,Soraka,Xerath,Yuumi", B:"Ashe,Galio,Karma,Kog'Maw,Leona,Poppy,Sona,Swain,Taric", C:"Alistar,Pyke,Rakan,Renata Glasc,Thresh", D:""},
+  // Bounty (coach, remplaçant support) : tier list tirée de son op.gg (saison 2026, volume + winrate au support)
+  SUB_S: {S:"Soraka,Leona,Taric,Milio", A:"Sona,Thresh,Braum,Karma,Renata Glasc,Rakan,Swain", B:"Morgana,Yuumi,Seraphine,Blitzcrank,Nami,Lulu,Vel'Koz", C:"Alistar,Zilean,Pyke,Nautilus,Senna", D:""},
   SUB: {S:"", A:"", B:"Aatrox,Ambessa,Darius,Jax,Mordekaiser,Yone,Zaahen", C:"", D:""},
 };
 
 // Joueurs : rôle principal + tier list (clé = rôle d'origine dans TIERS_RAW)
 const PLAYERS = [
   {id:"Fayk", main:"T", tl:"T"}, {id:"Billy", main:"J", tl:"J"}, {id:"JH", main:"M", tl:"M"},
-  {id:"Bastien", main:"A", tl:"A"}, {id:"Léo", main:"S", tl:"S"}, {id:"Yeyozz", main:"T", tl:"SUB"}
+  {id:"Bastien", main:"A", tl:"A"}, {id:"Léo", main:"S", tl:"S"}, {id:"Yeyozz", main:"T", tl:"SUB", sub:true},
+  {id:"Bounty", main:"S", tl:"SUB_S", sub:true}
 ];
 const ROLE_NAMES = {T:"Top", J:"Jungle", M:"Mid", A:"ADC", S:"Support"};
 

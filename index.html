@@ -240,7 +240,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.10 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.12 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -444,13 +444,16 @@ const TIERS_RAW = { // tier lists à jour du 17/11 (confiance actuelle des joueu
   M: {S:"Ahri,Kassadin,Orianna,Ryze,Syndra,Viktor", A:"Akali,Anivia,Annie,Aurora,Galio,Sylas,Twisted Fate,Yone", B:"Azir,Cassiopeia,LeBlanc,Lissandra,Mel,Swain,Taliyah,Vladimir,Zed", C:"Ambessa,Diana,Naafiri,Renekton,Vex", D:""},
   A: {S:"Corki,Tristana", A:"Ashe,Ezreal,Jhin,Jinx,Kai'Sa,Sivir,Xayah", B:"Caitlyn,Kalista,Lucian,Miss Fortune,Smolder,Syndra,Vayne,Yunara,Zeri,Ziggs", C:"Kog'Maw,Mel,Samira,Senna,Seraphine,Twitch,Varus", D:"Aphelios,Draven,Nilah"},
   S: {S:"Lulu,Nautilus,Zilean", A:"Blitzcrank,Braum,Milio,Morgana,Nami,Seraphine,Soraka,Xerath,Yuumi", B:"Ashe,Galio,Karma,Kog'Maw,Leona,Poppy,Sona,Swain,Taric", C:"Alistar,Pyke,Rakan,Renata Glasc,Thresh", D:""},
+  // Bounty (coach, remplaçant support) : tier list tirée de son op.gg (saison 2026, volume + winrate au support)
+  SUB_S: {S:"Soraka,Leona,Taric,Milio", A:"Sona,Thresh,Braum,Karma,Renata Glasc,Rakan,Swain", B:"Morgana,Yuumi,Seraphine,Blitzcrank,Nami,Lulu,Vel'Koz", C:"Alistar,Zilean,Pyke,Nautilus,Senna", D:""},
   SUB: {S:"", A:"", B:"Aatrox,Ambessa,Darius,Jax,Mordekaiser,Yone,Zaahen", C:"", D:""},
 };
 
 // Joueurs : rôle principal + tier list (clé = rôle d'origine dans TIERS_RAW)
 const PLAYERS = [
   {id:"Fayk", main:"T", tl:"T"}, {id:"Billy", main:"J", tl:"J"}, {id:"JH", main:"M", tl:"M"},
-  {id:"Bastien", main:"A", tl:"A"}, {id:"Léo", main:"S", tl:"S"}, {id:"Yeyozz", main:"T", tl:"SUB"}
+  {id:"Bastien", main:"A", tl:"A"}, {id:"Léo", main:"S", tl:"S"}, {id:"Yeyozz", main:"T", tl:"SUB", sub:true},
+  {id:"Bounty", main:"S", tl:"SUB_S", sub:true}
 ];
 const ROLE_NAMES = {T:"Top", J:"Jungle", M:"Mid", A:"ADC", S:"Support"};
 
@@ -491,6 +494,7 @@ const OUR_SOLOQ = {
   "JH":"Viktor:138:64|Ahri:96:53|Kassadin:81:54|Twisted Fate:71:54|Orianna:54:48|Akali:53:40|Ryze:44:45|Syndra:41:54|Sion:31:65|Yone:31:52",
   "Bastien":"Tristana:164:54|Corki:161:58|Jhin:48:50|Kai'Sa:42:55|Sivir:28:50|Ashe:25:56|Nautilus:21:57|Xayah:21:33|Ezreal:19:53|Viktor:17:47",
   "Léo":"Kog'Maw:161:56|Nautilus:28:57|Blitzcrank:11:55|Zilean:10:50|Sion:9:33|Xerath:7:86|Lulu:6:67|Braum:6:33|Soraka:5:60|Taric:5:60",
+  "Bounty":"Kai'Sa:149:56|Ashe:68:44|Soraka:60:57|Ezreal:45:40|Cassiopeia:44:59|Leona:41:54|Smolder:40:57|Vel'Koz:40:53|Yunara:37:51|Sona:35:49|Caitlyn:34:59|Taric:32:63|Milio:32:56|Swain:31:55|Thresh:31:42|Warwick:30:57|Jhin:29:55|Shaco:28:43|Renata Glasc:24:50|Karma:23:52|Orianna:22:64|Malzahar:22:59|Rakan:21:43|Yuumi:21:29|Braum:20:65|Tristana:20:50|Aurelion Sol:19:53|Seraphine:17:41|Jinx:17:41|Blitzcrank:16:44|Morgana:14:79|Kalista:14:57|Nami:13:31|Lux:12:42|Lulu:11:27|Alistar:9:33|Zilean:7:71|Pyke:7:29|Senna:5:60|Nautilus:5:40",
   "Yeyozz":"Jax:78:50|Darius:68:46|Aatrox:56:52|Zaahen:43:58|Ambessa:42:50"
 };
 
@@ -629,8 +633,8 @@ const playerMain = id=>(PLAYERS.find(p=>p.id===id)||{}).main;
 const STATS_OWNER = (()=>{ const cfg0=defaultConfig(), out={};
   for(const c in STATS){ let best=null,bv=-1;
     PLAYERS.forEach(p=>{ const x=((TEAM_P[p.id]||{})[p.main]||{})[c]; if(x&&x.g>bv){bv=x.g;best=p.id;} }); if(best){ out[c]=best; continue; } bv=-1;
-    PLAYERS.filter(p=>p.id!=="Yeyozz").forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
-    if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&p.id!=="Yeyozz")||{}).id; }
+    PLAYERS.filter(p=>!p.sub).forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
+    if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&!p.sub)||{}).id; }
     out[c]=best; }
   return out; })();
 
@@ -799,7 +803,9 @@ function scorePick(cfg,c,role,ctx){
   // Poids ajustés selon le côté et le moment de la draft
   const n=ctx.pickNo, side=ctx.side||"B";
   const mMeta=ctx.firstPick?1.5:(n<=2?1.25:(ctx.lastPick?0.8:1));
-  const parts=[["Affinité",af.v,W.affinite],["Méta",fo,W.force*mMeta]];
+  // Remplaçant : on priorise son confort → son affinité pèse 1,6×
+  const isSub=(PLAYERS.find(p=>p.id===pid)||{}).sub;
+  const parts=[["Affinité",af.v,W.affinite*(isSub?1.6:1)],["Méta",fo,W.force*mMeta]];
   if(ctx.allies.length) parts.push(["Synergie",sy.v,W.synergie*(duo?1.6:1)*(n<=3?1.2:1)]);
   const tW=[1,0.7,0.4,0.15,0][Math.min(4,n-1)]*(ctx.firstPick?1.2:1);
   let tim=null; if(tW>0){ tim=timingScore(cfg,c,role,ctx); parts.push(["Timing",tim,W.force*tW]); }
@@ -1357,7 +1363,8 @@ const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
 function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{tab:ui.tab,poolPlayer:ui.poolPlayer}})); }catch(e){} }
-function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } if(c.wv<9){ c.weights={affinite:25, force:25, synergie:25, matchup:25}; c.wv=9; } return c; }
+function migrate(c){ if(!c.wv||c.wv<7){ c.weights={...defaultConfig().weights}; c.wv=7; } if(c.wv<8){ c.roleOrder=["J","A","S","M","T"]; c.wv=8; } if(c.wv<9){ c.weights={affinite:25, force:25, synergie:25, matchup:25}; c.wv=9; }
+  const d0=defaultConfig().tiers; PLAYERS.forEach(p=>{ if(!c.tiers[p.id]) c.tiers[p.id]=d0[p.id]; }); return c; }
 function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem(LS)||"null"); if(d){ cfg=migrate(Object.assign(defaultConfig(),d.cfg||{})); prep=Object.assign(prep,d.prep||{}); live=Object.assign(live,d.live||{}); if(d.history) history=d.history; Object.assign(ui,d.ui||{}); } }catch(e){} }
 const pending={}, writing={}, timers={};
 function persist(key){ saveLocal(); if(!sync.db||sync.readOnly) return; clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key),450); pending[key]=true; }

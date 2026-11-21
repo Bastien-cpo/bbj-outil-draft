@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.12
+- Nouveau joueur remplaçant : Bounty (coach, support). Tier list tirée de son op.gg 2026 (S : Soraka, Leona, Taric, Milio).
+- Remplaçant dans la lineup (Bounty ou Yeyozz) : son affinité pèse 1,6× dans le score, pour prioriser son confort.
+- Préparation : EQX (Azzgard, FKR1, Para, Maliketh, Sakuya), lineup avec Bounty au support.
+
 ## v12.11
 - Affinité : les 72 scrims du Parthénon (+ 19/11) sont comptés par joueur et par rôle ; leurs résultats donnent un bonus/malus lissé d'au plus ±15 % (ex. Syndra chez JH, 2 V sur 7, baisse ; peu de games = presque neutre). Les tier lists de l'outil restent la référence, pas celles du Parthénon.
 - Synergie : les duos déjà joués par l'équipe (≥ 3 games) comptent dans le score, sans affichage (Yunara + Lulu 0/3 en malus ; Jinx + Milio, Tristana + Nautilus en bonus).

@@ -103,8 +103,8 @@ const playerMain = id=>(PLAYERS.find(p=>p.id===id)||{}).main;
 const STATS_OWNER = (()=>{ const cfg0=defaultConfig(), out={};
   for(const c in STATS){ let best=null,bv=-1;
     PLAYERS.forEach(p=>{ const x=((TEAM_P[p.id]||{})[p.main]||{})[c]; if(x&&x.g>bv){bv=x.g;best=p.id;} }); if(best){ out[c]=best; continue; } bv=-1;
-    PLAYERS.filter(p=>p.id!=="Yeyozz").forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
-    if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&p.id!=="Yeyozz")||{}).id; }
+    PLAYERS.filter(p=>!p.sub).forEach(p=>{ const t=cfg0.tiers[p.id][c]; if(t&&TIER_VAL[t]>bv){bv=TIER_VAL[t];best=p.id;} });
+    if(!best&&CHAMPS[c]){ const r=CHAMPS[c].roles[0]; best=(PLAYERS.find(p=>p.main===r&&!p.sub)||{}).id; }
     out[c]=best; }
   return out; })();
 
@@ -273,7 +273,9 @@ function scorePick(cfg,c,role,ctx){
   // Poids ajustés selon le côté et le moment de la draft
   const n=ctx.pickNo, side=ctx.side||"B";
   const mMeta=ctx.firstPick?1.5:(n<=2?1.25:(ctx.lastPick?0.8:1));
-  const parts=[["Affinité",af.v,W.affinite],["Méta",fo,W.force*mMeta]];
+  // Remplaçant : on priorise son confort → son affinité pèse 1,6×
+  const isSub=(PLAYERS.find(p=>p.id===pid)||{}).sub;
+  const parts=[["Affinité",af.v,W.affinite*(isSub?1.6:1)],["Méta",fo,W.force*mMeta]];
   if(ctx.allies.length) parts.push(["Synergie",sy.v,W.synergie*(duo?1.6:1)*(n<=3?1.2:1)]);
   const tW=[1,0.7,0.4,0.15,0][Math.min(4,n-1)]*(ctx.firstPick?1.2:1);
   let tim=null; if(tW>0){ tim=timingScore(cfg,c,role,ctx); parts.push(["Timing",tim,W.force*tW]); }

@@ -18,6 +18,7 @@ const OUR_SOLOQ = {
   "JH":"Viktor:138:64|Ahri:96:53|Kassadin:81:54|Twisted Fate:71:54|Orianna:54:48|Akali:53:40|Ryze:44:45|Syndra:41:54|Sion:31:65|Yone:31:52",
   "Bastien":"Tristana:164:54|Corki:161:58|Jhin:48:50|Kai'Sa:42:55|Sivir:28:50|Ashe:25:56|Nautilus:21:57|Xayah:21:33|Ezreal:19:53|Viktor:17:47",
   "Léo":"Kog'Maw:161:56|Nautilus:28:57|Blitzcrank:11:55|Zilean:10:50|Sion:9:33|Xerath:7:86|Lulu:6:67|Braum:6:33|Soraka:5:60|Taric:5:60",
+  "Bounty":"Kai'Sa:149:56|Ashe:68:44|Soraka:60:57|Ezreal:45:40|Cassiopeia:44:59|Leona:41:54|Smolder:40:57|Vel'Koz:40:53|Yunara:37:51|Sona:35:49|Caitlyn:34:59|Taric:32:63|Milio:32:56|Swain:31:55|Thresh:31:42|Warwick:30:57|Jhin:29:55|Shaco:28:43|Renata Glasc:24:50|Karma:23:52|Orianna:22:64|Malzahar:22:59|Rakan:21:43|Yuumi:21:29|Braum:20:65|Tristana:20:50|Aurelion Sol:19:53|Seraphine:17:41|Jinx:17:41|Blitzcrank:16:44|Morgana:14:79|Kalista:14:57|Nami:13:31|Lux:12:42|Lulu:11:27|Alistar:9:33|Zilean:7:71|Pyke:7:29|Senna:5:60|Nautilus:5:40",
   "Yeyozz":"Jax:78:50|Darius:68:46|Aatrox:56:52|Zaahen:43:58|Ambessa:42:50"
 };
 
