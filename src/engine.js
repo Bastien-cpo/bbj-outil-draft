@@ -590,7 +590,7 @@ function ourCounters(cfg,c,role,lineup){
     const m=ctrGet(I,x,c,role); if(m&&m[2]>=52) out.push({player:pid,champ:x,wr:m[2]}); });
   return out.sort((a,b)=>b.wr-a.wr).slice(0,4);
 }
-function banPlan(cfg,prep,lineup){
+function banPlan(cfg,prep,lineup,un){
   const out=[]; const PP=prepPlayers(prep);
   const vals=PP.map(p=>rankValue(p.rank)); const R={}; rankPlayers(PP).forEach(x=>R[x.p.name]=x);
   PP.forEach((pl,pi)=>{
@@ -618,7 +618,10 @@ function banPlan(cfg,prep,lineup){
       const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.12,0.06,0.02,0,-0.04][rk-1]*vol;
       if(rk===1){ tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur n°1 en face : ${R[pl.name].reason}`); }
       else why.push(`${pl.name.split("#")[0]} : joueur n°${rk} sur 5 en face`);
-      const oc=ourCounters(cfg,x.c,pl.role,lineup);
+      // Notre équipe compte aussi : si notre joueur a un vrai counter qu'il maîtrise (et encore dispo), ce confort adverse est moins prioritaire
+      const oc=ourCounters(cfg,x.c,pl.role,lineup).filter(o=>!(un&&un.has(o.champ)));
+      if(oc.length){ const k=Math.max(...oc.map(o=>clamp01((o.wr-51)/5)*affinity(cfg,o.player,pl.role,o.champ).v));
+        if(k>0.05){ s*=1-0.3*k*[0.4,0.7,1,1,1][rk-1]; /* le meilleur joueur adverse joue mieux autour d’un counter */ why.push(`On peut le laisser : ${oc.slice(0,2).map(o=>`${o.champ} (${o.player}, ${o.wr} %)`).join(", ")} le contre`); tags.push("Contrable par nous"); } }
       out.push({name:x.c, player:pl.name||"", role:pl.role, score:Math.round(100*clamp01(s)), why, tags, counters:oc});
     });
   });
@@ -642,7 +645,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   // Fearless : les champions déjà joués dans la série sortent des pools adverses, leurs conforts restants deviennent les cibles
   const lockedS=new Set(series.locked||[]);
   const prepF=lockedS.size?Object.assign({},prep,{players:(prep.players||[]).map(p=>Object.assign({},p,{champs:(p.champs||[]).filter(x=>!lockedS.has(findChamp(x[0])))}))}):prep;
-  const planAll=banPlan(cfg,prepF,lineup); const P=prepPlayers(prep);
+  const planAll=banPlan(cfg,prepF,lineup,un); const P=prepPlayers(prep);
   const played={}; P.forEach(pl=>pl.list.forEach(x=>{ if(x.g>=5&&(!played[x.c]||played[x.c].g<x.g)) played[x.c]={g:x.g,name:pl.name.split("#")[0]}; }));
   const short=w=>w.length>70?w.slice(0,68)+"…":w;
   if(!phase2){

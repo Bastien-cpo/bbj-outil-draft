@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.15
+- Bans 1-3 : notre équipe compte aussi. Si le joueur concerné a un counter qu'il maîtrise (et encore disponible en fearless), le confort adverse descend (jusqu'à −30 %, moins si c'est leur meilleur joueur) et reste affiché avec « On peut le laisser : … le contre ».
+
 ## v12.14
 - Bans 1 à 3 : uniquement l'affinité des adversaires (volume, part de leurs games, winrate, KDA), sans méta ; les suggestions pro/méta passent après. En fearless, les champions déjà joués sortent et les conforts restants prennent le relais à chaque game.
 - Bans 4 et 5 : inchangés (adaptés aux picks, counters, blindables).
