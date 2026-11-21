@@ -240,7 +240,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.9 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.10 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -1664,11 +1664,10 @@ function offPool(p,k=3){
     return {c, s:0.65*pop+0.35*sim, why:pro>=sq?`très présent en pro, ${pr.p+pr.b} drafts`:`très joué en solo Q, ${m.pres} %`};
   }).filter(x=>x&&x.s>=0.5).sort((a,b)=>b.s-a.s).slice(0,k);
 }
-// Tuto intégré (icône livre en haut) : s'ouvre tout seul à la première ouverture de l'outil
+// Tuto intégré : s'ouvre avec le bouton Tuto (icône livre) en haut
 function tutoModal(){ const R=(a,b)=>`<tr><td><b>${a}</b></td><td>${b}</td></tr>`;
   return `<div class="scmodal" data-act="tutoclose"><div class="scbox tutobox" data-act="none">
-  <div class="row" style="justify-content:space-between"><h2>Bienvenue dans BBJ Outil Draft</h2><button class="btn" data-act="tutoclose">✕</button></div>
-  <p>L'outil suit notre draft Drafter en direct et propose à chaque tour les meilleurs bans et picks pour nous cinq. Il ne décide pas : il met sous les yeux ce qu'on oublie en 30 secondes.</p>
+  <div class="row" style="justify-content:space-between"><h2>Bienvenue dans l'outil draft de BBJ</h2><button class="btn" data-act="tutoclose">✕</button></div>
   <h3>Installation (une fois)</h3><ol><li>Afficher la barre des favoris (Ctrl + Maj + B).</li><li>Onglet <b>Réglages</b> : glisser le bouton « Favori Drafter » dans la barre.</li><li>Autoriser les pop-ups pour drafter.lol.</li></ol>
   <p>Pendant la draft : dans la room Drafter, cliquer le favori. L'outil s'ouvre dans sa fenêtre et le badge <b>● BBJ synchro</b> apparaît. Les games suivantes suivent toutes seules ; recliquer seulement après un F5 sur Drafter.</p>
   <h3>Une draft</h3><ol><li><b>Côté</b> : détecté si une équipe s'appelle BBJ sur Drafter, sinon un clic Blue / Red.</li><li><b>Bans phase 1</b> : bans conseillés au centre ; nos premières cases montrent les meilleurs first picks (bleu) ou paires R1-R2 (rouge).</li><li><b>Picks</b> : par rôle libre, nos champions classés (détail au survol) ; étoile = nos tiers S/A/B. En face, leurs picks probables, <b>cercle rouge</b> = dangereux pour nous.</li><li><b>Bans phase 2</b> : contre notre compo ou ce qu'ils préparent.</li><li><b>Analyse finale</b>, puis <b>Partie suivante</b> (fearless appliqué) ou <b>Fin de série</b> (série et stats publiées pour l'équipe).</li></ol>
@@ -1927,7 +1926,7 @@ function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(
   games.forEach((g,i)=>{ const x=list[i]; if(!x) return; g.stats={gameId:x.gameId,min:x.min,us:x.us,them:x.them,objUs:x.objUs,objThem:x.objThem}; if(!g.result&&x.win!=null) g.result=x.win?"W":"L"; });
   delete s.pendingExport; persist("history"); saveLocal(); if(bbjBC) bbjBC.postMessage("reload");
   ui.tab="hist"; flash(`Stats de ${Math.min(list.length,games.length)} games ajoutées à la série vs ${s.opponent}`); render(); }
-loadLocal(); try{ if(!localStorage.getItem(LS+"-tuto")){ ui.tuto=true; localStorage.setItem(LS+"-tuto","1"); } }catch(e){} render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
+loadLocal(); ui.tuto=false; render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
 
 </script>
 </body>

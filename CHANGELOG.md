@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.10
+- Tuto : titre « Bienvenue dans l'outil draft de BBJ », phrase d'intro retirée ; il ne s'ouvre plus tout seul, seulement avec le bouton Tuto.
+
 ## v12.9
 - Bouton « Tuto » (icône livre) en haut de l'outil : le tuto intégré, ouvert automatiquement à la première ouverture.
 
