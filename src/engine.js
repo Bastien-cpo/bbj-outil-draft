@@ -638,16 +638,15 @@ function banPlan(cfg,prep,lineup,un,tb){
       const comfort=vol*(0.55+0.3*perf+0.15*kd)*(0.6+0.4*Math.min(1,share/0.2)); // part de ses games : un 4e champion pèse moins qu'un main
       // Bans 1-3 : on tâte le terrain → uniquement l'affinité du compte avec le champion (pas la méta)
       let s=comfort;
-      if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${x.g} games, ${Math.round(x.g/Math.max(1,second.g)*10)/10}× plus que son 2e champion (${second.c}, ${second.g} g.)`); }
-      else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué (${x.g} g., ${Math.round(share*100)} % de ses parties)`); }
-      else if(share>=0.15) why.push(`Gros confort : ${x.g} g., ${Math.round(share*100)} % de ses parties`);
-      if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games${x.kda?`, KDA ${x.kda}`:""}`);
-      else if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
+      // Raisons courtes, chacune appuyée par une stat
+      const st=`${x.g} games${x.wr!=null?` · ${x.wr} % de victoires`:""}${x.kda?` · KDA ${x.kda}`:""} · ${Math.round(share*100)} % de ses parties`;
+      if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${st} (2e champion : ${second.c}, ${second.g} g.)`); }
+      else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué : ${st}`); }
+      else why.push(`Confort n°${i+1} : ${st}`);
+      if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
-      // classement 1 à 5 du joueur (LP/pic > rendement > pool méta) : plus il est fort, plus ses champions valent un ban
       const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.12,0.06,0.02,0,-0.04][rk-1]*vol;
-      if(rk===1){ tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur n°1 en face : ${R[pl.name].reason}`); }
-      else why.push(`${pl.name.split("#")[0]} : joueur n°${rk} sur 5 en face`);
+      if(rk===1) tags.push("Meilleur joueur");
       // Notre équipe compte aussi : si notre joueur a un vrai counter qu'il maîtrise (et encore dispo), ce confort adverse est moins prioritaire
       const ocAll=ourCounters(cfg,x.c,pl.role,lineup), oc=ocAll.filter(o=>!(un&&un.has(o.champ)));
       // Lecture de leurs bans : s'ils bannissent notre counter de ce champion, ils préparent sans doute ce pick → il remonte

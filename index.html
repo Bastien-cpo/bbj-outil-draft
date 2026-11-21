@@ -119,7 +119,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .cbar .btn.pri{padding:10px 22px;font-size:15px}.cbar .btn[disabled]{opacity:.4;cursor:default}
 .bub.sel,.gc.sel{background:#2a2410;outline:2px solid var(--gold)}
 .badge{position:absolute;top:32px;left:6px;font:700 10px Inter;font-style:normal;border-radius:6px;padding:0 4px;line-height:15px}.badge.B{background:#14532d;color:#bbf7d0}.badge.C{background:#7f1d1d;color:#fecaca}.gc{position:relative}.gc .badge{top:24px;left:4px;font-size:9px;line-height:13px}
-.ids5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ids5 label{flex-direction:column;align-items:stretch;gap:2px;margin:0}.ids5 em{font-style:normal;font-size:11px}.ids5 input{min-width:0}
+.ids5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ids5 label{flex-direction:column;align-items:stretch;gap:2px;margin:0}.ids5 em{font-style:normal;font-size:11px}.ids5 label{min-width:0}.ids5 input{min-width:0;width:100%;box-sizing:border-box}
 .rrow.later{opacity:.75}.hint{font-size:10px;color:#fbbf24}
 .duob{position:relative;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:6px 8px 4px;display:flex;flex-wrap:wrap;align-items:center;gap:2px;width:118px;flex:none;cursor:pointer;color:var(--tx)}
 .duob:hover{border-color:var(--gold)}.duob .bn{width:100%;text-align:center;max-width:none;font-size:10px}.duob .sc{position:absolute;top:-6px;right:-4px;background:#2a3141;font:700 12px Inter;border-radius:10px;padding:0 5px}.duob .sc.hi{background:var(--gold);color:#111}
@@ -242,7 +242,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.21 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.22 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -1178,16 +1178,15 @@ function banPlan(cfg,prep,lineup,un,tb){
       const comfort=vol*(0.55+0.3*perf+0.15*kd)*(0.6+0.4*Math.min(1,share/0.2)); // part de ses games : un 4e champion pèse moins qu'un main
       // Bans 1-3 : on tâte le terrain → uniquement l'affinité du compte avec le champion (pas la méta)
       let s=comfort;
-      if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${x.g} games, ${Math.round(x.g/Math.max(1,second.g)*10)/10}× plus que son 2e champion (${second.c}, ${second.g} g.)`); }
-      else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué (${x.g} g., ${Math.round(share*100)} % de ses parties)`); }
-      else if(share>=0.15) why.push(`Gros confort : ${x.g} g., ${Math.round(share*100)} % de ses parties`);
-      if(x.wr!=null&&x.g>=15&&x.wr>=55) why.push(`${x.wr} % de victoires sur ${x.g} games${x.kda?`, KDA ${x.kda}`:""}`);
-      else if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
+      // Raisons courtes, chacune appuyée par une stat
+      const st=`${x.g} games${x.wr!=null?` · ${x.wr} % de victoires`:""}${x.kda?` · KDA ${x.kda}`:""} · ${Math.round(share*100)} % de ses parties`;
+      if(i===0 && x.g>=25 && second && x.g>=2.5*Math.max(1,second.g)){ s+=0.25; tags.push("One-trick"); why.push(`One-trick : ${st} (2e champion : ${second.c}, ${second.g} g.)`); }
+      else if(i===0){ tags.push("Main"); why.push(`Son champion le plus joué : ${st}`); }
+      else why.push(`Confort n°${i+1} : ${st}`);
+      if(x.g>=20&&x.wr!=null&&x.wr<48) why.push(`Beaucoup joué mais seulement ${x.wr} % de victoires`);
       if(PRO[x.c]&&PRO[x.c].b>=100) why.push(`Très banni en pro (${PRO[x.c].b} bans)`);
-      // classement 1 à 5 du joueur (LP/pic > rendement > pool méta) : plus il est fort, plus ses champions valent un ban
       const rk=R[pl.name]?R[pl.name].rank:3; s+=[0.12,0.06,0.02,0,-0.04][rk-1]*vol;
-      if(rk===1){ tags.push("Meilleur joueur"); why.push(`${pl.name.split("#")[0]}, joueur n°1 en face : ${R[pl.name].reason}`); }
-      else why.push(`${pl.name.split("#")[0]} : joueur n°${rk} sur 5 en face`);
+      if(rk===1) tags.push("Meilleur joueur");
       // Notre équipe compte aussi : si notre joueur a un vrai counter qu'il maîtrise (et encore dispo), ce confort adverse est moins prioritaire
       const ocAll=ourCounters(cfg,x.c,pl.role,lineup), oc=ocAll.filter(o=>!(un&&un.has(o.champ)));
       // Lecture de leurs bans : s'ils bannissent notre counter de ce champion, ils préparent sans doute ce pick → il remonte
@@ -1566,7 +1565,7 @@ function viewHistory(){
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
     return `<div class="dtop"><button class="btn sm" data-act="hclose">← Historique</button><b>${esc(s.date)} · ${esc(s.type||"Scrim")} vs ${esc(s.opponent)} · Game ${ui.hist.g+1} ${g.result==="W"?"(victoire)":g.result==="L"?"(défaite)":""}</b></div>
       ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
-  if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée. « Nouvelle série » archive la série en cours ici.</p></section>`;
+  if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée.</p></section>`;
   return S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
     <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
     ${s.games.map((g,gi)=>{ const us=g.side, them=us==="B"?"R":"B", P=t=>g.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===t);
@@ -1580,7 +1579,7 @@ const ourName=()=>prep.team||"BBJ", theirName=()=>(ui.histOpp!=null?ui.histOpp:p
 // côté de BBJ : choisi d'un clic au début de chaque game, sauf si Drafter affiche BBJ / Blocked by Jungle
 const curGameNo=()=>live.series.games.length+1;
 const sideOk=()=>live.sideHow==="nom"||live.sideManual===curGameNo();
-function sidePrompt(){ return `<div class="sidepick"><h2>Game ${curGameNo()} : de quel côté joue ${esc(ourName())} ?</h2><p class="muted">Tout l'outil (ordre, suggestions, bans) s'adapte à ce choix.</p>
+function sidePrompt(){ return `<div class="sidepick"><h2>Game ${curGameNo()} : de quel côté joue ${esc(ourName())} ?</h2>
   <div class="sidebtns"><button class="sbB" data-act="side" data-v="B">Blue</button><button class="sbR" data-act="side" data-v="R">Red</button></div></div>`; }
 function viewDraft(){
   const d=live.draft, gameNo=live.series.games.length+1;
@@ -1795,9 +1794,9 @@ function viewPrep(){
     <div class="row"><input data-act="plink" value="${esc(prep.link||"")}" placeholder="Colle ici le lien multi-op.gg des adversaires"></div>
     <div class="ids5">${ROLES.map((r,k)=>`<label><em>Joueur ${k+1}</em><input data-act="pid" data-k="${k}" value="${esc((prep.ids||[])[k]||"")}" placeholder="Pseudo#TAG"></label>`).join("")}</div>
     <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button><button class="btn sm" data-act="clearprep" title="Série terminée : vide l'adversaire, son op.gg et les bans de préparation">Effacer la préparation</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
-    <p class="muted">${reqStatus()}${prep.updatedAt?` Dernière mise à jour des profils : ${esc(prep.updatedAt)}.`:""}</p></section>
+    ${reqStatus()||prep.updatedAt?`<p class="muted">${reqStatus()}${prep.updatedAt?` Profils mis à jour le ${esc(prep.updatedAt)}.`:""}</p>`:""}</section>
   <section class="card"><h3>Bans conseillés</h3>
-    ${plan.length?`<p class="muted">Par ordre de priorité : 1 = le plus important. Il y en a 7 car l'adversaire bannit souvent une partie de ceux que vous visiez.</p><div class="bplan">${plan.slice(0,7).map((x,k)=>`<div class="bpc"><span class="rk">${k+1}</span>${av(x.name,"lg")}<b>${esc(x.name)}</b><span class="muted">${esc(x.player.split("#")[0])} · ${ROLE_NAMES[x.role]}</span>
+    ${plan.length?`<div class="bplan">${plan.slice(0,7).map((x,k)=>`<div class="bpc"><span class="rk">${k+1}</span>${av(x.name,"lg")}<b>${esc(x.name)}</b><span class="muted">${esc(x.player.split("#")[0])} · ${ROLE_NAMES[x.role]}</span>
       <div class="btags">${x.tags.map(t=>`<span class="tag ${t==="Meilleur joueur"?"star":"ok"}">${esc(t)}</span>`).join("")}${x.counters.length?`<span class="tag warn cnt">Counter :${x.counters.map(o=>`<span title="${esc(o.player)} · ${esc(o.champ)} ${o.wr} %">${av(o.champ,"xs")}</span>`).join("")}</span>`:""}</div>
       <ul class="bwhy">${x.why.map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>`).join("")}</div>`
       :`<div class="muted">Pas encore de profils adverses.</div>`}</section>
@@ -1816,7 +1815,7 @@ function idsFromLink(url){
 }
 function nextRun(){ const n=new Date(), h=n.getHours()+n.getMinutes()/60; return h<17.78?"aujourd'hui vers 17 h 47":"demain vers 17 h 47"; }
 function multiLink(){ const ids=(prep.ids||[]).filter(x=>x&&x.includes("#")); return ids.length?"https://op.gg/fr/lol/multisearch/euw?summoners="+encodeURIComponent(ids.join(",")):""; }
-function reqStatus(){ const q=prep.request; if(!q) return "Entre les pseudos (avec le #TAG) puis demande l'analyse : les profils et les bans conseillés se remplissent automatiquement pour toute l'équipe.";
+function reqStatus(){ const q=prep.request; if(!q) return "";
   return q.status==="done"?"Analyse terminée.":q.status==="error"?"L'analyse a échoué : "+esc(q.note||"")+".":`Analyse demandée le ${esc(q.at)} : elle sera faite automatiquement ${nextRun()}. Si c'est urgent, envoie le lien à Claude dans la conversation.`; }
 function dupWarn(){ const v=ROLES.map(r=>prep.lineup[r]); const d=v.filter((p,k)=>v.indexOf(p)!==k); return d.length?`<div class="warn">⚠ ${esc(d.join(", "))} est placé sur deux rôles.</div>`:""; }
 
@@ -1845,7 +1844,7 @@ function viewPools(){
     return `<button class="pc" data-act="tierpop" data-c="${esc(x.c)}">${av(x.c,"lg")}<span class="pn">${esc(x.c)}</span>
      <span class="pm2"><span class="tm${t?"":" none"}" title="Scrims + compétition"><b>${t?t[0]:0}</b><em>équipe</em></span><span class="sq" title="Solo Q (op.gg)"><b>${sq?sq.g:0}</b><em>SQ</em></span></span></button>`; };
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
-  <section class="card"><p class="muted">Sous chaque champion : à gauche les games en équipe (scrims + compétition), à droite la solo Q. Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
+  <section class="card">
    ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"Hors tier":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
    ${ui.tierPop?`<div class="pop">${champSheet(p.id,role,ui.tierPop)}<div class="poprow"><span class="muted">Tier :</span>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}" class="${(cfg.tiers[p.id]||{})[ui.tierPop]===t?"on":""}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;

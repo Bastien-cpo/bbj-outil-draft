@@ -2,6 +2,11 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.22
+- Préparation : raisons des bans conseillés resserrées, chacune appuyée par une stat (games, winrate, KDA, part de ses parties) ; plus de « joueur n°X sur 5 ».
+- Bug visuel corrigé : le champ du joueur 5 ne dépasse plus du cadre.
+- Textes d'aide superflus retirés (bans conseillés, analyse op.gg, Pool, choix du côté, historique vide) pour alléger l'outil.
+
 ## v12.21
 - Solo Q à jour (op.gg du 21/11) pour Fabien (BBJ Billy), JH (BBJ Shadouxe) et Bastien (Shigeo) : tous les champions joués au moins 3 fois, plus seulement les 10 premiers.
 - Pool : un champion n'apparaît plus « hors tier » à cause des games d'un autre joueur (ex. Bard chez Léo, joué une fois par Fabien au support). Seules ses propres games en équipe à ce rôle ou ≥ 20 games en solo Q l'y font entrer. Ligne renommée « Hors tier ».

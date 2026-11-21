@@ -119,7 +119,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .cbar .btn.pri{padding:10px 22px;font-size:15px}.cbar .btn[disabled]{opacity:.4;cursor:default}
 .bub.sel,.gc.sel{background:#2a2410;outline:2px solid var(--gold)}
 .badge{position:absolute;top:32px;left:6px;font:700 10px Inter;font-style:normal;border-radius:6px;padding:0 4px;line-height:15px}.badge.B{background:#14532d;color:#bbf7d0}.badge.C{background:#7f1d1d;color:#fecaca}.gc{position:relative}.gc .badge{top:24px;left:4px;font-size:9px;line-height:13px}
-.ids5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ids5 label{flex-direction:column;align-items:stretch;gap:2px;margin:0}.ids5 em{font-style:normal;font-size:11px}.ids5 input{min-width:0}
+.ids5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ids5 label{flex-direction:column;align-items:stretch;gap:2px;margin:0}.ids5 em{font-style:normal;font-size:11px}.ids5 label{min-width:0}.ids5 input{min-width:0;width:100%;box-sizing:border-box}
 .rrow.later{opacity:.75}.hint{font-size:10px;color:#fbbf24}
 .duob{position:relative;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:6px 8px 4px;display:flex;flex-wrap:wrap;align-items:center;gap:2px;width:118px;flex:none;cursor:pointer;color:var(--tx)}
 .duob:hover{border-color:var(--gold)}.duob .bn{width:100%;text-align:center;max-width:none;font-size:10px}.duob .sc{position:absolute;top:-6px;right:-4px;background:#2a3141;font:700 12px Inter;border-radius:10px;padding:0 5px}.duob .sc.hi{background:var(--gold);color:#111}
@@ -242,7 +242,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v12.21 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v12.22 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
