@@ -451,7 +451,7 @@ function viewPools(){
      <span class="pm2"><span class="tm${t?"":" none"}" title="Scrims + compétition"><b>${t?t[0]:0}</b><em>équipe</em></span><span class="sq" title="Solo Q (op.gg)"><b>${sq?sq.g:0}</b><em>SQ</em></span></span></button>`; };
   return `<nav class="ptabs">${PLAYERS.map(x=>`<button data-act="pplayer" data-p="${esc(x.id)}" class="${x.id===p.id?"on":""}">${esc(x.id)}<em>${ROLE_NAMES[x.main]}</em></button>`).join("")}</nav>
   <section class="card"><p class="muted">Sous chaque champion : à gauche les games en équipe (scrims + compétition), à droite la solo Q. Clique un champion pour voir sa fiche (scrims et compétition) et changer son tier.</p>
-   ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"SQ":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
+   ${["S","A","B","C","D","?"].map(t=>rows[t].length||t!=="?"?`<div class="trow"><div class="tl t${t==="?"?"Q":t}">${t==="?"?"Hors tier":t}</div><div class="tcs">${rows[t].map(cell).join("")||'<span class="muted">—</span>'}</div></div>`:"").join("")}
    ${ui.tierPop?`<div class="pop">${champSheet(p.id,role,ui.tierPop)}<div class="poprow"><span class="muted">Tier :</span>${["S","A","B","C","D"].map(t=>`<button data-act="settier" data-t="${t}" class="${(cfg.tiers[p.id]||{})[ui.tierPop]===t?"on":""}">${t}</button>`).join("")}<button data-act="settier" data-t="-">Retirer</button><button data-act="settier" data-t="x">×</button></div></div>`:""}
    <div class="row"><input list="champs" id="addpool" placeholder="Ajouter un champion au pool de ${esc(p.id)}…"><button class="btn" data-act="addpool">Ajouter</button></div></section>`;
 }

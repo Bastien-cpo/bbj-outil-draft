@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## v12.21
+- Solo Q à jour (op.gg du 21/11) pour Fabien (BBJ Billy), JH (BBJ Shadouxe) et Bastien (Shigeo) : tous les champions joués au moins 3 fois, plus seulement les 10 premiers.
+- Pool : un champion n'apparaît plus « hors tier » à cause des games d'un autre joueur (ex. Bard chez Léo, joué une fois par Fabien au support). Seules ses propres games en équipe à ce rôle ou ≥ 20 games en solo Q l'y font entrer. Ligne renommée « Hors tier ».
+
 ## v12.20
 - Fayk et Billy affichés sous leurs prénoms : Romain et Fabien (tiers, lineups, historique et préparation migrés automatiquement).
 - Solo Q cumulée sur tous les comptes : Romain (BBJ Faykedit + la kipa a yahu + I must improve), Léo (BBJ Shogui + BlessedByVictini, qui manquait).

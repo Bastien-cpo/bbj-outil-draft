@@ -143,7 +143,8 @@ function sqCounts(c,role){ const C=CHAMPS[c]; if(!C||!C.roles.includes(role)) re
 function poolOf(cfg,pid,role){
   const t=cfg.tiers[pid]||{}; const main=playerMain(pid)===role;
   const set=new Set(Object.keys(t));
-  if(main) for(const c in STATS) if(STATS_OWNER[c]===pid) set.add(c);
+  // games en équipe : seulement celles du joueur lui-même à ce rôle (avant : stats de toute l'équipe → ex. Bard chez Léo sans aucune game)
+  for(const c in ((TEAM_P[pid]||{})[role]||{})) set.add(c);
   for(const c in (OUR_SQ[pid]||{})) if(OUR_SQ[pid][c].g>=20&&sqCounts(c,role)) set.add(c);
   return [...set].filter(c=>CHAMPS[c]&&(main||CHAMPS[c].roles.includes(role)));
 }
