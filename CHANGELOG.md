@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.12 — 26/11/2026
+- Historique : stats de chaque game en miroir. Au centre, le rôle avec nos champions et les leurs ; de chaque côté, la même stat (or, puis CS, puis KDA, puis dégâts). La meilleure valeur de chaque paire est en vert, la moins bonne en rouge. Les objectifs (tours, drakes, barons, héraut, larves) suivent le même principe. Sur téléphone, les dégâts sont masqués pour garder le tableau lisible.
+- Série du 26/11 contre EQX classée en « Compétition ».
+
 ## 1.11 — 26/11/2026
 - Flex adverses plus lisibles : l'alerte orange « ⚠ Viktor : flex possible ADC / Mid » s'affiche aussi pendant nos bans (bans 4-5 compris), pas seulement pendant nos picks. Sur la carte du pick adverse, une ligne « ADC ou Mid ? » remplace le badge tronqué. Vérifié en rejouant la vraie game 2 contre EQX (26/11) jusqu'aux bans 4-5.
 

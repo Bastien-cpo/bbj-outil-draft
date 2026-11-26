@@ -168,13 +168,23 @@ function archiveSeries(keepPrep){
 // Série terminée : la préparation de l'adversaire (op.gg, bans) est vidée, on garde notre nom et notre line-up
 function clearPrep(){ prep.opponent=""; prep.link=""; prep.ids=[]; prep.players=[]; prep.request=null; prep.updatedAt=""; persist("prep"); }
 // Stats de la game importées du client LoL (script d'export) : par rôle, nous contre eux
+// Stats en miroir : rôle et champions au centre, puis de chaque côté la même stat (or, CS, KDA, dégâts) ; la meilleure valeur de chaque paire ressort
 function statsHtml(st){ if(!st||!st.us) return "";
-  const k=x=>`${x.k}/${x.d}/${x.a}`, g=x=>(x.gold/1000).toFixed(1)+"k", O=o=>`${o.towers} tours · ${o.drakes} drakes · ${o.barons} barons · ${o.herald} héraut · ${o.grubs} larves`;
-  const tot=(t,f)=>ROLES.reduce((a,r)=>a+(t[r]?t[r][f]:0),0);
-  return `<div class="gstats"><h4>Stats de la game · ${st.min} min</h4><table><tr><th></th><th>Nous</th><th>Or</th><th>CS</th><th>Dégâts</th><th>Vision</th><th></th><th>Eux</th><th>Or</th><th>CS</th></tr>
-   ${ROLES.map(r=>{ const u=st.us[r], t=st.them[r]; if(!u||!t) return ""; const dg=u.gold-t.gold; return `<tr><td>${ROLE_NAMES[r]}</td><td>${k(u)}</td><td class="${dg>=1000?"w":dg<=-1000?"l":""}">${g(u)}</td><td>${u.cs}</td><td>${(u.dmg/1000).toFixed(1)}k</td><td>${u.vis}</td><td></td><td>${k(t)}</td><td>${g(t)}</td><td>${t.cs}</td></tr>`; }).join("")}
-   <tr class="tot"><td>Total</td><td>${tot(st.us,"k")} kills</td><td>${(tot(st.us,"gold")/1000).toFixed(1)}k</td><td colspan="4"></td><td>${tot(st.them,"k")} kills</td><td>${(tot(st.them,"gold")/1000).toFixed(1)}k</td><td></td></tr></table>
-   <p class="muted">Nous : ${O(st.objUs)}<br>Eux : ${O(st.objThem)}</p></div>`; }
+  const kda=x=>`${x.k}/${x.d}/${x.a}`, gk=v=>(v/1000).toFixed(1)+"k", ch=x=>{ const n=RIOT_KEY[String(x.c)]; return n?av(n,"sm"):""; };
+  const kr=x=>(x.k+x.a)/Math.max(1,x.d), tot=(t,f)=>ROLES.reduce((a,r)=>a+(t[r]?t[r][f]||0:0),0);
+  const cmp=(a,b,big)=>{ const d=a-b, t=big||0; return [d>t?"w":d<-t?"l":"", d<-t?"w":d>t?"l":""]; };
+  const cols=[["Or",x=>x.gold,x=>gk(x.gold),500],["CS",x=>x.cs,x=>x.cs,10],["KDA",kr,kda,0.3],["Dégâts",x=>x.dmg,x=>gk(x.dmg),1500,"dm"]];
+  const L=cols.slice().reverse();
+  const head=`<tr>${L.map(c=>`<th class="${c[4]||""}">${c[0]}</th>`).join("")}<th class="mid">Nous · Eux</th>${cols.map(c=>`<th class="${c[4]||""}">${c[0]}</th>`).join("")}</tr>`;
+  const row=r=>{ const u=st.us[r], t=st.them[r]; if(!u||!t) return "";
+    const cl=cols.map(c=>cmp(c[1](u),c[1](t),c[3]));
+    return `<tr>${L.map(c=>{ const i=cols.indexOf(c); return `<td class="${cl[i][0]} ${c[4]||""}">${c[2](u)}</td>`; }).join("")}<td class="mid">${ch(u)}<span class="rl2">${ROLE_NAMES[r]}</span>${ch(t)}</td>${cols.map((c,i)=>`<td class="${cl[i][1]} ${c[4]||""}">${c[2](t)}</td>`).join("")}</tr>`; };
+  const TU={k:tot(st.us,"k"),d:tot(st.us,"d"),a:tot(st.us,"a"),gold:tot(st.us,"gold"),cs:tot(st.us,"cs"),dmg:tot(st.us,"dmg")}, TT={k:tot(st.them,"k"),d:tot(st.them,"d"),a:tot(st.them,"a"),gold:tot(st.them,"gold"),cs:tot(st.them,"cs"),dmg:tot(st.them,"dmg")};
+  const ct=cols.map(c=>cmp(c[1](TU),c[1](TT),c[3]*5));
+  const totRow=`<tr class="tot">${L.map(c=>{ const i=cols.indexOf(c); return `<td class="${ct[i][0]} ${c[4]||""}">${c[2](TU)}</td>`; }).join("")}<td class="mid"><span class="rl2">Total</span></td>${cols.map((c,i)=>`<td class="${ct[i][1]} ${c[4]||""}">${c[2](TT)}</td>`).join("")}</tr>`;
+  const OB=[["Tours","towers"],["Drakes","drakes"],["Barons","barons"],["Héraut","herald"],["Larves","grubs"]];
+  const obj=st.objUs&&st.objThem?`<table class="mirror obj">${OB.map(([n,f])=>{ const a=st.objUs[f]||0, b=st.objThem[f]||0; return `<tr><td class="${a>b?"w":a<b?"l":""}">${a}</td><td class="mid"><span class="rl2">${n}</span></td><td class="${b>a?"w":b<a?"l":""}">${b}</td></tr>`; }).join("")}</table>`:"";
+  return `<div class="gstats"><h4>Stats de la game · ${st.min} min</h4><table class="mirror">${head}${ROLES.map(row).join("")}${totRow}</table>${obj}</div>`; }
 function viewHistory(){
   const S=history.series||[];
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
