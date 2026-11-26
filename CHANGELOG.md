@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.5 — 26/11/2026
+- Nos picks 4-5 : dès 3 picks chez nous, bandeau « Notre compo manque d'engage / de réception : les champions en bleu la combleraient » au-dessus des suggestions. Anneau bleu sur les 4 premiers champions de chaque rôle qui comblent ce manque, et 2 champions hors du pool du joueur mais forts dans la draft actuelle, placés en 4e-5e position avec l'étiquette « hors pool », pour en discuter avec le joueur.
+
 ## 1.4 — 26/11/2026
 - Bans 4-5 : le poids des critères de famille (compléter / casser la synergie) dépend de la taille du pool du joueur adverse à ce rôle (champions à 10 games ou plus encore disponibles) : pool large → logique de compo à plein ; pool réduit (≤ 3) → effet réduit à 30 %, ses conforts et ses counters gardent la main (mention « Pool réduit » dans la raison).
 - Texte de la stratégie : « aucun champion disponible chez nous pour punir leur compo » (au lieu de « outil »).

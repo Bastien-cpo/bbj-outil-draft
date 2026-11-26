@@ -421,6 +421,14 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
     const pid=lineup[role];
     const list=poolOf(cfg,pid,role).filter(c=>!un.has(c)).filter(c=>!(cfg.excludeD&&tierFor(cfg,pid,role,c)==="D"))
       .map(c=>scorePick(cfg,c,role,ctx)).sort((a,b)=>b.score-a.score).slice(0,per);
+    // Picks 4-5 : ce qui comblerait les faiblesses de NOTRE compo (anneau bleu), y compris 2 champions hors de son pool mais très bons dans la draft actuelle
+    const gaps=ctx.allies.length>=3?familyGaps(ctx.allies.map(a=>a.name||a)).filter(g=>g!=="catch"):[];
+    if(gaps.length){ list.forEach(x=>{ const f=familiesOf(x.name).find(k=>gaps.includes(k)); if(f) x.fill=f; });
+      const inList=new Set(list.map(x=>x.name)), pool=new Set(poolOf(cfg,pid,role));
+      const extra=CHAMP_NAMES.filter(c=>!un.has(c)&&!inList.has(c)&&!pool.has(c)&&CHAMPS[c].roles.includes(role)&&familiesOf(c).some(k=>gaps.includes(k))&&(metaInfo(c,role).v>=0.55||metaInfo(c,role).pres>=8))
+        .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
+        .sort((a,b)=>b.score-a.score).slice(0,2);
+      list.splice(Math.min(3,list.length),0,...extra); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     out[role]={list, prio:prio[role]};
   });
   return out;

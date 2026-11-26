@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.4
+# Guide de l'outil draft BBJ — version 1.5
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -71,7 +71,7 @@ Pendant **nos picks**, une ligne par rôle encore libre, avec un **score sur 100
 | **Matchup / Blind** | 25 | Contre son vis-à-vis s'il est connu ; sinon, capacité à être pické à l'aveugle |
 
 - Le **top** compte un peu plus dans le matchup (×1,35) : à notre niveau, sa lane pèse beaucoup.
-- Un **anneau vert** signale un champion qui punit la compo adverse (par exemple du dive contre une compo sans réception). La ligne **Duos** propose les paires qui marchent ensemble. Elle ne propose jamais deux champions qui perdent ensemble.
+- À partir de nos 3 premiers picks, un bandeau indique ce qui **manque à notre compo** (engage, réception) : les champions qui le combleraient ont un **anneau bleu**, y compris 2 champions « hors pool » forts dans la draft, à proposer au joueur. Un **anneau vert** signale un champion qui punit la compo adverse (par exemple du dive contre une compo sans réception). La ligne **Duos** propose les paires qui marchent ensemble. Elle ne propose jamais deux champions qui perdent ensemble.
 - Passer la souris sur un champion affiche le **détail du score**.
 - En **fearless**, les champions déjà joués dans la série disparaissent des suggestions.
 

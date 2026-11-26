@@ -214,13 +214,17 @@ function bubble(x,role,dim){
   const hk=x.name+"|"+(role||""); lastRecs[hk]=x; const sel=ui.pending&&ui.pending.name===x.name;
   const ring=x.ring?` ring-${x.ring}`:"";
   return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}${ring}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
-    ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
+    ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}${x.offpool?'<span class="duom off" title="Hors de son pool, mais comble notre faiblesse">hors pool</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
 }
 function pickBubbles(){
   const r=recommendPicks(cfg,live.series,live.draft,prep.lineup,24); lastRecs={};
   // Anneau vert : parmi les meilleurs de la ligne, ce pick punit la compo adverse (seulement les 3 premiers concernés, pour ne pas surcharger)
   Object.values(r).forEach(R=>R.list.filter(x=>x.exploit).slice(0,3).forEach(x=>{ if(x.score>=(R.list[0]?R.list[0].score:0)-12) x.ring="exploit"; }));
-  return Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
+  // Picks 4-5 : bandeau + anneau bleu sur ce qui comble les faiblesses de notre compo (prioritaire sur le vert)
+  const mine=teamPicksNames(live.draft,live.draft.side), gaps=mine.length>=3?familyGaps(mine).filter(g=>g!=="catch"):[];
+  if(gaps.length) Object.values(r).forEach(R=>{ R.list.filter(x=>x.fill&&!x.offpool).slice(0,4).forEach(x=>x.ring="strat"); R.list.filter(x=>x.offpool).forEach(x=>x.ring="strat"); });
+  const banner=gaps.length?`<div class="stratl deny"><i></i>Notre compo manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : les champions en bleu la combleraient (hors pool compris)</div>`:"";
+  return banner+Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
     <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
 }
 function duoRow(){
