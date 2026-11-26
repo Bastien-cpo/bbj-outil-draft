@@ -106,7 +106,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .pa{position:absolute;top:2px;right:6px;background:#2a3141;font:700 11px Inter;border-radius:9px;padding:0 5px}
 .pop{position:sticky;bottom:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#1d2330;border:1px solid var(--gold);border-radius:12px;padding:8px 12px;margin-top:8px}
 .pc{position:relative}.pm2{display:flex;gap:4px;justify-content:center;margin-top:2px}.pm2>span{display:flex;flex-direction:column;align-items:center;line-height:1;border-radius:5px;padding:1px 3px;min-width:22px}.pm2 b{font-size:11px}.pm2 em{font-style:normal;font-size:8px;opacity:.75}.pm2 .tm{background:rgba(214,175,85,.18);border:1px solid rgba(214,175,85,.55);color:#f0d48a}.pm2 .tm.none{opacity:.4}.pm2 .sq{background:transparent;border:1px solid var(--line);color:var(--mu)}.pfb{position:absolute;top:2px;right:2px;font-size:10px;font-weight:700;border-radius:8px;padding:0 4px;background:#111}.pfb.good{color:#4fd18b}.pfb.mid{color:#e6c14a}.pfb.bad{color:#ef6b6b}
-.bub.ring-exploit .av{outline:2px solid #3ecf8e;outline-offset:2px}.bub.ring-strat .av{outline:2px solid #4da3ff;outline-offset:2px}.duom.off{background:#1d3a5c;color:#9fd0ff;top:auto;bottom:14px;left:50%;transform:translateX(-50%);font-size:8px;line-height:11px;white-space:nowrap}.stratl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);margin:0 0 4px 4px}.stratl i{width:10px;height:10px;border-radius:50%;border:2px solid #4da3ff;flex:none}
+.bub.ring-exploit .av{outline:2px solid #3ecf8e;outline-offset:2px}.bub.ring-strat .av{outline:2px solid #4da3ff;outline-offset:2px}.duom.off{background:#1d3a5c;color:#9fd0ff;top:auto;bottom:14px;left:50%;transform:translateX(-50%);font-size:8px;line-height:11px;white-space:nowrap}.tempo{font-size:11px;line-height:1.35;margin:4px 2px 0;padding:4px 7px;border-radius:6px;background:#2a2410;color:#f0d78a}.tempo.late{background:#13253a;color:#9fd0ff}.stratl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);margin:0 0 4px 4px}.stratl i{width:10px;height:10px;border-radius:50%;border:2px solid #4da3ff;flex:none}
 .pkrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}.pkrow select{font-size:10px;padding:1px 2px;max-width:100%}.fams{display:flex;gap:2px;flex-wrap:nowrap}.fam{font-style:normal;font-size:10px;line-height:1;width:17px;height:17px;display:grid;place-items:center;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:default}.famsum{display:flex;flex-wrap:wrap;gap:4px;padding:6px 4px 2px;border-top:1px dashed var(--line);margin-top:4px}.famsum .fs{font-size:12px;padding:2px 5px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.famsum .fs b{font-size:10px;margin-left:2px;opacity:.8}.famsum .fs.miss{border-color:#ef6b6b;color:#ef6b6b}
 .pop{flex-direction:column;align-items:stretch}.poprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pop button.on{border-color:var(--gold);color:var(--gold)}.sheet{display:flex;gap:10px;align-items:flex-start}.sst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;margin:6px 0}.sst span{display:flex;flex-direction:column}.sst em{font-style:normal;font-size:11px;color:var(--mu)}.sst i{font-style:normal;font-size:11px;opacity:.7}.sst .good{color:#4fd18b}.sst .mid{color:#e6c14a}.sst .bad{color:#ef6b6b}
 .pop button{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
@@ -244,7 +244,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v1.6 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v1.7 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -970,7 +970,7 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
       const extra=CHAMP_NAMES.filter(c=>!un.has(c)&&!inList.has(c)&&!pool.has(c)&&CHAMPS[c].roles.includes(role)&&familiesOf(c).some(k=>gaps.includes(k))&&(metaInfo(c,role).v>=0.55||metaInfo(c,role).pres>=8))
         .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
         .sort((a,b)=>b.score-a.score).slice(0,2);
-      extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
+      const ref=list[4]?list[4].score:0; extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(x.score>=ref-8?Math.max(Math.min(i,5+k),Math.min(5+k,list.length)):Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     out[role]={list, prio:prio[role]};
   });
   return out;
@@ -1305,25 +1305,31 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   return top.slice(0,n);
 }
 // ---- Familles de jeu (philosophie de chaque champion) : 1 à 2 familles par champion ----
-const FAMS={engage:{fr:"Engage",ic:"⚔"},catch:{fr:"Pick / Catch",ic:"🎯"},peel:{fr:"Réception",ic:"🛡"},poke:{fr:"Poke",ic:"☄"},dive:{fr:"Dive",ic:"⤵"},teamfight:{fr:"Teamfight",ic:"✸"},split:{fr:"Split",ic:"↯"},scaling:{fr:"Scaling",ic:"⏳"}};
+const FAMS={engage:{fr:"Engage",ic:"⚔"},catch:{fr:"Pick / Catch",ic:"🎯"},peel:{fr:"Réception",ic:"🛡"},poke:{fr:"Poke",ic:"☄"},dive:{fr:"Dive",ic:"⤵"},teamfight:{fr:"Teamfight",ic:"✸"},split:{fr:"Split",ic:"↯"},scaling:{fr:"Scaling",ic:"⏳"},early:{fr:"Early game",ic:"⚡"}};
 const CATCH=new Set("Thresh,Blitzcrank,Pyke,Nautilus,Morgana,Bard,Ahri,Lux,Zoe,Elise,LeBlanc,Twisted Fate,Rengar,Kha'Zix,Nidalee,Evelynn,Lee Sin,Pantheon,Qiyana,Neeko,Ashe,Jhin,Varus,Caitlyn,Zyra,Tristana,Kalista,Shaco,Talon,Fiddlesticks,Nocturne,Draven,Ezreal,Syndra,Vex,Rek'Sai,Naafiri,Ambessa".split(","));
 const DIVE=new Set("Diana,Vi,Jarvan IV,Xin Zhao,Wukong,Camille,Irelia,Akali,Kai'Sa,Zed,Talon,Rek'Sai,Nocturne,Hecarim,Kayn,Viego,Yone,Yasuo,Samira,Ambessa,Naafiri,Fizz,Katarina,Sylas,Renekton,Tristana,Kha'Zix,Rengar,Lee Sin,Qiyana,Briar,Bel'Veth,Olaf,Darius,Volibear,Zac".split(","));
 const SPLIT=new Set("Fiora,Jax,Camille,Tryndamere,Yorick,Gwen,Nasus,Riven,Kayle,Trundle,Shen,Garen,Aatrox,Sion,Udyr,Gangplank,Quinn,Irelia".split(","));
 function familiesOf(c){ const ch=CHAMPS[c]; if(!ch) return []; const sc={};
   if(ch.engage>=3) sc.engage=3+ch.engage/10; if(ch.peel>=3||(ch.peel>=2&&ch.engage<2&&ch.roles.includes("S"))) sc.peel=2.9+ch.peel/10;
   if(CATCH.has(c)) sc.catch=2.8; if(ch.poke>=2) sc.poke=ch.poke>=3?3.1:2.4; if(DIVE.has(c)) sc.dive=2.7;
-  if(ch.teamfight>=3&&!sc.engage) sc.teamfight=2.5; if(SPLIT.has(c)) sc.split=2.6; if(ch.scaling>=3&&ch.early<=1) sc.scaling=2.3;
+  if(ch.teamfight>=3&&!sc.engage) sc.teamfight=2.5; if(SPLIT.has(c)) sc.split=2.6; if(ch.scaling>=3&&ch.early<=1) sc.scaling=2.3; if(ch.early>=3&&ch.scaling<=1) sc.early=2.35;
   return Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,2); }
 // Bilan d'une compo : familles présentes (nombre) et manques importants (engage, réception)
 function familyCount(names){ const n={}; Object.keys(FAMS).forEach(f=>n[f]=0); names.forEach(c=>familiesOf(c).forEach(f=>n[f]++)); return n; }
 function familyGaps(names){ if(names.length<2) return []; const n=familyCount(names), g=[];
   if(!n.engage) g.push("engage"); if(!n.peel) g.push("peel"); if(!n.engage&&!n.catch&&!n.dive) g.push("catch"); return g; }
+// Tempo d'une compo : "early" = tout sur l'early sans scaling, "late" = scaling sans early
+function compTempo(names){ if(names.length<3) return null; const n=familyCount(names), ch=names.map(c=>CHAMPS[c]).filter(Boolean); if(!ch.length) return null;
+  const aE=ch.reduce((s,x)=>s+x.early,0)/ch.length, aS=ch.reduce((s,x)=>s+x.scaling,0)/ch.length;
+  if(n.early>=2&&!n.scaling&&aS<=1.6&&aE-aS>=0.8) return "early";
+  if(n.scaling>=2&&!n.early&&aE<=1.4&&aS-aE>=0.8) return "late"; return null; }
 // Ce qui punit la compo adverse : leurs trous (pas de réception, pas d'engage) et leur famille dominante
 function punishers(names){ const out={}; if(names.length<3) return out; const n=familyCount(names), gaps=familyGaps(names);
   if(gaps.includes("peel")) ["dive","catch","engage"].forEach(f=>out[f]=out[f]||"leur manque de réception");
   if(gaps.includes("engage")) ["poke","scaling"].forEach(f=>out[f]=out[f]||"leur manque d'engage");
   if(n.engage+n.dive>=3) out.peel=out.peel||"leur compo tout-engage (réception/désengage)";
   if(n.poke>=2) ["engage","dive"].forEach(f=>out[f]=out[f]||"leur compo poke");
+  const tp=compTempo(names); if(tp==="early") out.scaling=out.scaling||"leur compo sans scaling"; if(tp==="late") out.early=out.early||"leur compo lente en early";
   return out; }
 function exploitOf(c,names){ const P=punishers(names); const f=familiesOf(c).find(x=>P[x]); return f?{fam:f,why:P[f]}:null; }
 // Stratégie des bans 4-5 : si on a encore de quoi punir leur compo → les priver de la pièce manquante ; sinon → casser leur synergie
@@ -1458,7 +1464,7 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
 
 // ===== Interface v4 =====
 const $=s=>document.querySelector(s);
@@ -1771,14 +1777,15 @@ function boardCol(team,d,ro){
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
-    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team),team===d.side)}</div></div>`;
 }
 // Familles de jeu : icônes à côté de chaque pick + bilan de la compo (présent / manquant)
 function famIcons(c){ const f=familiesOf(c); return f.length?`<span class="fams">${f.map(k=>`<i class="fam f-${k}" title="${esc(FAMS[k].fr)}">${FAMS[k].ic}</i>`).join("")}</span>`:""; }
 function teamPicksNames(d,team){ return d.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===team?a.name:null).filter(Boolean); }
-function famSummary(names){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names);
+function famSummary(names,us){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names), tp=compTempo(names);
+  const tl=tp?`<div class="tempo ${tp}">${tp==="early"?(us?"⚡ Notre compo mise sur l'early sans scaling : il faut prendre l'avantage tôt et finir vite":"⚡ Leur compo mise tout sur l'early, sans scaling : même menés, chaque minute joue pour nous"):(us?"⏳ Notre compo est faite pour scaler : jouer safe et tenir l'early":"⏳ Leur compo mise sur le scaling, sans early : c'est à nous de les punir tôt")}</div>`:"";
   const have=Object.keys(FAMS).filter(f=>n[f]).map(f=>`<span class="fs" title="${esc(FAMS[f].fr)}">${FAMS[f].ic}${n[f]>1?`<b>×${n[f]}</b>`:""}</span>`).join("");
-  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>`; }
+  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>${tl}`; }
 
 // ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
 const ROLE_SVG={

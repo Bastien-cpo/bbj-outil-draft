@@ -309,14 +309,15 @@ function boardCol(team,d,ro){
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
-    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team),team===d.side)}</div></div>`;
 }
 // Familles de jeu : icônes à côté de chaque pick + bilan de la compo (présent / manquant)
 function famIcons(c){ const f=familiesOf(c); return f.length?`<span class="fams">${f.map(k=>`<i class="fam f-${k}" title="${esc(FAMS[k].fr)}">${FAMS[k].ic}</i>`).join("")}</span>`:""; }
 function teamPicksNames(d,team){ return d.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===team?a.name:null).filter(Boolean); }
-function famSummary(names){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names);
+function famSummary(names,us){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names), tp=compTempo(names);
+  const tl=tp?`<div class="tempo ${tp}">${tp==="early"?(us?"⚡ Notre compo mise sur l'early sans scaling : il faut prendre l'avantage tôt et finir vite":"⚡ Leur compo mise tout sur l'early, sans scaling : même menés, chaque minute joue pour nous"):(us?"⏳ Notre compo est faite pour scaler : jouer safe et tenir l'early":"⏳ Leur compo mise sur le scaling, sans early : c'est à nous de les punir tôt")}</div>`:"";
   const have=Object.keys(FAMS).filter(f=>n[f]).map(f=>`<span class="fs" title="${esc(FAMS[f].fr)}">${FAMS[f].ic}${n[f]>1?`<b>×${n[f]}</b>`:""}</span>`).join("");
-  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>`; }
+  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>${tl}`; }
 
 // ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
 const ROLE_SVG={

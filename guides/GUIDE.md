@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.6
+# Guide de l'outil draft BBJ — version 1.7
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 

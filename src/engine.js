@@ -428,7 +428,7 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
       const extra=CHAMP_NAMES.filter(c=>!un.has(c)&&!inList.has(c)&&!pool.has(c)&&CHAMPS[c].roles.includes(role)&&familiesOf(c).some(k=>gaps.includes(k))&&(metaInfo(c,role).v>=0.55||metaInfo(c,role).pres>=8))
         .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
         .sort((a,b)=>b.score-a.score).slice(0,2);
-      extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
+      const ref=list[4]?list[4].score:0; extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(x.score>=ref-8?Math.max(Math.min(i,5+k),Math.min(5+k,list.length)):Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     out[role]={list, prio:prio[role]};
   });
   return out;
@@ -763,25 +763,31 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   return top.slice(0,n);
 }
 // ---- Familles de jeu (philosophie de chaque champion) : 1 à 2 familles par champion ----
-const FAMS={engage:{fr:"Engage",ic:"⚔"},catch:{fr:"Pick / Catch",ic:"🎯"},peel:{fr:"Réception",ic:"🛡"},poke:{fr:"Poke",ic:"☄"},dive:{fr:"Dive",ic:"⤵"},teamfight:{fr:"Teamfight",ic:"✸"},split:{fr:"Split",ic:"↯"},scaling:{fr:"Scaling",ic:"⏳"}};
+const FAMS={engage:{fr:"Engage",ic:"⚔"},catch:{fr:"Pick / Catch",ic:"🎯"},peel:{fr:"Réception",ic:"🛡"},poke:{fr:"Poke",ic:"☄"},dive:{fr:"Dive",ic:"⤵"},teamfight:{fr:"Teamfight",ic:"✸"},split:{fr:"Split",ic:"↯"},scaling:{fr:"Scaling",ic:"⏳"},early:{fr:"Early game",ic:"⚡"}};
 const CATCH=new Set("Thresh,Blitzcrank,Pyke,Nautilus,Morgana,Bard,Ahri,Lux,Zoe,Elise,LeBlanc,Twisted Fate,Rengar,Kha'Zix,Nidalee,Evelynn,Lee Sin,Pantheon,Qiyana,Neeko,Ashe,Jhin,Varus,Caitlyn,Zyra,Tristana,Kalista,Shaco,Talon,Fiddlesticks,Nocturne,Draven,Ezreal,Syndra,Vex,Rek'Sai,Naafiri,Ambessa".split(","));
 const DIVE=new Set("Diana,Vi,Jarvan IV,Xin Zhao,Wukong,Camille,Irelia,Akali,Kai'Sa,Zed,Talon,Rek'Sai,Nocturne,Hecarim,Kayn,Viego,Yone,Yasuo,Samira,Ambessa,Naafiri,Fizz,Katarina,Sylas,Renekton,Tristana,Kha'Zix,Rengar,Lee Sin,Qiyana,Briar,Bel'Veth,Olaf,Darius,Volibear,Zac".split(","));
 const SPLIT=new Set("Fiora,Jax,Camille,Tryndamere,Yorick,Gwen,Nasus,Riven,Kayle,Trundle,Shen,Garen,Aatrox,Sion,Udyr,Gangplank,Quinn,Irelia".split(","));
 function familiesOf(c){ const ch=CHAMPS[c]; if(!ch) return []; const sc={};
   if(ch.engage>=3) sc.engage=3+ch.engage/10; if(ch.peel>=3||(ch.peel>=2&&ch.engage<2&&ch.roles.includes("S"))) sc.peel=2.9+ch.peel/10;
   if(CATCH.has(c)) sc.catch=2.8; if(ch.poke>=2) sc.poke=ch.poke>=3?3.1:2.4; if(DIVE.has(c)) sc.dive=2.7;
-  if(ch.teamfight>=3&&!sc.engage) sc.teamfight=2.5; if(SPLIT.has(c)) sc.split=2.6; if(ch.scaling>=3&&ch.early<=1) sc.scaling=2.3;
+  if(ch.teamfight>=3&&!sc.engage) sc.teamfight=2.5; if(SPLIT.has(c)) sc.split=2.6; if(ch.scaling>=3&&ch.early<=1) sc.scaling=2.3; if(ch.early>=3&&ch.scaling<=1) sc.early=2.35;
   return Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,2); }
 // Bilan d'une compo : familles présentes (nombre) et manques importants (engage, réception)
 function familyCount(names){ const n={}; Object.keys(FAMS).forEach(f=>n[f]=0); names.forEach(c=>familiesOf(c).forEach(f=>n[f]++)); return n; }
 function familyGaps(names){ if(names.length<2) return []; const n=familyCount(names), g=[];
   if(!n.engage) g.push("engage"); if(!n.peel) g.push("peel"); if(!n.engage&&!n.catch&&!n.dive) g.push("catch"); return g; }
+// Tempo d'une compo : "early" = tout sur l'early sans scaling, "late" = scaling sans early
+function compTempo(names){ if(names.length<3) return null; const n=familyCount(names), ch=names.map(c=>CHAMPS[c]).filter(Boolean); if(!ch.length) return null;
+  const aE=ch.reduce((s,x)=>s+x.early,0)/ch.length, aS=ch.reduce((s,x)=>s+x.scaling,0)/ch.length;
+  if(n.early>=2&&!n.scaling&&aS<=1.6&&aE-aS>=0.8) return "early";
+  if(n.scaling>=2&&!n.early&&aE<=1.4&&aS-aE>=0.8) return "late"; return null; }
 // Ce qui punit la compo adverse : leurs trous (pas de réception, pas d'engage) et leur famille dominante
 function punishers(names){ const out={}; if(names.length<3) return out; const n=familyCount(names), gaps=familyGaps(names);
   if(gaps.includes("peel")) ["dive","catch","engage"].forEach(f=>out[f]=out[f]||"leur manque de réception");
   if(gaps.includes("engage")) ["poke","scaling"].forEach(f=>out[f]=out[f]||"leur manque d'engage");
   if(n.engage+n.dive>=3) out.peel=out.peel||"leur compo tout-engage (réception/désengage)";
   if(n.poke>=2) ["engage","dive"].forEach(f=>out[f]=out[f]||"leur compo poke");
+  const tp=compTempo(names); if(tp==="early") out.scaling=out.scaling||"leur compo sans scaling"; if(tp==="late") out.early=out.early||"leur compo lente en early";
   return out; }
 function exploitOf(c,names){ const P=punishers(names); const f=familiesOf(c).find(x=>P[x]); return f?{fam:f,why:P[f]}:null; }
 // Stratégie des bans 4-5 : si on a encore de quoi punir leur compo → les priver de la pièce manquante ; sinon → casser leur synergie
@@ -916,4 +922,4 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
