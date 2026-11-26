@@ -428,7 +428,7 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
       const extra=CHAMP_NAMES.filter(c=>!un.has(c)&&!inList.has(c)&&!pool.has(c)&&CHAMPS[c].roles.includes(role)&&familiesOf(c).some(k=>gaps.includes(k))&&(metaInfo(c,role).v>=0.55||metaInfo(c,role).pres>=8))
         .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
         .sort((a,b)=>b.score-a.score).slice(0,2);
-      list.splice(Math.min(3,list.length),0,...extra); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
+      extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     out[role]={list, prio:prio[role]};
   });
   return out;

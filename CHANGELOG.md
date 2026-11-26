@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.6 — 26/11/2026
+- Champions « hors pool » : ils ne sont plus forcés en 4e-5e position. Ils se rangent selon leur score, après les champions habituels du joueur, au plus loin en 8e-9e position pour rester visibles sur PC. Le bandeau et l'anneau bleu suffisent à les repérer, et le choix revient au joueur.
+
 ## 1.5 — 26/11/2026
 - Nos picks 4-5 : dès 3 picks chez nous, bandeau « Notre compo manque d'engage / de réception : les champions en bleu la combleraient » au-dessus des suggestions. Anneau bleu sur les 4 premiers champions de chaque rôle qui comblent ce manque, et 2 champions hors du pool du joueur mais forts dans la draft actuelle, placés en 4e-5e position avec l'étiquette « hors pool », pour en discuter avec le joueur.
 

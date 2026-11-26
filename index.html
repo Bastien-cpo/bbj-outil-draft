@@ -244,7 +244,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v1.5 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v1.6 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -970,7 +970,7 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
       const extra=CHAMP_NAMES.filter(c=>!un.has(c)&&!inList.has(c)&&!pool.has(c)&&CHAMPS[c].roles.includes(role)&&familiesOf(c).some(k=>gaps.includes(k))&&(metaInfo(c,role).v>=0.55||metaInfo(c,role).pres>=8))
         .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
         .sort((a,b)=>b.score-a.score).slice(0,2);
-      list.splice(Math.min(3,list.length),0,...extra); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
+      extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     out[role]={list, prio:prio[role]};
   });
   return out;
