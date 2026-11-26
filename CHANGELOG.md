@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.10 — 26/11/2026
+- Flex adverses : le rôle d'un pick adverse tient compte de tous les joueurs qui l'ont dans leur pool, même hors de son rôle habituel. Exemple : Viktor first pick par EQX, avec 40 games pour Maliketh (ADC) et 24 pour Para (mid). Si deux joueurs le jouent vraiment, le pick est marqué « Flex ? ADC/Mid », nos suggestions ne supposent plus un rôle, et un bandeau orange prévient : « Viktor peut être un flex… évitez de le counterpick dans un rôle précis tant que son rôle n'est pas confirmé ».
+- Bans 1-3 dès la game 2 : une ligne « Game N · nos bans 1-3 » rappelle nos trois premiers bans de la game précédente, à part des autres suggestions (clic = ban).
+
 ## 1.9 — 26/11/2026
 - Drafter, passage à la game suivante : quand Drafter ouvre la game 2 sans lien avec la page de la game 1, recliquer le favori sur la nouvelle page ouvrait une deuxième fenêtre de l'outil, et l'ancienne restait bloquée sur la game 1. Désormais, la fenêtre qui suit la game la plus récente garde la synchro, les autres se ferment toutes seules (ou affichent « Cette fenêtre n'est plus reliée à Drafter »). La nouvelle fenêtre reprend la série : la game 1 passe en fearless, la game 2 se remplit en direct. Reproduit puis vérifié sur une copie locale de Drafter (lien normal et ouverture sans lien).
 

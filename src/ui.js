@@ -126,10 +126,10 @@ function applyDrafter(st){
   STEPS.forEach(([t,s],i)=>{ const raw=raws[i]; const c=drafterChamp(raw);
     if(!c){ if(raw==="none"||(slots&&t==="ban"&&i<lastFilled)) acts[i]=t==="pick"?{name:"",miss:true,role:null}:{name:"",miss:true}; return; } // étape passée sans choix (temps écoulé) : remplacée dès que Drafter reçoit l'échange
     if(t==="ban"){ acts[i]={name:c}; return; }
-    const o=old[i]&&old[i].name===c?old[i]:null; let role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]); let flex=o?!!o.flex:false, fx=o?o.fx:undefined;
-    if(!o&&s!==side){ const r=enemyRole(c,taken[s]); if(r) role=r; }
-    if(laneOf[s][c]){ role=laneOf[s][c]; flex=false; fx=undefined; }
-    taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
+    const o=old[i]&&old[i].name===c?old[i]:null; let role=o&&o.role&&!taken[s].includes(o.role)?o.role:guessRole(c,s,taken[s]); let flex=o?!!o.flex:false, fx=o?o.fx:undefined, fxr=o?o.fxr:undefined;
+    if(!o&&s!==side){ const r=enemyRole(c,taken[s],true); if(r){ role=r.r; if(r.fx){ flex=true; fx=r.fx.txt; fxr=r.fx.roles; } } }
+    if(laneOf[s][c]){ role=laneOf[s][c]; flex=false; fx=undefined; fxr=undefined; }
+    taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx,fxr}:{name:c,role,flex}; });
   // Corrections manuelles (champion raté, erreur) : elles priment sur ce que renvoie Drafter
   const man=live.draft.manual||{}; Object.keys(man).forEach(k=>{ if(man[k]) acts[+k]=man[k]; });
   // Champion survolé sur Drafter (pas encore validé) : affiché en transparence dans sa case, jamais compté dans la draft ni dans les calculs
@@ -232,7 +232,9 @@ function pickBubbles(){
   // Picks 4-5 : bandeau + anneau bleu sur ce qui comble les faiblesses de notre compo (prioritaire sur le vert)
   const mine=teamPicksNames(live.draft,live.draft.side), gaps=mine.length>=3?familyGaps(mine).filter(g=>g!=="catch"):[];
   if(gaps.length) Object.values(r).forEach(R=>{ R.list.filter(x=>x.fill&&!x.offpool).slice(0,4).forEach(x=>x.ring="strat"); R.list.filter(x=>x.offpool).forEach(x=>x.ring="strat"); });
-  const banner=gaps.length?`<div class="stratl deny"><i></i>Notre compo manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : les champions en bleu la combleraient (hors pool compris)</div>`:"";
+  const fxs=teamPicks(live.draft,live.draft.side==="B"?"R":"B").filter(p=>p.flex&&p.fx);
+  const fxb=fxs.map(p=>`<div class="stratl flexw"><i></i>⚠ ${esc(p.name)} peut être un flex : ${esc(p.fx)}. Évitez de le counterpick dans un rôle précis tant que son rôle n'est pas confirmé.</div>`).join("");
+  const banner=fxb+(gaps.length?`<div class="stratl deny"><i></i>Notre compo manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : les champions en bleu la combleraient (hors pool compris)</div>`:"");
   return banner+Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
     <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
 }
@@ -248,7 +250,13 @@ function banBubbles(){
   // Bans 4-5 : la stratégie (les priver de ce qui manque / casser leur synergie) et un anneau bleu sur les bans qui la servent
   const strat=phase2?banStrategy(cfg,live.series,live.draft,prep.lineup,prep):null;
   if(strat) r.slice(0,6).forEach(x=>{ if(x.fam===strat.mode) x.ring="strat"; });
-  return `${strat?`<div class="stratl ${strat.mode}"><i></i>${esc(strat.label)}</div>`:""}<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
+  // Bans 1-3 : rappel de nos 3 premiers bans de la game précédente (souvent les mêmes), à part des autres suggestions
+  let prevRow=""; const G=live.series.games, ti=targetIndex();
+  if(!phase2&&G.length&&ti>=0&&ti<6&&STEPS[ti][1]===live.draft.side){ const g=G[G.length-1], un=unavailable(live.series,live.draft);
+    const pb=STEPS.map((s,k)=>({s,k})).filter(x=>x.k<6&&x.s[0]==="ban"&&x.s[1]===g.side).map(x=>g.actions[x.k]).filter(a=>a&&a.name&&!a.miss).map(a=>a.name);
+    const items=pb.filter(n=>!un.has(n)).map(n=>{ const x=r.find(y=>y.name===n); return {...(x||{name:n,why:[]}),rank:x?x.rank:null,score:"–",ring:null,why:[`Banni par nous en game ${G.length}`,...((x&&x.why)||[])]}; });
+    if(pb.length) prevRow=`<div class="rrow prevb"><div class="rl"><b>Game ${G.length}</b><span>nos bans 1-3</span></div><div class="bubs">${items.length?items.map(x=>bubble(x,null,false)).join(""):'<span class="muted">déjà bannis ou joués</span>'}</div></div>`; }
+  return `${strat?`<div class="stratl ${strat.mode}"><i></i>${esc(strat.label)}</div>`:""}${prevRow}<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
     <div class="bubs fill">${r.map(x=>bubble(x,null,false)).join("")}</div></div>`;
 }
 function grid(){
@@ -314,7 +322,7 @@ function boardCol(team,d,ro){
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv${hv(x.k)?" hov":""}">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">${hv(x.k)?"survolé sur Drafter":"à confirmer"}</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
-    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
+    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ? ${(a.fxr||[]).map(r=>ROLE_NAMES[r]).join("/")}</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div></div>
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
@@ -526,11 +534,18 @@ function ctrEditor(){
 function flash(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(flash.t); flash.t=setTimeout(()=>t.classList.remove("on"),2200); }
 // Pick adverse : quel joueur de leur cinq le joue ? Plusieurs rôles possibles (ou rôle inhabituel) => « Flex ? »
 // Pick adverse : rôle le plus probable du champion, départagé par le joueur adverse qui le joue le plus à son rôle
-function enemyRole(c,taken){ const C=CHAMPS[c]; if(!C) return null; let P=[]; try{ P=prepPlayers(prep); }catch(e){}
-  const prior=[1,0.55,0.3,0.2]; let best=null;
-  C.roles.forEach((r,i)=>{ if(taken.includes(r)) return; const p=P.find(x=>x.role===r), x=p&&(p.all||p.list).find(y=>y.c===c);
-    const s=(prior[i]||0.15)+(x?Math.min(0.6,x.g/100):0); if(!best||s>best.s) best={r,s}; });
-  return best&&best.r; }
+// Rôle d'un pick adverse : rôles du champion + joueurs adverses qui l'ont dans leur pool (même hors de son rôle habituel, ex. Viktor ADC).
+// Si au moins deux joueurs le jouent vraiment, c'est un flex possible : rôle incertain tant que Drafter ne l'a pas confirmé.
+function enemyRole(c,taken,full){ const C=CHAMPS[c]; if(!C) return null; let P=[]; try{ P=prepPlayers(prep); }catch(e){}
+  const prior=[1,0.55,0.3,0.2], cand={};
+  C.roles.forEach((r,i)=>{ if(!taken.includes(r)) cand[r]={r,s:(prior[i]||0.15),g:0}; });
+  P.forEach(p=>{ if(!p.role||taken.includes(p.role)) return; const x=(p.all||p.list||[]).find(y=>y.c===c); if(!x||!x.g) return;
+    const k=cand[p.role]||(cand[p.role]={r:p.role,s:0,g:0}); k.g=x.g; k.pl=String(p.name||"").split("#")[0];
+    k.s=(C.roles.includes(p.role)?0.3:0)+Math.min(1,x.g/50); });
+  const L=Object.values(cand).sort((a,b)=>b.s-a.s), best=L[0]; if(!best) return null;
+  const pl=L.filter(k=>k.g>=10); let fx=null;
+  if(pl.length>=2&&pl[1].g>=0.5*pl[0].g) fx={roles:pl.map(k=>k.r), txt:pl.map(k=>`${k.pl} (${ROLE_NAMES[k.r]}, ${k.g} games)`).join(" ou ")};
+  return full?{r:best.r,fx}:best.r; }
 function addChamp(name,role){
   const i=targetIndex(); if(i<0) return false; const n=findChamp(name); if(!n){ flash("Champion inconnu"); return false; }
   const old=live.draft.actions[i];
@@ -538,7 +553,7 @@ function addChamp(name,role){
   const [t,s]=STEPS[i]; const a={name:n};
   if(t==="pick"){ const taken=teamPicks(live.draft,s).filter(p=>!p.flex&&p!==old).map(p=>p.role);
     a.role=role||(old&&old.role&&CHAMPS[n].roles.includes(old.role)?old.role:null)||CHAMPS[n].roles.find(r=>!taken.includes(r))||CHAMPS[n].roles[0]; a.flex=old?!!old.flex:false;
-    if(s!==live.draft.side&&!role&&!old){ const r=enemyRole(n,teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role)); if(r) a.role=r; } }
+    if(s!==live.draft.side&&!role&&!old){ const r=enemyRole(n,teamPicks(live.draft,s).filter(p=>!p.flex).map(p=>p.role),true); if(r){ a.role=r.r; if(r.fx){ a.flex=true; a.fx=r.fx.txt; a.fxr=r.fx.roles; } } } }
   live.draft.actions[i]=a; if(ui.edit!=null||(old&&old.miss)){ (live.draft.manual=live.draft.manual||{})[i]=a; } ui.hover=null; ui.pending=null; ui.edit=null; ui.gridQ=""; persist("live"); render(); return true;
 }
 function parseManual(txt){
@@ -569,7 +584,7 @@ document.addEventListener("click",e=>{
   else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0){ live.draft.actions[i]=null; if(live.draft.manual) delete live.draft.manual[i]; } ui.pending=null; persist("live"); render(); }
-  else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; if(!a.flex) delete a.fx; persist("live"); render(); }
+  else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; if(!a.flex){ delete a.fx; delete a.fxr; } persist("live"); render(); }
   else if(act==="nextgame"){ const names=live.draft.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick").map(a=>a.name);
     live.series.locked.push(...names); live.series.games.push({side:live.draft.side,actions:live.draft.actions,result:live.draft.result||null});
     live.draft={side:live.draft.side,actions:Array(20).fill(null)}; ui.edit=null; ui.pending=null; ui.viewGame=null; persist("live"); flash(names.length+" champions verrouillés"); render(); }

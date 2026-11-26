@@ -292,7 +292,7 @@ function stepLabel(i){ const [t,s]=STEPS[i]; let n=0; for(let k=0;k<=i;k++) if(S
 function teamPicks(draft,team){ return draft.actions.map((a,i)=>({a,i})).filter(x=>x.a&&x.a.name&&STEPS[x.i][0]==="pick"&&STEPS[x.i][1]===team).map(x=>x.a); }
 function unavailable(series,draft){ const s=new Set(series.locked); draft.actions.forEach(a=>{ if(a&&a.name) s.add(a.name); }); return s; }
 function openRoles(picks){ const taken=new Set(picks.filter(p=>!p.flex&&p.role).map(p=>p.role)); return ROLES.filter(r=>!taken.has(r)); }
-function enemyInfo(picks){ return picks.map(p=>({name:p.name, roles: p.flex? (CHAMPS[p.name]?CHAMPS[p.name].roles:[p.role]) : [p.role||(CHAMPS[p.name]?CHAMPS[p.name].roles[0]:"M")]})); }
+function enemyInfo(picks){ return picks.map(p=>({name:p.name, roles: p.flex? (p.fxr&&p.fxr.length?p.fxr:CHAMPS[p.name]?CHAMPS[p.name].roles:[p.role]) : [p.role||(CHAMPS[p.name]?CHAMPS[p.name].roles[0]:"M")]})); }
 
 // 4 critères : affinité, méta, synergie (avec nos picks), matchup (contre leurs picks).
 // Sans pick allié, la synergie est ignorée ; sans laner adverse connu, le matchup devient la capacité à être blind pick.
