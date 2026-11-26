@@ -2,6 +2,12 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.4 — 26/11/2026
+- Bans 4-5 : le poids des critères de famille (compléter / casser la synergie) dépend de la taille du pool du joueur adverse à ce rôle (champions à 10 games ou plus encore disponibles) : pool large → logique de compo à plein ; pool réduit (≤ 3) → effet réduit à 30 %, ses conforts et ses counters gardent la main (mention « Pool réduit » dans la raison).
+- Texte de la stratégie : « aucun champion disponible chez nous pour punir leur compo » (au lieu de « outil »).
+- Raisons des bans dédoublonnées.
+- Préparation EQX : rang actuel et pic d'elo de chaque joueur dans les fiches.
+
 ## 1.3 — 26/11/2026 · stratégie des bans 4-5
 - Bans 4-5 : l'outil choisit une stratégie selon nos propres outils. Si on a encore (S/A, disponibles, à nos rôles restants) de quoi punir leur compo et qu'ils peuvent combler leur trou → « Les priver d'engage / de réception » (bans des champions qui le combleraient). S'ils ne peuvent plus le combler, ou si on n'a pas de quoi les punir → « Casser leur synergie » (bans des champions qui renforcent leur famille dominante). La stratégie s'affiche au-dessus des bans ; les bans qui la servent ont un anneau bleu.
 - Nos picks : critère « Exploite leur compo » (dès 3 picks adverses) pour les champions qui punissent leur trou ou leur famille dominante (dive/catch contre zéro réception, poke contre zéro engage, réception contre du tout-engage…). Anneau vert sur au plus 3 champions par ligne, parmi les mieux notés.

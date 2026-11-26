@@ -726,6 +726,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   }
   // Phase 2 : un seul calcul avec la prédiction — score = probabilité qu'ils le pickent × danger pour vous
   const weak=weaknesses(ours.map(p=>p.name)); const out=[]; const theirNames=theirs.map(t=>t.name); const strat=banStrategy(cfg,series,draft,lineup,prep);
+  const depthOf={}; try{ prepPlayers(prep).forEach(p=>{ depthOf[p.role]=p.list.filter(x=>x.g>=10&&!un.has(x.c)).length; }); }catch(e){}
   enemyCandidates(cfg,series,draft,prep,lineup).forEach(R=>{ R.list.forEach(x=>{
     const c=x.name, ch=CHAMPS[c], why=[...x.why]; let danger=0;
     if(x.mine&&x.cw!=null&&x.cw>50){ danger+=clamp01((x.cw-50)/8)*(us==="B"?1.2:1); if(!why.some(w=>w.startsWith("Counter"))) why.push(`Counter de votre ${x.mine} (${x.cw} %)`); }
@@ -738,10 +739,13 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     if(x.intent>=0.4){ danger+=0.5*x.intent; why.unshift("⚠ Pick préparé par leurs bans"); }
     // Familles : leur compo a un trou (pas d'engage / pas de réception) → bannir ce qui le comblerait ; une famille déjà marquée → bannir ce qui la renforce
     if(theirNames.length>=2){ const fc=familiesOf(c), gaps=familyGaps(theirNames), cnt=familyCount(theirNames), mode=strat?strat.mode:"deny";
+      // Taille du pool du joueur à ce rôle : un pool large suit la logique de compo ; un pool réduit reste sur ses conforts et ses counters
+      const depth=depthOf[R.role]??5, kd=0.3+0.7*clamp01((depth-3)/5);
       const fill=fc.filter(f=>gaps.includes(f)), dom=fc.filter(f=>cnt[f]>=2);
-      if(fill.length){ danger+=mode==="deny"?0.4:0.15; why.unshift(`Compléterait leur compo : ${fill.map(f=>FAMS[f].fr).join(", ")} qui leur manque`); x.fam="deny"; }
-      else if(dom.length){ danger+=mode==="synergy"?0.35:0.05; if(mode==="synergy"){ why.unshift(`Renforcerait leur ${FAMS[dom[0]].fr} (déjà ${cnt[dom[0]]} champions) : synergie à casser`); x.fam="synergy"; } } }
-    out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role, fam:x.fam||null});
+      if(fill.length){ danger+=(mode==="deny"?0.4:0.15)*kd; why.unshift(`Compléterait leur compo : ${fill.map(f=>FAMS[f].fr).join(", ")} qui leur manque`); x.fam="deny"; }
+      else if(dom.length){ danger+=(mode==="synergy"?0.35:0.05)*kd; if(mode==="synergy"){ why.unshift(`Renforcerait leur ${FAMS[dom[0]].fr} (déjà ${cnt[dom[0]]} champions) : synergie à casser`); x.fam="synergy"; } }
+      if(x.fam&&depth<=3) why.push(`Pool réduit (${depth} champions à 10 games ou plus) : il restera plutôt sur ses conforts`); }
+    out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why:[...new Set(why)], prep:x.inPool, role:R.role, fam:x.fam||null});
   }); });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].s<x.s) best[x.name]=x; });
   const list=Object.values(best).sort((a,b)=>b.s-a.s);
@@ -784,7 +788,7 @@ function banStrategy(cfg,series,draft,lineup,prep){ const us=draft.side, them=us
       pool.forEach(c=>{ if(!un.has(c)&&CHAMPS[c].roles.includes(r)&&familiesOf(c).some(f=>gaps.includes(f))) fillers.push(c); }); }); }catch(e){}
   if(gaps.length&&!fillers.length) return {mode:"synergy",dom,gaps,tools,label:`Ils ne peuvent plus combler leur manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : casser leur synergie (${FAMS[dom].fr})`};
   return tools.length>=2&&gaps.length?{mode:"deny",gaps,tools:tools.slice(0,4),label:`Les priver ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : vous avez de quoi punir (${tools.slice(0,3).map(t=>t.c).join(", ")})`}
-    :{mode:"synergy",dom,gaps,tools,label:`Casser leur synergie (${FAMS[dom].fr}) : ${tools.length?"peu d'outils pour punir leur compo":"aucun outil disponible pour punir leur compo"}`}; }
+    :{mode:"synergy",dom,gaps,tools,label:`Casser leur synergie (${FAMS[dom].fr}) : ${tools.length?"trop peu de champions chez nous pour punir leur compo":"aucun champion disponible chez nous pour punir leur compo"}`}; }
 // ---- Mécaniques qui contrent : grappins contre bot peu mobile, anti-dash contre compo à dashs ----
 const HOOKS=new Set(["Pyke","Blitzcrank","Thresh","Nautilus"]), ANTIDASH=new Set(["Poppy","Janna"]);
 const DASHERS=new Set("Leona,Vi,Akali,Corki,Rakan,Alistar,Rell,Jarvan IV,Lee Sin,Yone,Yasuo,Irelia,Kai'Sa,Camille,Hecarim,Sejuani,Wukong,Xin Zhao,Pantheon,Gragas,Lucian,Tristana,Kalista,Ambessa,Gwen,Riven,Fiora,Jax,Renekton,Zac,Diana,Kha'Zix,Rengar,Qiyana,Sylas,LeBlanc,Ahri,Galio,Maokai,Vayne,Graves,Kindred,Lillia,Viego,Aatrox".split(","));
