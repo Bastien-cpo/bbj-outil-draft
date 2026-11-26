@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.2
+# Guide de l'outil draft BBJ — version 1.3
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -57,7 +57,7 @@ Pour chaque rôle adverse encore libre, l'outil montre les 5 champions qu'ils on
 ### Au centre : les suggestions
 Pendant **nos bans** :
 - **Bans 1 à 3** : on vise le **confort de leurs joueurs** (volume de games, winrate, KDA). C'est notre façon de faire face à une équipe qu'on connaît peu. Si notre joueur a un vrai counter à un de leurs champions, celui-ci descend un peu, avec l'étiquette « Contrable par nous ».
-- **Bans 4 et 5** : adaptés à la draft : leurs picks probables, les counters de nos picks, et surtout ce qui **compléterait leur compo** (par exemple de la réception s'ils n'en ont pas).
+- **Bans 4 et 5** : adaptés à la draft : leurs picks probables, les counters de nos picks, et leur compo : l'outil affiche sa stratégie au-dessus des bans. Soit **les priver** de ce qui leur manque (si on a de quoi punir ce manque), soit **casser leur synergie** (s'ils ne peuvent plus le combler ou si on n'a pas les outils). Les bans qui servent cette stratégie ont un **anneau bleu**.
 
 Pendant **nos picks**, une ligne par rôle encore libre, avec un **score sur 100** sur chaque champion :
 
@@ -71,7 +71,7 @@ Pendant **nos picks**, une ligne par rôle encore libre, avec un **score sur 100
 | **Matchup / Blind** | 25 | Contre son vis-à-vis s'il est connu ; sinon, capacité à être pické à l'aveugle |
 
 - Le **top** compte un peu plus dans le matchup (×1,35) : à notre niveau, sa lane pèse beaucoup.
-- La ligne **Duos** propose les paires qui marchent ensemble. Elle ne propose jamais deux champions qui perdent ensemble.
+- Un **anneau vert** signale un champion qui punit la compo adverse (par exemple du dive contre une compo sans réception). La ligne **Duos** propose les paires qui marchent ensemble. Elle ne propose jamais deux champions qui perdent ensemble.
 - Passer la souris sur un champion affiche le **détail du score**.
 - En **fearless**, les champions déjà joués dans la série disparaissent des suggestions.
 

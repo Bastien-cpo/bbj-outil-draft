@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.3 — 26/11/2026 · stratégie des bans 4-5
+- Bans 4-5 : l'outil choisit une stratégie selon nos propres outils. Si on a encore (S/A, disponibles, à nos rôles restants) de quoi punir leur compo et qu'ils peuvent combler leur trou → « Les priver d'engage / de réception » (bans des champions qui le combleraient). S'ils ne peuvent plus le combler, ou si on n'a pas de quoi les punir → « Casser leur synergie » (bans des champions qui renforcent leur famille dominante). La stratégie s'affiche au-dessus des bans ; les bans qui la servent ont un anneau bleu.
+- Nos picks : critère « Exploite leur compo » (dès 3 picks adverses) pour les champions qui punissent leur trou ou leur famille dominante (dive/catch contre zéro réception, poke contre zéro engage, réception contre du tout-engage…). Anneau vert sur au plus 3 champions par ligne, parmi les mieux notés.
+
 ## 1.2 — 26/11/2026
 - Icônes de famille : placées à côté du menu de rôle (qui passe en plus petit) et renvoyées à la ligne s'il manque de place ; plus aucune superposition, vérifié en 390, 768, 1024, 1280 et 1920 px (contrôle ajouté aux tests).
 - Préparation : les profils adverses n'affichent plus que l'icône du champion, ses games et son winrate (le nom reste au survol).

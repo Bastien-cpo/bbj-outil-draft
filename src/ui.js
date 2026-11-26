@@ -212,11 +212,14 @@ function viewCenter(){
 let lastRecs={};
 function bubble(x,role,dim){
   const hk=x.name+"|"+(role||""); lastRecs[hk]=x; const sel=ui.pending&&ui.pending.name===x.name;
-  return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
+  const ring=x.ring?` ring-${x.ring}`:"";
+  return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}${ring}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
     ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
 }
 function pickBubbles(){
   const r=recommendPicks(cfg,live.series,live.draft,prep.lineup,24); lastRecs={};
+  // Anneau vert : parmi les meilleurs de la ligne, ce pick punit la compo adverse (seulement les 3 premiers concernés, pour ne pas surcharger)
+  Object.values(r).forEach(R=>R.list.filter(x=>x.exploit).slice(0,3).forEach(x=>{ if(x.score>=(R.list[0]?R.list[0].score:0)-12) x.ring="exploit"; }));
   return Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
     <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
 }
@@ -229,7 +232,10 @@ function banBubbles(){
   const r=recommendBans(cfg,live.series,live.draft,prep,prep.lineup,24); lastRecs={};
   r.forEach((x,k)=>{ x.rank=k+1; lastRecs[x.name]=x; });
   const phase2=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").length>=6;
-  return `<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
+  // Bans 4-5 : la stratégie (les priver de ce qui manque / casser leur synergie) et un anneau bleu sur les bans qui la servent
+  const strat=phase2?banStrategy(cfg,live.series,live.draft,prep.lineup,prep):null;
+  if(strat) r.slice(0,6).forEach(x=>{ if(x.fam===strat.mode) x.ring="strat"; });
+  return `${strat?`<div class="stratl ${strat.mode}"><i></i>${esc(strat.label)}</div>`:""}<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
     <div class="bubs fill">${r.map(x=>bubble(x,null,false)).join("")}</div></div>`;
 }
 function grid(){

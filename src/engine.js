@@ -328,6 +328,9 @@ function scorePick(cfg,c,role,ctx){
     const open=ctx.theirOpen||ROLES; expo=open.includes(role)?Math.min(1,(ctx.enemyAfter||0)/Math.max(1,open.length)):0;
     if(expo>0) parts.push(["Blind",mu.v,W.matchup*topK]);
   }
+  // Nos picks : bonus si le champion punit la compo adverse (dès 3 picks en face)
+  const exploit=(ctx.enemies||[]).length>=3?exploitOf(c,ctx.enemies.map(x=>x.name)):null;
+  if(exploit) parts.push(["Exploite leur compo",1,W.synergie*0.45]);
   const tw=parts.reduce((s,p)=>s+p[2],0)||1;
   const raw=parts.reduce((s,p)=>s+p[1]*p[2],0)/tw;
   // Échelle d'affichage : 90+ = pick excellent, 75-90 = très bon, 60-75 = correct, < 60 = à éviter
@@ -367,7 +370,8 @@ function scorePick(cfg,c,role,ctx){
   if(coh!=null&&coh>=0.6) why.push("Compo cohérente avec ce pick"); else if(coh!=null&&coh<=0.3) why.push("⚠ Laisse la compo avec des faiblesses");
   if(tim!=null&&tim<0.5) why.push("Rôle/champion rarement pické aussi tôt");
   if(NEXT_DELTA[c]) why.push((NEXT_DELTA[c]>0?"buff ":"nerf ")+PATCH_NEXT.v);
-  return {name:c, role, score, raw, parts, why, tier:af.tier, badge:pickBadge(c,role), duo:!!(sy.duos&&sy.duos.length)};
+  if(exploit) why.unshift(`Exploite ${exploit.why} (${FAMS[exploit.fam].fr})`);
+  return {name:c, role, score, raw, parts, why, tier:af.tier, badge:pickBadge(c,role), duo:!!(sy.duos&&sy.duos.length), exploit:!!exploit};
 }
 // Habitudes de l'équipe : jungle/mid/ADC en premier, top en pick 4-5, support après l'ADC
 function roleOrderOf(cfg){ const o=(cfg&&cfg.roleOrder&&cfg.roleOrder.length===5)?cfg.roleOrder:["J","A","S","M","T"]; return o; }
@@ -721,7 +725,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     return plan.concat(pro).slice(0,n);
   }
   // Phase 2 : un seul calcul avec la prédiction — score = probabilité qu'ils le pickent × danger pour vous
-  const weak=weaknesses(ours.map(p=>p.name)); const out=[]; const theirNames=theirs.map(t=>t.name);
+  const weak=weaknesses(ours.map(p=>p.name)); const out=[]; const theirNames=theirs.map(t=>t.name); const strat=banStrategy(cfg,series,draft,lineup,prep);
   enemyCandidates(cfg,series,draft,prep,lineup).forEach(R=>{ R.list.forEach(x=>{
     const c=x.name, ch=CHAMPS[c], why=[...x.why]; let danger=0;
     if(x.mine&&x.cw!=null&&x.cw>50){ danger+=clamp01((x.cw-50)/8)*(us==="B"?1.2:1); if(!why.some(w=>w.startsWith("Counter"))) why.push(`Counter de votre ${x.mine} (${x.cw} %)`); }
@@ -733,10 +737,11 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
     if(x.intent>=0.4){ danger+=0.5*x.intent; why.unshift("⚠ Pick préparé par leurs bans"); }
     // Familles : leur compo a un trou (pas d'engage / pas de réception) → bannir ce qui le comblerait ; une famille déjà marquée → bannir ce qui la renforce
-    if(theirNames.length>=2){ const fc=familiesOf(c), gaps=familyGaps(theirNames), cnt=familyCount(theirNames);
-      const fill=fc.filter(f=>gaps.includes(f)); if(fill.length){ danger+=0.35; why.unshift(`Compléterait leur compo : ${fill.map(f=>FAMS[f].fr).join(", ")} qui leur manque`); }
-      else { const dom=fc.filter(f=>cnt[f]>=2); if(dom.length){ danger+=0.15; why.push(`Renforcerait leur ${FAMS[dom[0]].fr} (déjà ${cnt[dom[0]]} champions)`); } } }
-    out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
+    if(theirNames.length>=2){ const fc=familiesOf(c), gaps=familyGaps(theirNames), cnt=familyCount(theirNames), mode=strat?strat.mode:"deny";
+      const fill=fc.filter(f=>gaps.includes(f)), dom=fc.filter(f=>cnt[f]>=2);
+      if(fill.length){ danger+=mode==="deny"?0.4:0.15; why.unshift(`Compléterait leur compo : ${fill.map(f=>FAMS[f].fr).join(", ")} qui leur manque`); x.fam="deny"; }
+      else if(dom.length){ danger+=mode==="synergy"?0.35:0.05; if(mode==="synergy"){ why.unshift(`Renforcerait leur ${FAMS[dom[0]].fr} (déjà ${cnt[dom[0]]} champions) : synergie à casser`); x.fam="synergy"; } } }
+    out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role, fam:x.fam||null});
   }); });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].s<x.s) best[x.name]=x; });
   const list=Object.values(best).sort((a,b)=>b.s-a.s);
@@ -759,6 +764,27 @@ function familiesOf(c){ const ch=CHAMPS[c]; if(!ch) return []; const sc={};
 function familyCount(names){ const n={}; Object.keys(FAMS).forEach(f=>n[f]=0); names.forEach(c=>familiesOf(c).forEach(f=>n[f]++)); return n; }
 function familyGaps(names){ if(names.length<2) return []; const n=familyCount(names), g=[];
   if(!n.engage) g.push("engage"); if(!n.peel) g.push("peel"); if(!n.engage&&!n.catch&&!n.dive) g.push("catch"); return g; }
+// Ce qui punit la compo adverse : leurs trous (pas de réception, pas d'engage) et leur famille dominante
+function punishers(names){ const out={}; if(names.length<3) return out; const n=familyCount(names), gaps=familyGaps(names);
+  if(gaps.includes("peel")) ["dive","catch","engage"].forEach(f=>out[f]=out[f]||"leur manque de réception");
+  if(gaps.includes("engage")) ["poke","scaling"].forEach(f=>out[f]=out[f]||"leur manque d'engage");
+  if(n.engage+n.dive>=3) out.peel=out.peel||"leur compo tout-engage (réception/désengage)";
+  if(n.poke>=2) ["engage","dive"].forEach(f=>out[f]=out[f]||"leur compo poke");
+  return out; }
+function exploitOf(c,names){ const P=punishers(names); const f=familiesOf(c).find(x=>P[x]); return f?{fam:f,why:P[f]}:null; }
+// Stratégie des bans 4-5 : si on a encore de quoi punir leur compo → les priver de la pièce manquante ; sinon → casser leur synergie
+function banStrategy(cfg,series,draft,lineup,prep){ const us=draft.side, them=us==="B"?"R":"B";
+  const theirN=teamPicks(draft,them).map(p=>p.name); if(theirN.length<3) return null;
+  const un=unavailable(series,draft), open=openRoles(teamPicks(draft,us)), tools=[];
+  open.forEach(r=>CHAMP_NAMES.forEach(c=>{ if(un.has(c)||!CHAMPS[c].roles.includes(r)) return; const t=tierFor(cfg,lineup[r],r,c); if(t!=="S"&&t!=="A") return; const x=exploitOf(c,theirN); if(x) tools.push({c,r,...x}); }));
+  const gaps=familyGaps(theirN).filter(g=>g!=="catch"), n=familyCount(theirN), dom=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];
+  // Peuvent-ils encore combler leur trou ? (champions de leur pool, à leurs rôles restants, encore disponibles)
+  let fillers=[]; try{ const P=prepPlayers(prep||{}), tOpen=openRoles(teamPicks(draft,them));
+    tOpen.forEach(r=>{ const pl=P.find(q=>q.role===r); const pool=pl?pl.list.filter(x=>x.g>=5).map(x=>x.c):CHAMP_NAMES.filter(c=>CHAMPS[c].roles.includes(r)&&metaInfo(c,r).pres>=8);
+      pool.forEach(c=>{ if(!un.has(c)&&CHAMPS[c].roles.includes(r)&&familiesOf(c).some(f=>gaps.includes(f))) fillers.push(c); }); }); }catch(e){}
+  if(gaps.length&&!fillers.length) return {mode:"synergy",dom,gaps,tools,label:`Ils ne peuvent plus combler leur manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : casser leur synergie (${FAMS[dom].fr})`};
+  return tools.length>=2&&gaps.length?{mode:"deny",gaps,tools:tools.slice(0,4),label:`Les priver ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : vous avez de quoi punir (${tools.slice(0,3).map(t=>t.c).join(", ")})`}
+    :{mode:"synergy",dom,gaps,tools,label:`Casser leur synergie (${FAMS[dom].fr}) : ${tools.length?"peu d'outils pour punir leur compo":"aucun outil disponible pour punir leur compo"}`}; }
 // ---- Mécaniques qui contrent : grappins contre bot peu mobile, anti-dash contre compo à dashs ----
 const HOOKS=new Set(["Pyke","Blitzcrank","Thresh","Nautilus"]), ANTIDASH=new Set(["Poppy","Janna"]);
 const DASHERS=new Set("Leona,Vi,Akali,Corki,Rakan,Alistar,Rell,Jarvan IV,Lee Sin,Yone,Yasuo,Irelia,Kai'Sa,Camille,Hecarim,Sejuani,Wukong,Xin Zhao,Pantheon,Gragas,Lucian,Tristana,Kalista,Ambessa,Gwen,Riven,Fiora,Jax,Renekton,Zac,Diana,Kha'Zix,Rengar,Qiyana,Sylas,LeBlanc,Ahri,Galio,Maokai,Vayne,Graves,Kindred,Lillia,Viego,Aatrox".split(","));
@@ -878,4 +904,4 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
