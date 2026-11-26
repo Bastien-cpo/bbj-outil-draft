@@ -106,6 +106,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .pa{position:absolute;top:2px;right:6px;background:#2a3141;font:700 11px Inter;border-radius:9px;padding:0 5px}
 .pop{position:sticky;bottom:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#1d2330;border:1px solid var(--gold);border-radius:12px;padding:8px 12px;margin-top:8px}
 .pc{position:relative}.pm2{display:flex;gap:4px;justify-content:center;margin-top:2px}.pm2>span{display:flex;flex-direction:column;align-items:center;line-height:1;border-radius:5px;padding:1px 3px;min-width:22px}.pm2 b{font-size:11px}.pm2 em{font-style:normal;font-size:8px;opacity:.75}.pm2 .tm{background:rgba(214,175,85,.18);border:1px solid rgba(214,175,85,.55);color:#f0d48a}.pm2 .tm.none{opacity:.4}.pm2 .sq{background:transparent;border:1px solid var(--line);color:var(--mu)}.pfb{position:absolute;top:2px;right:2px;font-size:10px;font-weight:700;border-radius:8px;padding:0 4px;background:#111}.pfb.good{color:#4fd18b}.pfb.mid{color:#e6c14a}.pfb.bad{color:#ef6b6b}
+.fams{display:flex;flex-direction:column;gap:2px;margin-left:auto;margin-right:4px}.fam{font-style:normal;font-size:12px;line-height:1;width:20px;height:20px;display:grid;place-items:center;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:default}.famsum{display:flex;flex-wrap:wrap;gap:4px;padding:6px 4px 2px;border-top:1px dashed var(--line);margin-top:4px}.famsum .fs{font-size:12px;padding:2px 5px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.famsum .fs b{font-size:10px;margin-left:2px;opacity:.8}.famsum .fs.miss{border-color:#ef6b6b;color:#ef6b6b}
 .pop{flex-direction:column;align-items:stretch}.poprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pop button.on{border-color:var(--gold);color:var(--gold)}.sheet{display:flex;gap:10px;align-items:flex-start}.sst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;margin:6px 0}.sst span{display:flex;flex-direction:column}.sst em{font-style:normal;font-size:11px;color:var(--mu)}.sst i{font-style:normal;font-size:11px;opacity:.7}.sst .good{color:#4fd18b}.sst .mid{color:#e6c14a}.sst .bad{color:#ef6b6b}
 .pop button{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
 /* réglages */
@@ -242,7 +243,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v1.0 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v1.1 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -1025,6 +1026,7 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
     const cands=new Set(Object.keys(pool));
     CHAMP_NAMES.forEach(c=>{ const m=metaInfo(c,role), pr=PRO[c]; if(!m.off&&(m.pres>=8||(pr&&pr.p+pr.b>=150&&m.pres>=3))) cands.add(c); });
     if(mine) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,c,mine.name,role); if(w!=null&&w>=54) cands.add(c); } });
+    if(mine&&pl) vsAgainst(pl,mine.name).forEach(x=>{ if(x.g>=2) cands.add(x.c); });
     (series&&series.games||[]).forEach(g=>(g.actions||[]).forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]!==g.side&&CHAMPS[a.name]&&CHAMPS[a.name].roles.includes(role)) cands.add(a.name); }));
     draft.actions.forEach((a,k)=>{ if(a&&a.name&&STEPS[k][0]==="ban"&&STEPS[k][1]===them) CHAMP_NAMES.forEach(c=>{ if(CHAMPS[c].roles.includes(role)){ const w=laneWR(I,a.name,c,role); if(w!=null&&w>=52) cands.add(c); } }); });
     // Lecture de leurs bans : bannir les counters d'un champion = le préparer ; un champion qu'ils bannissaient dans une game précédente et qu'ils laissent ouvert = pick prévu
@@ -1057,10 +1059,13 @@ function enemyCandidates(cfg,series,draft,prep,lineup){
         poolV=pl?(late?0.15+0.25*tdv:0.05)*pop:0.5*m.v;
         if(pl&&late&&tdv>=0.4&&pop>=0.3) why.push("Hors de son pool, mais punit votre compo"); else if(pl&&pop>=0.5) why.push("Hors de son pool"); }
       const it=intentOf(c); if(it.why.length) why.unshift(...it.why);
-      const s=0.6*poolV+0.4*reason+0.45*it.v;
+      // Ce qu'il joue d'habitude contre notre laner (solo Q) : un pick qu'il connaît dans ce matchup remonte
+      let hab=0; const hv=mine?vsHabit(pl,c,mine.name):null;
+      if(hv&&hv.g>=2){ hab=Math.min(1,hv.g/6)*(0.6+0.4*clamp01((hv.wr-35)/30)); why.unshift(`Contre votre ${mine.name} en solo Q : ${hv.g} games (${hv.wr} %)`); }
+      const s=0.6*poolV+0.4*reason+0.45*it.v+0.4*hab;
       // Très dangereux pour notre compo : gros counter de notre lane, ou mécanique qui nous punit fort
       const danger=(cw!=null&&cw>=54)||td.v>=0.4;
-      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v, danger};
+      return {name:c, s, why, cw, mine:mine?mine.name:null, inPool:!!p, intent:it.v, habit:hab, danger:danger||hab>=0.6};
     }).sort((a,b)=>b.s-a.s);
     return {role, player:pl?pl.name.split("#")[0]:null, list};
   });
@@ -1111,6 +1116,13 @@ function inferRole(champs){
 }
 function roleShares(champs){ const sc={}; let t=0; champs.forEach(([c,g])=>{ const ch=CHAMPS[findChamp(c)]; if(ch){ sc[ch.roles[0]]=(sc[ch.roles[0]]||0)+g; t+=g; } }); ROLES.forEach(r=>sc[r]=t?(sc[r]||0)/t:0); return sc; }
 function permutations(a){ if(a.length<=1) return [a]; const o=[]; a.forEach((x,i)=>permutations(a.slice(0,i).concat(a.slice(i+1))).forEach(p=>o.push([x,...p]))); return o; }
+// Habitudes en solo Q contre un champion précis (détail « vs » d'op.gg : leur champion → [adversaire de lane, games, WR])
+function vsHabit(pl,c,opp){ if(!pl||!pl.vs) return null; let best=null;
+  for(const k in pl.vs){ if(findChamp(k)!==c) continue; (pl.vs[k]||[]).forEach(([o,g,wr])=>{ if(findChamp(o)===opp&&(!best||g>best.g)) best={g:+g,wr:+wr}; }); }
+  return best; }
+function vsAgainst(pl,opp){ const out=[]; if(!pl||!pl.vs) return out;
+  for(const k in pl.vs){ const c=findChamp(k); (pl.vs[k]||[]).forEach(([o,g,wr])=>{ if(c&&findChamp(o)===opp) out.push({c,g:+g,wr:+wr}); }); }
+  return out.sort((a,b)=>b.g-a.g); }
 function prepPlayers(prep){
   const L=(prep&&prep.players||[]).map(p=>{ const champs=(p.champs||[]).map(([c,g,wr,kda])=>({c:findChamp(c),g:+g,wr:wr==null?null:+wr,kda:kda==null?null:+kda})).filter(x=>x.c).sort((a,b)=>b.g-a.g);
     return {...p, role:p.role||inferRole(champs.map(x=>[x.c,x.g])), list:champs, _sh:roleShares(champs.map(x=>[x.c,x.g]))}; });
@@ -1250,7 +1262,7 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     return plan.concat(pro).slice(0,n);
   }
   // Phase 2 : un seul calcul avec la prédiction — score = probabilité qu'ils le pickent × danger pour vous
-  const weak=weaknesses(ours.map(p=>p.name)); const out=[];
+  const weak=weaknesses(ours.map(p=>p.name)); const out=[]; const theirNames=theirs.map(t=>t.name);
   enemyCandidates(cfg,series,draft,prep,lineup).forEach(R=>{ R.list.forEach(x=>{
     const c=x.name, ch=CHAMPS[c], why=[...x.why]; let danger=0;
     if(x.mine&&x.cw!=null&&x.cw>50){ danger+=clamp01((x.cw-50)/8)*(us==="B"?1.2:1); if(!why.some(w=>w.startsWith("Counter"))) why.push(`Counter de votre ${x.mine} (${x.cw} %)`); }
@@ -1261,6 +1273,10 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
     { const td=traitDanger(c,ours.map(o=>({name:o.name,role:o.flex?null:o.role}))); if(td.v){ danger+=td.v; why.push(...td.why); } }
     theirs.forEach(t=>{ const q=synVal(cfg,c,R.role,t.name,t.flex?null:t.role); if(q&&q.v>=2.5){ danger+=0.15; why.push(`Synergie avec leur ${t.name} (+${q.v} %)`); } });
     if(x.intent>=0.4){ danger+=0.5*x.intent; why.unshift("⚠ Pick préparé par leurs bans"); }
+    // Familles : leur compo a un trou (pas d'engage / pas de réception) → bannir ce qui le comblerait ; une famille déjà marquée → bannir ce qui la renforce
+    if(theirNames.length>=2){ const fc=familiesOf(c), gaps=familyGaps(theirNames), cnt=familyCount(theirNames);
+      const fill=fc.filter(f=>gaps.includes(f)); if(fill.length){ danger+=0.35; why.unshift(`Compléterait leur compo : ${fill.map(f=>FAMS[f].fr).join(", ")} qui leur manque`); }
+      else { const dom=fc.filter(f=>cnt[f]>=2); if(dom.length){ danger+=0.15; why.push(`Renforcerait leur ${FAMS[dom[0]].fr} (déjà ${cnt[dom[0]]} champions)`); } } }
     out.push({name:c, s:x.s*(0.4+danger), p:x.s, danger, why, prep:x.inPool, role:R.role});
   }); });
   const best={}; out.forEach(x=>{ if(!best[x.name]||best[x.name].s<x.s) best[x.name]=x; });
@@ -1270,6 +1286,20 @@ function recommendBans(cfg,series,draft,prep,lineup,n=10){
   alerts.forEach((a,k)=>{ a.why.unshift("⚠ Peu probable, mais casserait votre compo"); top.splice(Math.min(top.length,3+k*3),0,a); });
   return top.slice(0,n);
 }
+// ---- Familles de jeu (philosophie de chaque champion) : 1 à 2 familles par champion ----
+const FAMS={engage:{fr:"Engage",ic:"⚔"},catch:{fr:"Pick / Catch",ic:"🎯"},peel:{fr:"Réception",ic:"🛡"},poke:{fr:"Poke",ic:"☄"},dive:{fr:"Dive",ic:"⤵"},teamfight:{fr:"Teamfight",ic:"✸"},split:{fr:"Split",ic:"↯"},scaling:{fr:"Scaling",ic:"⏳"}};
+const CATCH=new Set("Thresh,Blitzcrank,Pyke,Nautilus,Morgana,Bard,Ahri,Lux,Zoe,Elise,LeBlanc,Twisted Fate,Rengar,Kha'Zix,Nidalee,Evelynn,Lee Sin,Pantheon,Qiyana,Neeko,Ashe,Jhin,Varus,Caitlyn,Zyra,Tristana,Kalista,Shaco,Talon,Fiddlesticks,Nocturne,Draven,Ezreal,Syndra,Vex,Rek'Sai,Naafiri,Ambessa".split(","));
+const DIVE=new Set("Diana,Vi,Jarvan IV,Xin Zhao,Wukong,Camille,Irelia,Akali,Kai'Sa,Zed,Talon,Rek'Sai,Nocturne,Hecarim,Kayn,Viego,Yone,Yasuo,Samira,Ambessa,Naafiri,Fizz,Katarina,Sylas,Renekton,Tristana,Kha'Zix,Rengar,Lee Sin,Qiyana,Briar,Bel'Veth,Olaf,Darius,Volibear,Zac".split(","));
+const SPLIT=new Set("Fiora,Jax,Camille,Tryndamere,Yorick,Gwen,Nasus,Riven,Kayle,Trundle,Shen,Garen,Aatrox,Sion,Udyr,Gangplank,Quinn,Irelia".split(","));
+function familiesOf(c){ const ch=CHAMPS[c]; if(!ch) return []; const sc={};
+  if(ch.engage>=3) sc.engage=3+ch.engage/10; if(ch.peel>=3||(ch.peel>=2&&ch.engage<2&&ch.roles.includes("S"))) sc.peel=2.9+ch.peel/10;
+  if(CATCH.has(c)) sc.catch=2.8; if(ch.poke>=2) sc.poke=ch.poke>=3?3.1:2.4; if(DIVE.has(c)) sc.dive=2.7;
+  if(ch.teamfight>=3&&!sc.engage) sc.teamfight=2.5; if(SPLIT.has(c)) sc.split=2.6; if(ch.scaling>=3&&ch.early<=1) sc.scaling=2.3;
+  return Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,2); }
+// Bilan d'une compo : familles présentes (nombre) et manques importants (engage, réception)
+function familyCount(names){ const n={}; Object.keys(FAMS).forEach(f=>n[f]=0); names.forEach(c=>familiesOf(c).forEach(f=>n[f]++)); return n; }
+function familyGaps(names){ if(names.length<2) return []; const n=familyCount(names), g=[];
+  if(!n.engage) g.push("engage"); if(!n.peel) g.push("peel"); if(!n.engage&&!n.catch&&!n.dive) g.push("catch"); return g; }
 // ---- Mécaniques qui contrent : grappins contre bot peu mobile, anti-dash contre compo à dashs ----
 const HOOKS=new Set(["Pyke","Blitzcrank","Thresh","Nautilus"]), ANTIDASH=new Set(["Poppy","Janna"]);
 const DASHERS=new Set("Leona,Vi,Akali,Corki,Rakan,Alistar,Rell,Jarvan IV,Lee Sin,Yone,Yasuo,Irelia,Kai'Sa,Camille,Hecarim,Sejuani,Wukong,Xin Zhao,Pantheon,Gragas,Lucian,Tristana,Kalista,Ambessa,Gwen,Riven,Fiora,Jax,Renekton,Zac,Diana,Kha'Zix,Rengar,Qiyana,Sylas,LeBlanc,Ahri,Galio,Maokai,Vayne,Graves,Kindred,Lillia,Viego,Aatrox".split(","));
@@ -1389,7 +1419,7 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
 
 // ===== Interface v4 =====
 const $=s=>document.querySelector(s);
@@ -1689,11 +1719,17 @@ function boardCol(team,d,ro){
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
-      ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
+      ${famIcons(a.name)}${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
-    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}</div></div>`;
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
 }
+// Familles de jeu : icônes à côté de chaque pick + bilan de la compo (présent / manquant)
+function famIcons(c){ const f=familiesOf(c); return f.length?`<span class="fams">${f.map(k=>`<i class="fam f-${k}" title="${esc(FAMS[k].fr)}">${FAMS[k].ic}</i>`).join("")}</span>`:""; }
+function teamPicksNames(d,team){ return d.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===team?a.name:null).filter(Boolean); }
+function famSummary(names){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names);
+  const have=Object.keys(FAMS).filter(f=>n[f]).map(f=>`<span class="fs" title="${esc(FAMS[f].fr)}">${FAMS[f].ic}${n[f]>1?`<b>×${n[f]}</b>`:""}</span>`).join("");
+  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>`; }
 
 // ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
 const ROLE_SVG={
@@ -1720,7 +1756,7 @@ function scoutProfile(p,P){
   const trap=L.filter(x=>x.wr!=null&&x.g>=25&&x.wr<=43&&(x.kda==null||x.kda<2.2)).sort((a,b)=>a.wr-b.wr)[0];
   // Flex = champion présent dans le pool de deux de leurs joueurs (chacun à son rôle, ≥ 5 games)
   const shown=q=>q.list.slice(0,15).filter(y=>y.g>=5);
-  const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q!==p&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
+  const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q.name!==p.name&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
   const lines=[shape,
     fx.length?`Flex : ${fx.map(x=>`${x.c} — il le joue, et ${x.o.map(q=>`${q.name.split("#")[0]} aussi (${ROLE_NAMES[q.role].toLowerCase()})`).join(", ")}`).join(" · ")}`:"",
     trap?`À laisser : ${trap.c} sous-performe nettement (${trap.g} games, ${trap.wr} %${trap.kda?`, KDA ${trap.kda}`:""})`:""];
@@ -1753,9 +1789,13 @@ function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
   const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
-  const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
+  // Fiche vivante : on suit la draft. Notre pick à ce rôle déjà locké → c'est lui seul qu'on compare ; un champion indisponible (pick, ban, fearless) disparaît de la fiche
+  const usSide=live.draft.side, myPick=live.draft.actions.find((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===usSide&&a.role===r&&!a.flex);
+  const theirPick=live.draft.actions.find((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]!==usSide&&a.role===r&&!a.flex);
+  const ours=myPick?[myPick.name]:CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
     if(un.has(c)) return false; const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta, encore disponible
-  const theirs=p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
+  const theirs=theirPick?[]:p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
+  const habits=myPick?vsAgainst(p,myPick.name).filter(x=>!un.has(x.c)&&x.g>=2).slice(0,6):[];
   const threats=[], answers=[];
   theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
@@ -1768,15 +1808,16 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile(p,P).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile({...p,list:p.list.filter(x=>!un.has(x.c))},P.map(q=>({...q,list:q.list.filter(x=>!un.has(x.c))}))).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
       const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
       return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
-   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).slice().sort((a,b)=>(!!st(a.c))-(!!st(b.c))).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
-   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")})</h4>
-   ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
-   <h4>Nos réponses à ses champions</h4>
-   ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}
+   ${theirPick?`<p class="flx">A pické <b>${esc(theirPick.name)}</b>.</p>`:""}<div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.filter(x=>!un.has(x.c)).length))}">${p.list.filter(x=>!un.has(x.c)).slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   ${myPick?`<h4>Ce qu'il joue d'habitude contre ${esc(myPick.name)} (solo Q)</h4>${habits.length?`<div class="scpool grid" style="--n:${habits.length}">${habits.map(x=>chip(x.c,`<em>${x.g} g · ${x.wr} %</em>`)).join("")}</div>`:`<p class="muted">Pas d'habitude repérée contre ${esc(myPick.name)}.</p>`}`:""}
+   ${theirPick?"":`<h4>${myPick?`Ses champions qui contrent notre ${esc(myPick.name)}`:`Ses champions qui contrent nos meilleurs (${esc(our||"?")})`}</h4>`}
+   ${theirPick?"":threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
+   ${myPick||theirPick?"":`<h4>Nos réponses à ses champions</h4>
+   ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}`}
   </div></div>`;
 }
 

@@ -296,11 +296,17 @@ function boardCol(team,d,ro){
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
-      ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
+      ${famIcons(a.name)}${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
-    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}</div></div>`;
+    <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
 }
+// Familles de jeu : icônes à côté de chaque pick + bilan de la compo (présent / manquant)
+function famIcons(c){ const f=familiesOf(c); return f.length?`<span class="fams">${f.map(k=>`<i class="fam f-${k}" title="${esc(FAMS[k].fr)}">${FAMS[k].ic}</i>`).join("")}</span>`:""; }
+function teamPicksNames(d,team){ return d.actions.map((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===team?a.name:null).filter(Boolean); }
+function famSummary(names){ if(!names.length) return ""; const n=familyCount(names), gaps=familyGaps(names);
+  const have=Object.keys(FAMS).filter(f=>n[f]).map(f=>`<span class="fs" title="${esc(FAMS[f].fr)}">${FAMS[f].ic}${n[f]>1?`<b>×${n[f]}</b>`:""}</span>`).join("");
+  return `<div class="famsum">${have}${gaps.filter(g=>g!=="catch").map(g=>`<span class="fs miss" title="${esc(FAMS[g].fr)} manquant(e)">${FAMS[g].ic}✗</span>`).join("")}</div>`; }
 
 // ---------- Fiches des joueurs adverses (icônes sous les bans adverses) ----------
 const ROLE_SVG={
@@ -327,7 +333,7 @@ function scoutProfile(p,P){
   const trap=L.filter(x=>x.wr!=null&&x.g>=25&&x.wr<=43&&(x.kda==null||x.kda<2.2)).sort((a,b)=>a.wr-b.wr)[0];
   // Flex = champion présent dans le pool de deux de leurs joueurs (chacun à son rôle, ≥ 5 games)
   const shown=q=>q.list.slice(0,15).filter(y=>y.g>=5);
-  const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q!==p&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
+  const fx=shown(p).map(x=>({c:x.c, o:(P||[]).filter(q=>q.name!==p.name&&shown(q).some(y=>y.c===x.c))})).filter(x=>x.o.length).slice(0,4);
   const lines=[shape,
     fx.length?`Flex : ${fx.map(x=>`${x.c} — il le joue, et ${x.o.map(q=>`${q.name.split("#")[0]} aussi (${ROLE_NAMES[q.role].toLowerCase()})`).join(", ")}`).join(" · ")}`:"",
     trap?`À laisser : ${trap.c} sous-performe nettement (${trap.g} games, ${trap.wr} %${trap.kda?`, KDA ${trap.kda}`:""})`:""];
@@ -360,9 +366,13 @@ function scoutModal(){
   const r=ui.scout; let P=[]; try{ P=prepPlayers(prep); }catch(e){} const p=P.find(x=>x.role===r); if(!p) return "";
   const un=unavailable(live.series,live.draft), I=ctrIndex(cfg), our=prep.lineup[r];
   const RK=rankPlayers(P), me=RK.find(x=>x.p===p), S=me.s;
-  const ours=CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
+  // Fiche vivante : on suit la draft. Notre pick à ce rôle déjà locké → c'est lui seul qu'on compare ; un champion indisponible (pick, ban, fearless) disparaît de la fiche
+  const usSide=live.draft.side, myPick=live.draft.actions.find((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]===usSide&&a.role===r&&!a.flex);
+  const theirPick=live.draft.actions.find((a,k)=>a&&a.name&&STEPS[k][0]==="pick"&&STEPS[k][1]!==usSide&&a.role===r&&!a.flex);
+  const ours=myPick?[myPick.name]:CHAMP_NAMES.filter(c=>{ const t=tierFor(cfg,our,r,c); if(!((t==="S"||t==="A")&&CHAMPS[c].roles.includes(r))) return false;
     if(un.has(c)) return false; const a=affinity(cfg,our,r,c); return a.games>=3||metaInfo(c,r).v>=0.75; }); // joué en scrim/compétition ou très méta, encore disponible
-  const theirs=p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
+  const theirs=theirPick?[]:p.list.filter(x=>x.g>=5&&!un.has(x.c)).slice(0,12);
+  const habits=myPick?vsAgainst(p,myPick.name).filter(x=>!un.has(x.c)&&x.g>=2).slice(0,6):[];
   const threats=[], answers=[];
   theirs.forEach(x=>ours.forEach(o=>{ const g=ctrGet(I,x.c,o,r); if(g&&g[2]>=51.5) threats.push({c:x.c,o,wr:g[2],g:x.g}); const h=ctrGet(I,o,x.c,r); if(h&&h[2]>=51.5) answers.push({c:o,vs:x.c,wr:h[2],g:x.g}); }));
   const rank=a=>a.sort((x,y)=>(y.wr-50)*Math.log(2+y.g)-(x.wr-50)*Math.log(2+x.g));
@@ -375,15 +385,16 @@ function scoutModal(){
    <div class="schead"><span class="scno r${me.rank}" title="Place dans leur cinq (LP et pic, puis rendement, puis pool méta)">#${me.rank}</span>${roleIcon(r,26)}<div><b>${esc(p.name.split("#")[0])}</b><span class="muted"> · ${ROLE_NAMES[r]}</span></div><button class="btn sm" data-act="scoutclose">✕</button></div>
    <div class="scstats">${p.rank?`<span><em>Rang</em>${esc(p.rank)}</span>`:""}${p.peak?`<span><em>Pic</em>${esc(p.peak)}</span>`:""}${S.games?`<span><em>Games</em>${S.games}</span>`:""}${S.wr!=null?`<span><em>WR</em>${S.wr} %</span>`:""}</div>
 
-   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile(p,P).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
+   <h4>Profil</h4><ul>${p.note?`<li class="flx">${esc(p.note)}</li>`:""}${scoutProfile({...p,list:p.list.filter(x=>!un.has(x.c))},P.map(q=>({...q,list:q.list.filter(x=>!un.has(x.c))}))).map(l=>`<li>${esc(l)}</li>`).join("")}${(()=>{ if(!live.series.locked.length) return "";
       const top=p.list.slice(0,6), used=top.filter(x=>live.series.locked.includes(x.c)), left=top.filter(x=>!un.has(x.c)).slice(0,4);
       return `<li class="flx">Fearless : ${used.length?`déjà joués ${used.map(x=>x.c).join(", ")}`:"aucun de ses conforts joué"}${left.length?` · il lui reste ${left.map(x=>x.c).join(", ")}`:" · plus aucun confort disponible"}</li>`; })()}</ul>
    <h4>Champion pool</h4>
-   <div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.length))}">${p.list.slice(0,15).slice().sort((a,b)=>(!!st(a.c))-(!!st(b.c))).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
-   <h4>Ses champions qui contrent nos meilleurs (${esc(our||"?")})</h4>
-   ${threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
-   <h4>Nos réponses à ses champions</h4>
-   ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}
+   ${theirPick?`<p class="flx">A pické <b>${esc(theirPick.name)}</b>.</p>`:""}<div class="scpool grid" style="--n:${(n=>n<=8?n:Math.ceil(n/2))(Math.min(15,p.list.filter(x=>!un.has(x.c)).length))}">${p.list.filter(x=>!un.has(x.c)).slice(0,15).map(x=>chip(x.c,`<em>${x.g} g${x.wr!=null?` · ${x.wr} %`:""}</em>`)).join("")}</div>
+   ${myPick?`<h4>Ce qu'il joue d'habitude contre ${esc(myPick.name)} (solo Q)</h4>${habits.length?`<div class="scpool grid" style="--n:${habits.length}">${habits.map(x=>chip(x.c,`<em>${x.g} g · ${x.wr} %</em>`)).join("")}</div>`:`<p class="muted">Pas d'habitude repérée contre ${esc(myPick.name)}.</p>`}`:""}
+   ${theirPick?"":`<h4>${myPick?`Ses champions qui contrent notre ${esc(myPick.name)}`:`Ses champions qui contrent nos meilleurs (${esc(our||"?")})`}</h4>`}
+   ${theirPick?"":threats.length?`<div class="scduels">${rank(threats).slice(0,6).map(t=>duel(t.o,t.c,t.wr,false)).join("")}</div>`:`<p class="muted">Aucun counter net dans les données de matchups.</p>`}
+   ${myPick||theirPick?"":`<h4>Nos réponses à ses champions</h4>
+   ${answers.length?`<div class="scduels">${rank(answers).slice(0,6).map(t=>duel(t.c,t.vs,t.wr,true)).join("")}</div>`:`<p class="muted">Pas de réponse nette dans nos tiers S/A.</p>`}`}
   </div></div>`;
 }
 

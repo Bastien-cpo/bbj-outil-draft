@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.0
+# Guide de l'outil draft BBJ — version 1.1
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -43,6 +43,7 @@ Les conseils sont des propositions, pas des ordres. La décision finale reste ce
 - **À gauche, nous ; à droite, eux** (ou l'inverse selon le côté). On y voit les bans et les picks faits.
 - Cliquer un champion déjà placé permet de **corriger** une erreur. La correction est gardée, même si Drafter renvoie autre chose.
 - Le bouton **\*** à côté d'un pick = **flex** : le rôle de ce champion n'est pas encore sûr.
+- Les **icônes de famille** à côté de chaque pick : ⚔ Engage, 🎯 Pick/Catch, 🛡 Réception, ☄ Poke, ⤵ Dive, ✸ Teamfight, ↯ Split, ⏳ Scaling. Sous chaque compo, un bilan montre les familles présentes et, en rouge, ce qui manque (engage, réception).
 - Pendant les bans, notre premier emplacement de pick affiche des **idées de first pick** (côté bleu) ou des **idées de paires R1-R2** (côté rouge).
 
 ### La prédiction adverse (colonne adverse)
@@ -50,12 +51,13 @@ Pour chaque rôle adverse encore libre, l'outil montre les 5 champions qu'ils on
 - Le calcul : **60 % leur pool** (op.gg) et **40 % le contexte** (counters de nos picks, synergies avec leurs picks, méta).
 - **Leurs bans comptent aussi.** S'ils bannissent les counters d'un champion, ils le préparent sans doute. S'ils ont banni un champion à une game précédente et le laissent ouvert maintenant, ils comptent sans doute le jouer.
 - Un **cercle rouge** autour d'un champion = pick dangereux pour nous (gros counter ou mécanique qui punit notre compo).
-- Les **icônes de rôle** au-dessus ouvrent la **fiche du joueur adverse** : son pool, ses champions flex, et ce qu'on peut laisser passer.
+- Dès qu'on lock un champion, l'outil regarde **ce que son vis-à-vis prend d'habitude contre lui en solo Q** et le fait remonter.
+- Les **icônes de rôle** au-dessus ouvrent la **fiche du joueur adverse** : son pool, ses champions flex, ce qu'il joue d'habitude contre notre pick. Elle suit la draft : un champion pické, banni ou déjà joué disparaît de la fiche.
 
 ### Au centre : les suggestions
 Pendant **nos bans** :
 - **Bans 1 à 3** : on vise le **confort de leurs joueurs** (volume de games, winrate, KDA). C'est notre façon de faire face à une équipe qu'on connaît peu. Si notre joueur a un vrai counter à un de leurs champions, celui-ci descend un peu, avec l'étiquette « Contrable par nous ».
-- **Bans 4 et 5** : adaptés à la draft (leurs picks probables, les counters de nos picks, les champions encore blindables).
+- **Bans 4 et 5** : adaptés à la draft : leurs picks probables, les counters de nos picks, et surtout ce qui **compléterait leur compo** (par exemple de la réception s'ils n'en ont pas).
 
 Pendant **nos picks**, une ligne par rôle encore libre, avec un **score sur 100** sur chaque champion :
 

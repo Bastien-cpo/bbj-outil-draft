@@ -2,6 +2,13 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.1 — 26/11/2026 · retours du coach
+- Prédiction adverse : ce que leur joueur prend d'habitude en solo Q contre NOTRE champion de lane (détail « vs » d'op.gg) remonte dans ses picks probables et dans les bans 4-5 (ex. Thresh locké → Milio, Karma, Lulu, Rakan pour leur support).
+- Fiches adverses vivantes : tout champion indisponible (pické, banni, déjà joué en fearless) disparaît de la fiche, counters compris ; quand notre rôle est locké, la fiche compare à notre pick et affiche « Ce qu'il joue d'habitude contre X ». Corrigé : la ligne Flex citait le joueur lui-même.
+- Familles de jeu : icônes à côté de chaque pick (Engage ⚔, Pick/Catch 🎯, Réception 🛡, Poke ☄, Dive ⤵, Teamfight ✸, Split ↯, Scaling ⏳) et bilan sous chaque compo (familles présentes, engage ou réception manquants en rouge). Visuel provisoire.
+- Bans 4-5 : priorité aux champions qui combleraient le trou de leur compo (« Compléterait leur compo : Réception qui leur manque »), puis à ceux qui renforceraient une famille déjà marquée.
+- Tests : dossier tests/ (tests/run.sh) lancé avant chaque version — 300 drafts aléatoires sur le moteur, puis drafts complètes bleu/rouge sur ordinateur et mobile avec ouverture de chaque fiche adverse à chaque étape.
+
 ## 1.0 — 21/11/2026 · première version officielle partagée à l'équipe
 - Numérotation remise à zéro : cette version (anciennement v12.26) devient la 1.0. Les entrées ci-dessous (v11 à v12.26) retracent le développement avant la sortie.
 - Guide de l'outil réécrit pour les joueurs de l'équipe ; « Fin de série » et l'envoi des stats restent gérés par Bastien.
