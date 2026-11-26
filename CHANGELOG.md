@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.8 — 26/11/2026
+- Drafter : un champion survolé mais pas encore validé (ban ou pick, chez nous comme chez eux) s'affiche en transparence avec un contour en pointillés dans sa case (« survolé sur Drafter »). Il n'est jamais compté dans la draft ni dans les calculs tant qu'il n'est pas validé. Avant, il n'apparaissait pas du tout.
+
 ## 1.7 — 26/11/2026
 - Nouvelle famille « Early game » ⚡ (Renekton, Lee Sin, Draven, LeBlanc, Elise, Lucian…).
 - Tempo des compos (dès 3 picks), sous chaque équipe : « Leur compo mise tout sur l'early, sans scaling : même menés, chaque minute joue pour nous » (et l'inverse pour une compo de scaling, ou pour la nôtre). Une compo adverse sans scaling met en avant nos champions de scaling (« Exploite leur compo sans scaling »), une compo lente fait ressortir nos champions d'early.

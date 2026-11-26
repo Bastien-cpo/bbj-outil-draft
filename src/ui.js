@@ -126,9 +126,12 @@ function applyDrafter(st){
     taken[s].push(role); acts[i]=fx?{name:c,role,flex,fx}:{name:c,role,flex}; });
   // Corrections manuelles (champion raté, erreur) : elles priment sur ce que renvoie Drafter
   const man=live.draft.manual||{}; Object.keys(man).forEach(k=>{ if(man[k]) acts[+k]=man[k]; });
+  // Champion survolé sur Drafter (pas encore validé) : affiché en transparence dans sa case, jamais compté dans la draft ni dans les calculs
+  let hv=null; if(st.hov&&st.hov.length===4){ const [hk,hs,hj]=st.hov; let n=0; const k=STEPS.findIndex(([t,s])=>t===hk&&s===hs&&++n===hj); const c=drafterChamp(st.hov[3]); if(k>=0&&c&&!acts[k]) hv={k,name:c}; }
+  const hovCh=JSON.stringify(hv)!==JSON.stringify(ui.hover||null); ui.hover=hv;
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
-  if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else renderSync();
+  if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else if(hovCh) render(); else renderSync();
 }
 // Nom de l'adversaire pris sur Drafter seulement si la préparation n'en a pas et que notre côté est confirmé
 function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(prep.opponent||!sideOk()) return false; if(n&&!/^(adversaires?|blue|red|bleu|rouge|team ?\d|équipe ?\d)$/i.test(n.trim())&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
@@ -281,8 +284,9 @@ function boardCol(team,d,ro){
   const i=ro?-1:targetIndex(); const active=!ro&&i>=0&&STEPS[i][1]===team;
   const slots=STEPS.map((s,k)=>({s,k})).filter(x=>x.s[1]===team);
   const bans=slots.filter(x=>x.s[0]==="ban"), picks=slots.filter(x=>x.s[0]==="pick");
-  const pv=k=>!ro&&k===i&&ui.pending?ui.pending.name:null;
-  const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
+  const hv=k=>!ro&&!(k===i&&ui.pending)&&ui.hover&&ui.hover.k===k&&!d.actions[k]&&d===live.draft;
+  const pv=k=>!ro&&k===i&&ui.pending?ui.pending.name:hv(k)?ui.hover.name:null;
+  const ban=x=>{const a=d.actions[x.k], p=pv(x.k); return `<button class="ban ${x.k===i?"cur":""} ${p?"pv":""}${hv(x.k)?" hov":""}" ${hv(x.k)?`title="${esc(p)} survolé sur Drafter (pas encore validé)"`:""} ${ro?"disabled":""} data-act="editslot" data-k="${x.k}">${p?av(p,"md"):a&&a.miss?`<span class="miss" title="Ban raté">∅</span>`:a?av(a.name,"md"):""}</button>`;};
   // Pool restant de l'adversaire : pour chaque rôle encore libre, ses champions les plus joués encore disponibles
   let pools=null, pi=0;
   if(!ro&&team!==d.side){ try{ pools=(prep.players||[]).length?predictEnemy(cfg,live.series,d,prep,prep.lineup,5).map(q=>({...q,list:q.list.map(c=>({name:c.name,why:c.why,danger:c.danger}))})):null; }catch(e){ pools=null; } }
@@ -302,7 +306,7 @@ function boardCol(team,d,ro){
       return `<div class="pk empty pred ${x.k===i?"cur":""}"><div class="prl">${ROLE_NAMES[q.role]}${q.player?` · ${esc(q.player)}`:""}</div><div class="prb">${q.list.length?q.list.map(c=>`<span class="prc${c.danger?" dgr":""}" title="${esc((c.danger?"⚠ Très dangereux pour votre compo · ":"")+c.name+" · "+(c.why||[]).slice(0,3).join(" · "))}">${av(c.name,"md")}</span>`).join(""):'<span class="muted">pool épuisé</span>'}</div></div>`; }
     if(!a&&!p) return `<div class="pk empty ${x.k===i?"cur":""}"></div>`;
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
-    if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
+    if(p) return `<div class="pk cur pv${hv(x.k)?" hov":""}">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">${hv(x.k)?"survolé sur Drafter":"à confirmer"}</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div></div>

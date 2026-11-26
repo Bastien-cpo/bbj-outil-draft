@@ -6,14 +6,15 @@ openWin(); if(R.started) return; R.started=true;
 const bd=document.createElement("div"); bd.style.cssText="position:fixed;z-index:2147483647;left:8px;bottom:8px;padding:4px 9px;border-radius:12px;font:600 11px system-ui;background:#1d2a1d;color:#8fe08f;border:1px solid #3c6;cursor:pointer;opacity:.85";
 bd.title="Clique pour rouvrir / afficher la fenêtre BBJ"; bd.onclick=openWin; document.body.appendChild(bd);
 const ids={};
-function scan(){
+function scan(){ let HOV=null;
   document.querySelectorAll("img").forEach(i=>{ const m=(i.getAttribute("src")||"").match(/champions\/(\d+)-/); if(m&&i.alt&&i.alt!=="Ban"&&i.alt!=="Pick") ids[m[1]]=i.alt; });
   // emplacements fixes Drafter (#blue-ban-1…, #red-pick-5) : null si vide, pour repérer les bans ratés
   const slot=(k,n)=>{ const out=[]; for(let j=1;j<=5;j++){ const el=document.getElementById(k+"-"+j);
-      if(el&&el.querySelector('[class*="pulse-animation"]')){ out.push(null); continue; } // champion montré mais pas encore confirmé
+      const hov=!!(el&&el.querySelector('[class*="pulse-animation"]')); // case en cours : champion survolé, pas encore confirmé
       const im=el&&el.querySelector(n==="ban"?"img[alt=\"Ban\"]":"img[alt=\"Pick\"]"), s=im?im.getAttribute("src")||"":"";
-      let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; else if(el&&el.querySelector('[style*="rotate(45deg)"]')) v="none"; }
-      else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; else { const nm=el&&el.querySelector(".champion-name"); if(nm&&/^none$/i.test(nm.textContent.trim())) v="none"; } }
+      let v=null; if(n==="ban"){ const m=s.match(/champions\/(\d+)-/); if(m) v=ids[m[1]]||m[1]; else if(!hov&&el&&el.querySelector('[style*="rotate(45deg)"]')) v="none"; }
+      else { const m=s.match(/splashes\/([a-z0-9]+)-/); if(m) v=m[1]; else { const nm=el&&el.querySelector(".champion-name"); if(!hov&&nm&&/^none$/i.test(nm.textContent.trim())) v="none"; } }
+      if(hov){ if(v&&v!=="none") HOV=[n,k.split("-")[0]==="blue"?"B":"R",j,v]; out.push(null); continue; } // affiché à part dans l'outil, jamais compté comme validé
       out.push(v); } return out; }; // "none" = temps écoulé sans choix (ban barré / pick « None »)
   // après « Confirmer les rôles », chaque case de pick porte l'icône de sa lane (les picks sont réordonnés par rôle)
   const RL={Top:"T",Jungle:"J",Mid:"M",Bot:"A",Support:"S"};
@@ -22,8 +23,8 @@ function scan(){
   const blue=(txt.match(/([^\n]+)\n\s*côté bleu/)||txt.match(/([^\n]+)\n\s*blue side/i)||[])[1]||"";
   const red=(txt.match(/([^\n]+)\n\s*(?:Prêt\s*)?côté rouge/)||txt.match(/([^\n]+)\n\s*(?:Ready\s*)?red side/i)||[])[1]||"";
   const phase=(txt.match(/(Pick|Ban) (bleu|rouge)/)||[""])[0];
-  return {v:3, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
-    bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick"), bpr:lanes("blue"), rpr:lanes("red")};
+  const st={v:3, game:+(new URL(location.href).searchParams.get("game")||1), url:location.href, blue:blue.trim(), red:red.trim(), phase,
+    bb:slot("blue-ban","ban"), rb:slot("red-ban","ban"), bp:slot("blue-pick","pick"), rp:slot("red-pick","pick"), bpr:lanes("blue"), rpr:lanes("red")}; st.hov=HOV; return st;
 }
 // Game suivante : Drafter l'ouvre dans une nouvelle fenêtre (lien « Partie N », target=_blank). On ouvre nous-mêmes cette fenêtre
 // (même site) pour y réinjecter le relais et lui passer la fenêtre de l'outil : la synchro continue sans recliquer le favori.
