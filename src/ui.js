@@ -225,6 +225,9 @@ function bubble(x,role,dim){
   return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}${ring}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
     ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}${x.offpool?'<span class="duom off" title="Hors de son pool, mais comble notre faiblesse">hors pool</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
 }
+// Picks adverses au rôle incertain (flex) : alerte visible pendant nos picks ET nos bans
+function flexBanner(){ const fxs=teamPicks(live.draft,live.draft.side==="B"?"R":"B").filter(p=>p.flex&&p.fx);
+  return fxs.map(p=>`<div class="flexw"><b>⚠ ${esc(p.name)} : flex possible ${(p.fxr||[]).map(r=>ROLE_NAMES[r]).join(" / ")}</b><span>${esc(p.fx)}. Ne le counterpickez pas dans un rôle précis tant que son rôle n'est pas confirmé.</span></div>`).join(""); }
 function pickBubbles(){
   const r=recommendPicks(cfg,live.series,live.draft,prep.lineup,24); lastRecs={};
   // Anneau vert : parmi les meilleurs de la ligne, ce pick punit la compo adverse (seulement les 3 premiers concernés, pour ne pas surcharger)
@@ -232,8 +235,7 @@ function pickBubbles(){
   // Picks 4-5 : bandeau + anneau bleu sur ce qui comble les faiblesses de notre compo (prioritaire sur le vert)
   const mine=teamPicksNames(live.draft,live.draft.side), gaps=mine.length>=3?familyGaps(mine).filter(g=>g!=="catch"):[];
   if(gaps.length) Object.values(r).forEach(R=>{ R.list.filter(x=>x.fill&&!x.offpool).slice(0,4).forEach(x=>x.ring="strat"); R.list.filter(x=>x.offpool).forEach(x=>x.ring="strat"); });
-  const fxs=teamPicks(live.draft,live.draft.side==="B"?"R":"B").filter(p=>p.flex&&p.fx);
-  const fxb=fxs.map(p=>`<div class="stratl flexw"><i></i>⚠ ${esc(p.name)} peut être un flex : ${esc(p.fx)}. Évitez de le counterpick dans un rôle précis tant que son rôle n'est pas confirmé.</div>`).join("");
+  const fxb=flexBanner();
   const banner=fxb+(gaps.length?`<div class="stratl deny"><i></i>Notre compo manque ${gaps.map(g=>g==="engage"?"d'engage":"de réception").join(" et ")} : les champions en bleu la combleraient (hors pool compris)</div>`:"");
   return banner+Object.keys(r).map(role=>`<div class="rrow"><div class="rl"><b>${ROLE_NAMES[role]}</b><span>${esc(prep.lineup[role])}</span></div>
     <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
@@ -256,7 +258,7 @@ function banBubbles(){
     const pb=STEPS.map((s,k)=>({s,k})).filter(x=>x.k<6&&x.s[0]==="ban"&&x.s[1]===g.side).map(x=>g.actions[x.k]).filter(a=>a&&a.name&&!a.miss).map(a=>a.name);
     const items=pb.filter(n=>!un.has(n)).map(n=>{ const x=r.find(y=>y.name===n); return {...(x||{name:n,why:[]}),rank:x?x.rank:null,score:"–",ring:null,why:[`Banni par nous en game ${G.length}`,...((x&&x.why)||[])]}; });
     if(pb.length) prevRow=`<div class="rrow prevb"><div class="rl"><b>Game ${G.length}</b><span>nos bans 1-3</span></div><div class="bubs">${items.length?items.map(x=>bubble(x,null,false)).join(""):'<span class="muted">déjà bannis ou joués</span>'}</div></div>`; }
-  return `${strat?`<div class="stratl ${strat.mode}"><i></i>${esc(strat.label)}</div>`:""}${prevRow}<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
+  return `${flexBanner()}${strat?`<div class="stratl ${strat.mode}"><i></i>${esc(strat.label)}</div>`:""}${prevRow}<div class="rrow"><div class="rl"><b>Bans</b><span>${phase2?"picks 4-5":(prep.players||[]).length?"préparation":"pro / méta"}</span></div>
     <div class="bubs fill">${r.map(x=>bubble(x,null,false)).join("")}</div></div>`;
 }
 function grid(){
@@ -322,8 +324,8 @@ function boardCol(team,d,ro){
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv${hv(x.k)?" hov":""}">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">${hv(x.k)?"survolé sur Drafter":"à confirmer"}</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
-    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ? ${(a.fxr||[]).map(r=>ROLE_NAMES[r]).join("/")}</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
-      <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div></div>
+    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
+      <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div>${a.fx&&a.flex?`<div class="fxl">${(a.fxr||[]).map(r=>ROLE_NAMES[r]).join(" ou ")} ?</div>`:""}</div>
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">

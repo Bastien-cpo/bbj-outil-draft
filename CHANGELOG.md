@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.11 — 26/11/2026
+- Flex adverses plus lisibles : l'alerte orange « ⚠ Viktor : flex possible ADC / Mid » s'affiche aussi pendant nos bans (bans 4-5 compris), pas seulement pendant nos picks. Sur la carte du pick adverse, une ligne « ADC ou Mid ? » remplace le badge tronqué. Vérifié en rejouant la vraie game 2 contre EQX (26/11) jusqu'aux bans 4-5.
+
 ## 1.10 — 26/11/2026
 - Flex adverses : le rôle d'un pick adverse tient compte de tous les joueurs qui l'ont dans leur pool, même hors de son rôle habituel. Exemple : Viktor first pick par EQX, avec 40 games pour Maliketh (ADC) et 24 pour Para (mid). Si deux joueurs le jouent vraiment, le pick est marqué « Flex ? ADC/Mid », nos suggestions ne supposent plus un rôle, et un bandeau orange prévient : « Viktor peut être un flex… évitez de le counterpick dans un rôle précis tant que son rôle n'est pas confirmé ».
 - Bans 1-3 dès la game 2 : une ligne « Game N · nos bans 1-3 » rappelle nos trois premiers bans de la game précédente, à part des autres suggestions (clic = ban).
