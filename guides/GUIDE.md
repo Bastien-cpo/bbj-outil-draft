@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.8
+# Guide de l'outil draft BBJ — version 1.9
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -139,7 +139,7 @@ Si je ne suis pas là, l'un de vous fait tourner l'outil pendant la draft. Rien 
 1. Ouvre la room Drafter et clique le favori **BBJ ➜ Drafter** : l'outil s'ouvre et suit la draft.
 2. Vérifie la lineup dans **Préparation** (surtout si un remplaçant joue).
 3. Au début de chaque game, choisis notre côté (Blue / Red).
-4. À la fin de chaque game, entre le résultat (Victoire / Défaite). L'outil passe tout seul à la game suivante quand Drafter change de game.
+4. À la fin de chaque game, entre le résultat (Victoire / Défaite). L'outil passe tout seul à la game suivante quand Drafter change de game. Si la pastille « ● BBJ synchro » n'apparaît pas sur la page Drafter de la nouvelle game, reclique le favori sur cette page : une nouvelle fenêtre de l'outil reprend la série et l'ancienne se ferme.
 5. **À la fin de la série, ne clique pas sur « Fin de série »** : envoie-moi simplement le **lien de la room Drafter** sur Discord.
 
 Je m'occupe ensuite de récupérer la série et les stats des games depuis mon PC : elles arriveront dans l'Historique et dans les fiches de l'onglet Pools pour toute l'équipe.

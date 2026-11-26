@@ -17,7 +17,7 @@ const curStep=()=>live.draft.actions.findIndex(a=>!a);
 const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id}</option>`).join("");
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
-function saveLocal(){ try{ if(live.draft.actions.some(Boolean)||live.series.games.length) live.ts=Date.now(); localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{poolPlayer:ui.poolPlayer}})); }catch(e){} }
+function saveLocal(){ if(window.__bbjYield) return; try{ if(live.draft.actions.some(Boolean)||live.series.games.length) live.ts=Date.now(); localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{poolPlayer:ui.poolPlayer}})); }catch(e){} }
 // Fayk → Romain, Billy → Fabien (vrais prénoms) : anciennes lineups, historique et préparation
 const RENAMED={Fayk:"Romain",Billy:"Fabien"};
 function fixLineup(l){ if(l) for(const r in l) if(RENAMED[l[r]]) l[r]=RENAMED[l[r]]; return l; }
@@ -74,7 +74,13 @@ function drafterChamp(x){ if(x==null) return null; x=String(x); if(/^\d+$/.test(
 // Diagnostic (tests) : renvoie l'état de l'outil à la fenêtre qui le demande
 window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-ping"||!e.source) return; let sug=[]; try{ sug=[...document.querySelectorAll(".center [data-n]")].slice(0,6).map(x=>x.dataset.n); }catch(err){}
   e.source.postMessage({type:"bbj-state", s:{side:live.draft.side, sideHow:live.sideHow, sideOk:sideOk(), game:curGameNo(), acts:live.draft.actions.map(a=>a?(a.miss?"∅":a.name+(a.role?"/"+a.role:"")):null), games:live.series.games.length, locked:live.series.locked, opp:prep.opponent, hist:(history.series||[]).length, sug, prompt:!!document.querySelector(".sidepick")}},"*"); });
-window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state) return; if(!drafterLast) flash("Drafter connecté ✓"); drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); });
+window.addEventListener("message",e=>{ const m=e.data; if(!m||m.type!=="bbj-drafter"||!m.state||window.__bbjYield) return; if(!drafterLast) flash("Drafter connecté ✓"); drafterLast=Date.now(); drafterState=m.state; applyDrafter(m.state); announceActive(); });
+// Plusieurs fenêtres de l'outil (ex. favori recliqué sur la game 2 quand Drafter l'ouvre sans lien avec la game 1) :
+// la fenêtre qui suit la game la plus récente (puis la plus récente ouverte) garde la synchro, les autres se ferment
+const WIN_ID=Math.random().toString(36).slice(2), WIN_START=Date.now(); let _annT=0;
+function announceActive(){ if(Date.now()-_annT<1000||typeof bbjBC==="undefined"||!bbjBC) return; _annT=Date.now(); bbjBC.postMessage({type:"bbj-active",id:WIN_ID,start:WIN_START,game:live.drafterGame||0}); }
+function yieldWindow(){ if(window.__bbjYield) return; window.__bbjYield=true; try{ window.close(); }catch(e){}
+  document.body.innerHTML='<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0f16;color:#e6e9ef;font:600 18px system-ui;text-align:center;padding:30px;line-height:1.5">Cette fenêtre n\'est plus reliée à Drafter.<br>La draft continue dans la nouvelle fenêtre de l\'outil : tu peux fermer celle-ci.</div>'; }
 // rôle d'un pick : rôle libre que le champion joue, en privilégiant (chez nous) le joueur qui l'a dans son pool
 function guessRole(c,side,taken){ const roles=CHAMPS[c]?CHAMPS[c].roles:ROLES; const open=roles.filter(r=>!taken.includes(r));
   if(side===live.draft.side){ const best=open.map(r=>({r,t:TIER_VAL[tierFor(cfg,prep.lineup[r],r,c)]||0})).sort((a,b)=>b.t-a.t)[0]; if(best&&best.t>0) return best.r; }
@@ -639,7 +645,8 @@ async function initSnapshot(){
 if(new URLSearchParams(location.search).get("embed")) document.body.classList.add("embed");
 // Stats envoyées par le script « Fin de série » du PC (lien #import=...) : rattachées à la série archivée qui les attend
 const bbjBC=("BroadcastChannel" in window)?new BroadcastChannel("bbj-outil"):null;
-if(bbjBC) bbjBC.onmessage=e=>{ if(e.data==="reload"){ loadLocal(); render(); flash("Stats de la série importées"); } };
+if(bbjBC) bbjBC.onmessage=e=>{ const m=e.data; if(m==="reload"){ loadLocal(); render(); flash("Stats de la série importées"); return; }
+  if(m&&m.type==="bbj-active"&&m.id!==WIN_ID&&drafterLast){ const mine=live.drafterGame||0; if(m.game>mine||(m.game===mine&&m.start>WIN_START)) yieldWindow(); } };
 function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(!m) return;
   window.history.replaceState(null,"",location.pathname+location.search);
   let data; try{ const b=m[1].replace(/-/g,"+").replace(/_/g,"/"), bin=atob(b+"===".slice((b.length+3)%4)); data=JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))); }catch(e){ flash("Import illisible"); return; }

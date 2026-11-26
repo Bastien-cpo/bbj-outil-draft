@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.9 — 26/11/2026
+- Drafter, passage à la game suivante : quand Drafter ouvre la game 2 sans lien avec la page de la game 1, recliquer le favori sur la nouvelle page ouvrait une deuxième fenêtre de l'outil, et l'ancienne restait bloquée sur la game 1. Désormais, la fenêtre qui suit la game la plus récente garde la synchro, les autres se ferment toutes seules (ou affichent « Cette fenêtre n'est plus reliée à Drafter »). La nouvelle fenêtre reprend la série : la game 1 passe en fearless, la game 2 se remplit en direct. Reproduit puis vérifié sur une copie locale de Drafter (lien normal et ouverture sans lien).
+
 ## 1.8 — 26/11/2026
 - Correctif : si les profils adverses ont disparu en local (série remise à zéro, nouveau navigateur…), l'outil recharge automatiquement la préparation publiée au prochain chargement (Ctrl+F5).
 - Drafter : un champion survolé mais pas encore validé (ban ou pick, chez nous comme chez eux) s'affiche en transparence avec un contour en pointillés dans sa case (« survolé sur Drafter »). Il n'est jamais compté dans la draft ni dans les calculs tant qu'il n'est pas validé. Avant, il n'apparaissait pas du tout.
