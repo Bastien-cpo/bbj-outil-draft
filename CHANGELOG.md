@@ -3,6 +3,7 @@
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
 ## 1.8 — 26/11/2026
+- Correctif : si les profils adverses ont disparu en local (série remise à zéro, nouveau navigateur…), l'outil recharge automatiquement la préparation publiée au prochain chargement (Ctrl+F5).
 - Drafter : un champion survolé mais pas encore validé (ban ou pick, chez nous comme chez eux) s'affiche en transparence avec un contour en pointillés dans sa case (« survolé sur Drafter »). Il n'est jamais compté dans la draft ni dans les calculs tant qu'il n'est pas validé. Avant, il n'apparaissait pas du tout.
 
 ## 1.7 — 26/11/2026

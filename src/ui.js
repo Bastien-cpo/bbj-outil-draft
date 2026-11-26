@@ -629,7 +629,8 @@ async function initSnapshot(){
   if(window.claude&&window.claude.use) return;
   try{ const r=await fetch("team.json",{cache:"no-store"}); if(!r.ok) return; const s=await r.json(); if(!s||!s.at) return;
     let seen=0; try{ seen=+localStorage.getItem(LS+"-snap")||0; }catch(e){}
-    if(s.at<=seen) return;
+    // Profils adverses perdus en local (série remise à zéro, nouveau navigateur…) : on recharge la préparation publiée, sans toucher au reste
+    if(s.at<=seen){ if(!(prep.players||[]).length&&s.prep&&(s.prep.players||[]).length){ prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},prep,{opponent:s.prep.opponent||prep.opponent,link:s.prep.link||"",ids:s.prep.ids||[],players:s.prep.players,updatedAt:s.prep.updatedAt||""}); fixNames(); saveLocal(); render(); flash("Profils adverses rechargés"); } return; }
     if(s.config) cfg=migrate(Object.assign(defaultConfig(),s.config)); if(s.prep) prep=Object.assign({opponent:"",link:"",players:[],lineup:{...DEF_LINEUP}},s.prep); if(s.history) history=Object.assign({series:[]},s.history); fixNames();
     try{ localStorage.setItem(LS+"-snap",String(s.at)); }catch(e){}
     sync.note="Données de l'équipe du "+new Date(s.at).toLocaleDateString("fr-FR"); saveLocal(); render(); renderSync();
