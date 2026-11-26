@@ -28,6 +28,8 @@ async def run():
             if bad in txt: errs.append(f'{side}{W} étape {i}: "{bad}" affiché')
           ov=await pg.evaluate("document.documentElement.scrollWidth>document.documentElement.clientWidth+2")
           if ov: errs.append(f'{side}{W} étape {i}: débordement horizontal')
+          sup=await pg.evaluate("""(()=>{const bad=[];document.querySelectorAll('.pk').forEach(pk=>{const f=pk.querySelector('.fams');if(!f)return;const a=f.getBoundingClientRect();for(const e of [pk.querySelector('select'),pk.querySelector('.nm'),pk.querySelector('.flex')]){if(!e)continue;const r=e.getBoundingClientRect();if(a.left<r.right-1&&a.right>r.left+1&&a.top<r.bottom-1&&a.bottom>r.top+1)bad.push(e.className||e.tagName);}});return bad;})()""")
+          if sup: errs.append(f'{side}{W} étape {i}: icônes de famille superposées {sup}')
           if W==1280:
             for r in "TJMAS":
               res=await pg.evaluate(f"""(()=>{{ ui.scout='{r}'; render(); const m=document.querySelector('.scbox'); if(!m) return null;

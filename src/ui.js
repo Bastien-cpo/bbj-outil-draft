@@ -295,8 +295,8 @@ function boardCol(team,d,ro){
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
-      ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
-      ${famIcons(a.name)}${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
+      <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div></div>
+      ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
     <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
@@ -418,7 +418,7 @@ function viewPrep(){
       :`<div class="muted">Pas encore de profils adverses.</div>`}</section>
   ${P.length?`<section class="card"><h3>Profils adverses (solo Q)</h3>${P.map((p,k)=>`<div class="opp"><div class="row"><b>${esc(p.name)}</b><span class="muted">${esc(p.rank||"")}</span>${(()=>{const v=P.map(q=>rankValue(q.rank)); const me=v[k], o=v.filter((x,j)=>j!==k&&x!=null); const g=me!=null&&o.length?me-o.reduce((a,b)=>a+b,0)/o.length:0; return g>=400?`<span class="tag star">Meilleur joueur (+${Math.round(g)} LP)</span>`:"";})()}
       <select data-act="prole" data-k="${k}">${ROLES.map(r=>`<option value="${r}" ${p.role===r?"selected":""}>${ROLE_NAMES[r]}</option>`).join("")}</select></div>
-      <div class="chips">${p.list.map(x=>`<span class="chip">${av(x.c,"sm")} ${esc(x.c)} <b>${x.g}</b><span class="muted">${x.wr!=null?x.wr+"%":""}</span></span>`).join("")}</div></div>`).join("")}</section>`:""}
+      <div class="chips">${p.list.map(x=>`<span class="chip" title="${esc(x.c)}">${av(x.c,"sm")}<b>${x.g}</b><span class="muted">${x.wr!=null?x.wr+"%":""}</span></span>`).join("")}</div></div>`).join("")}</section>`:""}
   <details class="card" ${ui.manual?"open":""}><summary><h3>Saisie manuelle</h3></summary>
     <p class="muted">Une ligne par joueur : <b>Pseudo : Champion games WR, …</b> (ex. <i>Adv : Ornn 182 53, Garen 60 59</i>).</p>
     <textarea id="manual" rows="5">${esc(P.map(p=>p.name+" : "+p.list.map(x=>`${x.c} ${x.g} ${x.wr??""}`.trim()).join(", ")).join("\n"))}</textarea>

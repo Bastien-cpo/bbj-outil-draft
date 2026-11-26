@@ -106,7 +106,7 @@ label{display:flex;gap:6px;align-items:center;margin:4px 0;color:var(--mu)}
 .pa{position:absolute;top:2px;right:6px;background:#2a3141;font:700 11px Inter;border-radius:9px;padding:0 5px}
 .pop{position:sticky;bottom:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#1d2330;border:1px solid var(--gold);border-radius:12px;padding:8px 12px;margin-top:8px}
 .pc{position:relative}.pm2{display:flex;gap:4px;justify-content:center;margin-top:2px}.pm2>span{display:flex;flex-direction:column;align-items:center;line-height:1;border-radius:5px;padding:1px 3px;min-width:22px}.pm2 b{font-size:11px}.pm2 em{font-style:normal;font-size:8px;opacity:.75}.pm2 .tm{background:rgba(214,175,85,.18);border:1px solid rgba(214,175,85,.55);color:#f0d48a}.pm2 .tm.none{opacity:.4}.pm2 .sq{background:transparent;border:1px solid var(--line);color:var(--mu)}.pfb{position:absolute;top:2px;right:2px;font-size:10px;font-weight:700;border-radius:8px;padding:0 4px;background:#111}.pfb.good{color:#4fd18b}.pfb.mid{color:#e6c14a}.pfb.bad{color:#ef6b6b}
-.fams{display:flex;flex-direction:column;gap:2px;margin-left:auto;margin-right:4px}.fam{font-style:normal;font-size:12px;line-height:1;width:20px;height:20px;display:grid;place-items:center;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:default}.famsum{display:flex;flex-wrap:wrap;gap:4px;padding:6px 4px 2px;border-top:1px dashed var(--line);margin-top:4px}.famsum .fs{font-size:12px;padding:2px 5px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.famsum .fs b{font-size:10px;margin-left:2px;opacity:.8}.famsum .fs.miss{border-color:#ef6b6b;color:#ef6b6b}
+.pkrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}.pkrow select{font-size:10px;padding:1px 2px;max-width:100%}.fams{display:flex;gap:2px;flex-wrap:nowrap}.fam{font-style:normal;font-size:10px;line-height:1;width:17px;height:17px;display:grid;place-items:center;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:default}.famsum{display:flex;flex-wrap:wrap;gap:4px;padding:6px 4px 2px;border-top:1px dashed var(--line);margin-top:4px}.famsum .fs{font-size:12px;padding:2px 5px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--line)}.famsum .fs b{font-size:10px;margin-left:2px;opacity:.8}.famsum .fs.miss{border-color:#ef6b6b;color:#ef6b6b}
 .pop{flex-direction:column;align-items:stretch}.poprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pop button.on{border-color:var(--gold);color:var(--gold)}.sheet{display:flex;gap:10px;align-items:flex-start}.sst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;margin:6px 0}.sst span{display:flex;flex-direction:column}.sst em{font-style:normal;font-size:11px;color:var(--mu)}.sst i{font-style:normal;font-size:11px;opacity:.7}.sst .good{color:#4fd18b}.sst .mid{color:#e6c14a}.sst .bad{color:#ef6b6b}
 .pop button{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
 /* réglages */
@@ -243,7 +243,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v1.1 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v1.2 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -1718,8 +1718,8 @@ function boardCol(team,d,ro){
     if(p) return `<div class="pk cur pv">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">à confirmer</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
     return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
-      ${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}</div>
-      ${famIcons(a.name)}${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
+      <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div></div>
+      ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
   return `<div class="colw"><div class="tname ${team}">${esc(name)}</div><div class="col ${team}${d.side===team?" us":""}${active?" active":""}">
     <div class="bans">${bans.slice(0,3).map(ban).join("")}<i></i>${bans.slice(3).map(ban).join("")}</div>${scoutRow(team,d)}${picks.map(pick).join("")}${famSummary(teamPicksNames(d,team))}</div></div>`;
@@ -1841,7 +1841,7 @@ function viewPrep(){
       :`<div class="muted">Pas encore de profils adverses.</div>`}</section>
   ${P.length?`<section class="card"><h3>Profils adverses (solo Q)</h3>${P.map((p,k)=>`<div class="opp"><div class="row"><b>${esc(p.name)}</b><span class="muted">${esc(p.rank||"")}</span>${(()=>{const v=P.map(q=>rankValue(q.rank)); const me=v[k], o=v.filter((x,j)=>j!==k&&x!=null); const g=me!=null&&o.length?me-o.reduce((a,b)=>a+b,0)/o.length:0; return g>=400?`<span class="tag star">Meilleur joueur (+${Math.round(g)} LP)</span>`:"";})()}
       <select data-act="prole" data-k="${k}">${ROLES.map(r=>`<option value="${r}" ${p.role===r?"selected":""}>${ROLE_NAMES[r]}</option>`).join("")}</select></div>
-      <div class="chips">${p.list.map(x=>`<span class="chip">${av(x.c,"sm")} ${esc(x.c)} <b>${x.g}</b><span class="muted">${x.wr!=null?x.wr+"%":""}</span></span>`).join("")}</div></div>`).join("")}</section>`:""}
+      <div class="chips">${p.list.map(x=>`<span class="chip" title="${esc(x.c)}">${av(x.c,"sm")}<b>${x.g}</b><span class="muted">${x.wr!=null?x.wr+"%":""}</span></span>`).join("")}</div></div>`).join("")}</section>`:""}
   <details class="card" ${ui.manual?"open":""}><summary><h3>Saisie manuelle</h3></summary>
     <p class="muted">Une ligne par joueur : <b>Pseudo : Champion games WR, …</b> (ex. <i>Adv : Ornn 182 53, Garen 60 59</i>).</p>
     <textarea id="manual" rows="5">${esc(P.map(p=>p.name+" : "+p.list.map(x=>`${x.c} ${x.g} ${x.wr??""}`.trim()).join(", ")).join("\n"))}</textarea>

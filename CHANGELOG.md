@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.2 — 26/11/2026
+- Icônes de famille : placées à côté du menu de rôle (qui passe en plus petit) et renvoyées à la ligne s'il manque de place ; plus aucune superposition, vérifié en 390, 768, 1024, 1280 et 1920 px (contrôle ajouté aux tests).
+- Préparation : les profils adverses n'affichent plus que l'icône du champion, ses games et son winrate (le nom reste au survol).
+
 ## 1.1 — 26/11/2026 · retours du coach
 - Prédiction adverse : ce que leur joueur prend d'habitude en solo Q contre NOTRE champion de lane (détail « vs » d'op.gg) remonte dans ses picks probables et dans les bans 4-5 (ex. Thresh locké → Milio, Karma, Lulu, Rakan pour leur support).
 - Fiches adverses vivantes : tout champion indisponible (pické, banni, déjà joué en fearless) disparaît de la fiche, counters compris ; quand notre rôle est locké, la fiche compare à notre pick et affiche « Ce qu'il joue d'habitude contre X ». Corrigé : la ligne Flex citait le joueur lui-même.
