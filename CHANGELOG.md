@@ -13,6 +13,8 @@ Chaque version résume ce qui a été ajouté ou changé concrètement. Les poin
 - Revue de draft et bilan : les lanes sont jugées sur l'or à 15 min quand la timeline existe (plus juste que l'or en fin de game).
 - Timelines ajoutées pour les séries PickUp (17/11) et Funky (19/11) ; les stats de PickUp, qui manquaient, sont recréées depuis les fichiers du client.
 - Script « Fin de série » : exporte désormais une timeline compacte (environ 4 Ko par game) avec les stats.
+- Timelines des deux games contre EQX ajoutées ; rôles de la game 1 corrigés dans l'historique.
+- Correctif Drafter : après la draft, si personne n'échange les rôles, les icônes de lane suivent seulement l'ordre des cases (Top, Jungle, Mid…). L'outil n'accepte maintenant une lane que si elle est plausible pour le champion (rôle habituel, ou dans le pool du joueur à ce rôle). En game 1 contre EQX, Orianna était passée top et Leona mid.
 - Nos flex : les deux joueurs au moins en B et l'un des deux en S/A (Viktor et Syndra JH/Bastien, Dr. Mundo, Sion, Sylas, Swain). Viktor ajouté en B dans la tier list de Bastien.
 
 ## 1.13 — 27/11/2026
