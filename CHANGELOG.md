@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.19 — 27/11/2026
+- La correction du score pro ne compte plus les buffs et nerfs : elle mesure l'effet réel des patchs. Pour chaque champion et chaque rôle, l'outil compare son winrate solo Q (LoLalytics Maître+, écart au winrate moyen) entre le patch des Worlds (26.20) et le 26.23, pondéré par le nombre de games. Exemples : Viktor mid −0,9 pt (nerf puis buff, toujours plus faible qu'aux Worlds), Ezreal ADC +1,2, Orianna mid +1,7, Syndra mid −1,8. Les buffs/nerfs ne servent que pour un champion sans assez de données. Le détail du pick indique « plus fort / plus faible qu'aux Worlds ».
+
 ## 1.18 — 27/11/2026
 - Le pro redevient la référence majoritaire de la force d'un pick : 65 % pro / 35 % solo Q du patch actuel. Le jeu en équipe (bans, ordre de pick, blind, counters, synergies, duos) reste entièrement basé sur le pro.
 - Le score pro est corrigé par les patch notes sortis depuis les Worlds (patch 26.20) : 26.21, 26.22 et 26.23. Chaque buff ou nerf compte, et ils se cumulent ou s'annulent (ex. Azir ▲▲, Viktor ▲▼ = 0). La raison apparaît dans le détail du pick (« buffé depuis les Worlds »).

@@ -110,8 +110,13 @@ function proScore(c){ const p=PRO[c]; if(!p) return 0.15; const pres=clamp01(Mat
 // Le pro reste la référence majoritaire (draft d'équipe : bans, ordre de pick, blind, counters, synergies). Son score est corrigé
 // par les patch notes sortis depuis les dernières games pro (26.21 → aujourd'hui) ; la solo Q du patch actuel ne pèse que 35 %.
 const SINCE_PRO={}; (typeof PATCHES_SINCE_PRO!=="undefined"?PATCHES_SINCE_PRO:[]).forEach(p=>{ p.buff.split(",").filter(Boolean).forEach(n=>{ const c=findChamp(n.trim())||n.trim(); SINCE_PRO[c]=(SINCE_PRO[c]||0)+1; }); p.nerf.split(",").filter(Boolean).forEach(n=>{ const c=findChamp(n.trim())||n.trim(); SINCE_PRO[c]=(SINCE_PRO[c]||0)-1; }); });
-const proAdj=c=>clamp01(proScore(c)+0.05*Math.max(-2,Math.min(2,SINCE_PRO[c]||0)));
-function force(cfg,c,role){ return clamp01(0.65*proAdj(c)+0.35*metaInfo(c,role).v); }
+// Correction mesurée : évolution du winrate solo Q (Maître+) entre le patch des Worlds et aujourd'hui, pondérée par le volume de games ;
+// les buffs/nerfs ne comptent seuls que pour un champion sans assez de données
+const SINCE_WR={}; (typeof SINCE_PRO_WR_RAW!=="undefined"?SINCE_PRO_WR_RAW:"").split(";").forEach(t=>{ const [rc,d,g]=t.split(":"); if(!rc) return; const [r,n]=rc.split("|"); const c=findChamp(n)||n; SINCE_WR[c+"|"+r]={d:+d,g:+g}; });
+function sinceDelta(c,role){ let x=role?SINCE_WR[c+"|"+role]:null; if(!x){ let best=null; for(const r of ["T","J","M","A","S"]){ const y=SINCE_WR[c+"|"+r]; if(y&&(!best||y.g>best.g)) best=y; } x=best; }
+  if(x){ const w=x.g/(x.g+4000); return {d:x.d*w, pts:x.d, measured:true}; } const n=SINCE_PRO[c]||0; return {d:0.8*Math.max(-2,Math.min(2,n)), pts:null, measured:false}; }
+const proAdj=(c,role)=>clamp01(proScore(c)+Math.max(-0.12,Math.min(0.12,0.035*sinceDelta(c,role).d)));
+function force(cfg,c,role){ return clamp01(0.65*proAdj(c,role)+0.35*metaInfo(c,role).v); }
 // Premier pick bleu en pro 2026 (games, victoires) : léger bonus/malus, ramené vers 50 % selon l'échantillon
 const B1_PRO={"Lee Sin":[58,30],"Camille":[18,7],"Bard":[25,8],"Varus":[41,22],"Jarvan IV":[131,57],"Ryze":[105,50],"Vi":[127,71],"Karma":[56,24],"Jayce":[46,18],"Rumble":[76,41],"Orianna":[127,69],"Nocturne":[83,38],"Ezreal":[95,55],"Naafiri":[22,11],"Viktor":[24,14],"Seraphine":[34,20],"Cassiopeia":[100,63],"Lulu":[18,11],"Lucian":[40,19],"Pantheon":[37,16],"Olaf":[23,13],"Syndra":[25,7],"Annie":[34,16],"Ashe":[21,13]};
 function b1Adj(c){ const x=B1_PRO[c]; if(!x) return 0; return (x[1]/x[0]-0.5)*x[0]/(x[0]+60); }
@@ -374,7 +379,7 @@ function scorePick(cfg,c,role,ctx){
   if(coh!=null&&coh>=0.6) why.push("Compo cohérente avec ce pick"); else if(coh!=null&&coh<=0.3) why.push("⚠ Laisse la compo avec des faiblesses");
   if(tim!=null&&tim<0.5) why.push("Rôle/champion rarement pické aussi tôt");
   if(NEXT_DELTA[c]) why.push((NEXT_DELTA[c]>0?"buff ":"nerf ")+PATCH_NEXT.v);
-  if(SINCE_PRO[c]) why.push((SINCE_PRO[c]>0?"buffé":"nerfé")+" depuis les Worlds"+(Math.abs(SINCE_PRO[c])>1?" (×"+Math.abs(SINCE_PRO[c])+")":""));
+  { const sd=sinceDelta(c,role); if(sd.measured&&Math.abs(sd.pts)>=0.8) why.push(`${sd.pts>0?"plus fort":"plus faible"} qu'aux Worlds (${sd.pts>0?"+":""}${sd.pts} pts de winrate en solo Q)`); else if(!sd.measured&&SINCE_PRO[c]) why.push((SINCE_PRO[c]>0?"buffé":"nerfé")+" depuis les Worlds"); }
   if(exploit) why.unshift(`Exploite ${exploit.why} (${FAMS[exploit.fam].fr})`);
   return {name:c, role, score, raw, parts, why, tier:af.tier, badge:pickBadge(c,role), duo:!!(sy.duos&&sy.duos.length), exploit:!!exploit};
 }
