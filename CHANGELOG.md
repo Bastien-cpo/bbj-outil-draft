@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.15 — 27/11/2026
+- Artefact Claude : il embarque désormais l'historique publié (team.json). Quand cet historique est plus récent que celui de la base de l'artefact, il le remplace (games d'hier, stats, timelines) et retire la série de simulation « 27/11 EQX ».
+
 ## 1.14 — 27/11/2026
 - Analyse de la game (Historique, en ouvrant une game), à partir de la timeline du client LoL :
   - verdict prudent « draft ou gameplay ? » qui croise la draft estimée et le résultat ;

@@ -46,7 +46,10 @@ async function initDb(){
   ["config","prep","live","history"].forEach(key=>{
     db.doc("team/"+key).onSnapshot(snap=>{
       if(!snap.metadata.fromCache){ clearTimeout(t); sync.ok=true; if(!sync.readOnly) sync.note="Synchronisé avec l'équipe"; }
-      if(snap.exists&&!pending[key]&&!snap.metadata.hasPendingWrites){ const d=snap.data(); if(d&&d.v){ apply[key](JSON.parse(JSON.stringify(d.v))); saveLocal(); render(); return; } }
+      if(snap.exists&&!pending[key]&&!snap.metadata.hasPendingWrites){ const d=snap.data(); if(d&&d.v){
+        if(key==="history"){ sync.histAt=d.at||0; if(adoptSnapHistory()) return; }
+        apply[key](JSON.parse(JSON.stringify(d.v))); saveLocal(); render(); return; } }
+      if(key==="history"&&!snap.exists){ sync.histAt=0; if(adoptSnapHistory()) return; }
       renderSync();
     }, ()=>{ sync.note="Synchro interrompue : enregistré sur cet appareil"; renderSync(); });
   });
@@ -718,8 +721,13 @@ document.addEventListener("keydown",e=>{
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; ui.tierPop=null; render(); });
 $("#champs").innerHTML=CHAMP_NAMES.map(n=>`<option value="${esc(n)}">`).join("");
 // Hors de Claude (GitHub Pages) : pas de base d'équipe, on charge la copie team.json publiée avec le site
+// Artefact Claude : l'historique publié (team.json, mis à jour par « Fin de série ») remplace celui de la base quand il est plus récent
+let _snapArt=null;
+function adoptSnapHistory(){ if(!_snapArt||!_snapArt.history||sync.histAt==null||_snapArt.at<=sync.histAt) return false;
+  history=Object.assign({series:[]},JSON.parse(JSON.stringify(_snapArt.history))); fixNames(); sync.histAt=_snapArt.at; saveLocal(); render();
+  if(sync.db&&!sync.readOnly){ pending.history=true; clearTimeout(timers.history); flush("history"); } flash("Historique de l'équipe mis à jour"); return true; }
 async function initSnapshot(){
-  if(window.claude&&window.claude.use) return;
+  if(window.claude&&window.claude.use){ try{ const r=await fetch("team.json",{cache:"no-store"}); if(r.ok){ const s=await r.json(); if(s&&s.at){ _snapArt=s; adoptSnapHistory(); } } }catch(e){} return; }
   try{ const r=await fetch("team.json",{cache:"no-store"}); if(!r.ok) return; const s=await r.json(); if(!s||!s.at) return;
     let seen=0; try{ seen=+localStorage.getItem(LS+"-snap")||0; }catch(e){}
     // Profils adverses perdus en local (série remise à zéro, nouveau navigateur…) : on recharge la préparation publiée, sans toucher au reste
