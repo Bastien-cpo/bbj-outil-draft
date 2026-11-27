@@ -107,8 +107,9 @@ const proPrio = c=>{ const p=PRO[c]; return p? clamp01(Math.sqrt((p.p+p.b)/PRO_M
 // Méta = moitié games pro récentes (Worlds 2026 + ligues majeures été), moitié solo Q du patch actuel
 function proScore(c){ const p=PRO[c]; if(!p) return 0.15; const pres=clamp01(Math.sqrt((p.p+p.b)/PRO_MAX)); const wr=p.p>=10?p.w/p.p:0.5; return clamp01(0.85*pres+0.15+0.5*(wr-0.5)); }
 // Calibrage pro 2026 : la présence pro prédit la victoire, pas la force solo Q → 60 % pro / 40 % solo Q (on reste une équipe amateur : l'affinité garde son poids)
-// Pro / solo Q : les games pro (Worlds = dernière compétition de 2026) vieillissent jusqu'à la reprise de janvier → la solo Q du patch actuel pèse davantage
-function force(cfg,c,role){ return clamp01(0.4*proScore(c)+0.6*metaInfo(c,role).v); }
+// Pro / solo Q à parts égales : le pro reste la référence du jeu en équipe (draft, ordre de pick, blind, counters),
+// la solo Q du patch actuel corrige l'écart de patch depuis les Worlds, jusqu'à la reprise pro de janvier
+function force(cfg,c,role){ return clamp01(0.5*proScore(c)+0.5*metaInfo(c,role).v); }
 // Premier pick bleu en pro 2026 (games, victoires) : léger bonus/malus, ramené vers 50 % selon l'échantillon
 const B1_PRO={"Lee Sin":[58,30],"Camille":[18,7],"Bard":[25,8],"Varus":[41,22],"Jarvan IV":[131,57],"Ryze":[105,50],"Vi":[127,71],"Karma":[56,24],"Jayce":[46,18],"Rumble":[76,41],"Orianna":[127,69],"Nocturne":[83,38],"Ezreal":[95,55],"Naafiri":[22,11],"Viktor":[24,14],"Seraphine":[34,20],"Cassiopeia":[100,63],"Lulu":[18,11],"Lucian":[40,19],"Pantheon":[37,16],"Olaf":[23,13],"Syndra":[25,7],"Annie":[34,16],"Ashe":[21,13]};
 function b1Adj(c){ const x=B1_PRO[c]; if(!x) return 0; return (x[1]/x[0]-0.5)*x[0]/(x[0]+60); }

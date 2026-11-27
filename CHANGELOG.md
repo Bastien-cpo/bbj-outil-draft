@@ -2,6 +2,9 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.17 — 27/11/2026
+- Force d'un pick : 50 % pro / 50 % solo Q. Le pro reste la référence du jeu en équipe (draft, ordre de pick, blind, counters) ; la solo Q du patch actuel corrige seulement l'écart de patch depuis les Worlds.
+
 ## 1.16 — 27/11/2026
 - Méta : stats solo Q OP.GG du patch 26.23 (Maître+ et Émeraude+, 5 rôles), relevées le 27/11, à la place de celles du 26.22. Les buffs et nerfs du 26.23 (Annie, Azir, Bard, Ezreal, Galio, Gnar, Mel, Vel'Koz, Vi ▲ ; LeBlanc, Master Yi, Syndra ▼) sont maintenant dans les chiffres réels : leur anticipation est retirée.
 - Patch suivant : 26.24 le 09/12 (le 26.23 dure trois semaines) ; au PBE pour l'instant, seul Akshan est buffé (rien de définitif).
