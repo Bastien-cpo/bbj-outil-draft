@@ -430,7 +430,9 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
         .sort((a,b)=>b.score-a.score).slice(0,2);
       const ref=list[4]?list[4].score:0; extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(x.score>=ref-8?Math.max(Math.min(i,5+k),Math.min(5+k,list.length)):Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
     // Nos flex (discret) : champion aussi joué par un autre de nos joueurs (tier S/A/B) à un autre rôle encore ouvert
-    list.forEach(x=>{ if(!["S","A"].includes(tierFor(cfg,pid,role,x.name))) return; const o=ctx.open.filter(r=>r!==role&&lineup[r]&&["S","A"].includes(tierFor(cfg,lineup[r],r,x.name))); if(o.length) x.ourFlex=o; });
+    // (les deux joueurs au moins en B, et l'un des deux en S/A : ex. Viktor JH S / Bastien B, Dr. Mundo top/jungle)
+    list.forEach(x=>{ const t0=tierFor(cfg,pid,role,x.name), OK=["S","A","B"], HI=["S","A"]; if(!OK.includes(t0)) return;
+      const o=ctx.open.filter(r=>{ if(r===role||!lineup[r]) return false; const t1=tierFor(cfg,lineup[r],r,x.name); return OK.includes(t1)&&(HI.includes(t0)||HI.includes(t1)); }); if(o.length) x.ourFlex=o; });
     out[role]={list, prio:prio[role]};
   });
   return out;
@@ -932,6 +934,47 @@ function bansAgainstUs(S,opp){ const cnt={}; let games=0;
       const c=cnt[a.name]||(cnt[a.name]={name:a.name,n:0,same:0,p1:0}); c.n++; if(same) c.same++; if(i<6) c.p1++; }); }); });
   return {games,list:Object.values(cnt).map(c=>({...c,w:c.n+c.same})).sort((a,b)=>b.w-a.w||b.p1-a.p1)}; }
 
+// ---- Analyse de la game (timeline exportée du client) : phases, lanes à 10/15 min, objectifs, lecture draft / gameplay ----
+const _RK={}; try{ RIOT_KEYS_RAW.split("|").forEach(t=>{ const [k,n]=t.split(":"); _RK[k]=findChamp(n)||n; }); }catch(err){}
+function gameAnalysis(cfg,s,gi,pp){
+  const g=s.games[gi], st=g.stats, T=st&&st.tl; if(!T||!T.g||!T.p) return null;
+  const side=g.side, roleOf={};
+  (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick") roleOf[(STEPS[i][1]===side?"u":"t")+a.name]=a.role; });
+  const P=T.p.map(([sd,c],i)=>{ const n=_RK[String(c)]||String(c); return {i,sd,name:n,role:roleOf[(sd===0?"u":"t")+n]||null}; });
+  const n=Math.max(...T.g.map(a=>a.length)), at=(arr,m)=>arr[Math.min(m,arr.length-1)]||0;
+  const team=(sd,m,k)=>P.filter(p=>p.sd===sd).reduce((a,p)=>a+at(T[k][p.i],m),0);
+  const gdc=[]; for(let m=0;m<n;m++) gdc.push(team(0,m,"g")-team(1,m,"g"));
+  const min=n-1, GD=m=>m<=min?gdc[m]:null;
+  const by=(sd,r)=>P.find(p=>p.sd===sd&&p.role===r);
+  const lane=(rs,m,k)=>{ const u=rs.map(r=>by(0,r)), t=rs.map(r=>by(1,r)); if(u.some(x=>!x)||t.some(x=>!x)||m>min) return null; return u.reduce((a,p)=>a+at(T[k][p.i],m),0)-t.reduce((a,p)=>a+at(T[k][p.i],m),0); };
+  const LR=[["T",["T"]],["J",["J"]],["M",["M"]],["A",["A"]],["S",["S"]],["B",["A","S"]]];
+  const lanes=LR.map(([r,rs])=>{ const u=rs.map(x=>by(0,x)), t=rs.map(x=>by(1,x)); const xp=(rs.length===1&&u[0]&&t[0]&&T.x15)?(T.x15[u[0].i]-T.x15[t[0].i]):null;
+    return {role:r,ours:u.map(x=>x&&x.name).join(" + "),theirs:t.map(x=>x&&x.name).join(" + "),gd10:lane(rs,10,"g"),gd15:lane(rs,15,"g"),cs15:lane(rs,15,"c"),xp15:min>=15?xp:null}; });
+  const ev=(T.ev||[]).map(([t,ty,sd,x])=>({t,ty,sd,x}));
+  const kills=ph=>[0,1].map(sd=>ev.filter(e=>e.ty==="K"&&e.sd===sd&&e.t>=ph[0]*60&&e.t<ph[1]*60).length);
+  const phases=[["Early","0-15",0,15],["Mid","15-25",15,25],["Late","25+",25,999]].filter(p=>p[2]<min).map(([nm,lb,a,b])=>{ const e=Math.min(b,min); return {name:nm,label:lb,delta:gdc[e]-gdc[a],kills:kills([a,b]),obj:[0,1].map(sd=>ev.filter(x=>x.sd===sd&&"DHBVA".includes(x.ty)&&x.t>=a*60&&x.t<b*60).length)}; });
+  const fb=ev.find(e=>e.ty==="K"), ft=ev.find(e=>e.ty==="T");
+  const deaths15=P.filter(p=>p.sd===0).map(p=>({name:p.name,role:p.role,d:ev.filter(e=>e.ty==="K"&&e.sd===1&&e.x===p.i&&e.t<900).length})).filter(x=>x.d>=2);
+  // lecture : plan de draft vs déroulé
+  let f=null; try{ f=analyzeFinal(cfg,{side,actions:g.actions},pp||{players:[]},s.lineup||{}); }catch(err){}
+  const notes=[], ue=f&&f.us&&f.us.prof?f.us.prof.p:null, te=f&&f.them&&f.them.prof?f.them.prof.p:null;
+  const g15=GD(15), win=g.result==="W";
+  if(ue&&te&&g15!=null){ const eu=ue.early-ue.scaling, et=te.early-te.scaling;
+    if(eu>et+2) notes.push(g15>=1000?`Plan early respecté : notre compo plus forte tôt a pris ${Math.round(g15/100)/10}k d'avance à 15 min.`:`Plan early raté : notre compo devait prendre l'avantage tôt, mais ${g15>=0?"+":""}${Math.round(g15/100)/10}k à 15 min.`);
+    else if(et>eu+2) notes.push(g15>=-1500?`Early tenu face à une compo plus forte tôt (${g15>=0?"+":""}${Math.round(g15/100)/10}k à 15 min) : le scaling devait jouer pour nous.`:`Early perdu nettement face à leur compo early (${Math.round(g15/100)/10}k à 15 min).`); }
+  if(f&&f.lanes) f.lanes.forEach(l=>{ const L=lanes.find(x=>x.role===l.role); if(!L||L.gd15==null) return;
+    if(l.wr>=52&&L.gd15<=-500) notes.push(`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} prévue gagnante (${l.wr} %) mais ${Math.round(L.gd15/100)/10}k à 15 min : exécution à revoir.`);
+    if(l.wr<=48&&L.gd15<=-500) notes.push(`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} prévue perdante (${l.wr} %) et perdue (${Math.round(L.gd15/100)/10}k à 15 min) : la draft a pesé.`);
+    if(l.wr<=48&&L.gd15>=500) notes.push(`${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} prévue perdante (${l.wr} %) mais gagnée (+${Math.round(L.gd15/100)/10}k à 15 min).`); });
+  const lead=Math.max(...gdc), deficit=Math.min(...gdc);
+  if(!win&&lead>=2500) notes.push(`Avance de ${Math.round(lead/100)/10}k à ${gdc.indexOf(lead)} min non convertie.`);
+  if(win&&deficit<=-2500) notes.push(`Retour après ${Math.round(-deficit/100)/10}k de retard (${gdc.indexOf(deficit)} min).`);
+  deaths15.forEach(x=>notes.push(`${x.name} (${ROLE_NAMES[x.role]||"?"}) : ${x.d} morts avant 15 min.`));
+  let verdict=null; if(f){ const fav=f.win>=52, unf=f.win<=48;
+    verdict=win?(unf?"Victoire malgré une draft défavorable : le gameplay a compensé.":fav?"Victoire avec une draft favorable : plan exécuté.":"Victoire, draft équilibrée."):(fav?"Défaite malgré une draft favorable : regarder l'exécution d'abord.":unf?"Défaite avec une draft défavorable : la draft a pesé.":"Défaite, draft équilibrée : le gameplay a fait la différence."); }
+  return {min,gdc,gd10:GD(10),gd15:g15,gd20:GD(20),gd25:GD(25),gdEnd:gdc[min],lanes,phases,fb:fb?{t:fb.t,sd:fb.sd}:null,ft:ft?{t:ft.t,sd:ft.sd,x:ft.x}:null,
+    obj:ev.filter(e=>"DHBVA".includes(e.ty)).map(e=>({t:e.t,ty:e.ty,sd:e.sd,x:e.x})),notes,verdict,draftWin:f?f.win:null}; }
+
 // ---- Revue de draft (après coup) : nos picks face aux conseils de l'outil, lanes prévues face à l'or réel ----
 function draftReview(cfg,s,gi,pp){
   const g=s.games[gi], side=g.side, them=side==="B"?"R":"B", lineup=s.lineup||{};
@@ -947,10 +990,12 @@ function draftReview(cfg,s,gi,pp){
     picks.push({i,name:a.name,role:a.role,rank:k>=0?k+1:null,score:sc,top:L[0]?{name:L[0].name,score:L[0].score}:null,best}); });
   let f=null; try{ f=analyzeFinal(cfg,{side,actions:g.actions},pp||{players:[]},lineup); }catch(err){}
   const st=g.stats, gold=(t,r)=>st&&st[t]&&st[t][r]?st[t][r].gold:null;
-  const lanes=(f&&f.lanes||[]).map(l=>{ const rs=l.role==="B"?["A","S"]:[l.role]; let gd=null;
-    if(st&&rs.every(r=>gold("us",r)!=null&&gold("them",r)!=null)) gd=rs.reduce((a,r)=>a+gold("us",r)-gold("them",r),0);
+  let GA=null; try{ GA=gameAnalysis(cfg,s,gi,pp); }catch(err){}
+  const lanes=(f&&f.lanes||[]).map(l=>{ const rs=l.role==="B"?["A","S"]:[l.role]; let gd=null, at15=false;
+    const L=GA&&GA.lanes.find(x=>x.role===l.role); if(L&&L.gd15!=null){ gd=L.gd15; at15=true; }
+    else if(st&&rs.every(r=>gold("us",r)!=null&&gold("them",r)!=null)) gd=rs.reduce((a,r)=>a+gold("us",r)-gold("them",r),0);
     const first=idx[l.ours]!=null&&idx[l.theirs]!=null&&idx[l.ours]<idx[l.theirs];
-    return {role:l.role,ours:l.ours,theirs:l.theirs,ours2:l.ours2,theirs2:l.theirs2,wr:l.wr,gd,counterpicked:first&&l.wr<=47.5}; });
+    return {role:l.role,ours:l.ours,theirs:l.theirs,ours2:l.ours2,theirs2:l.theirs2,wr:l.wr,gd,at15,counterpicked:first&&l.wr<=47.5}; });
   const notes=[];
   lanes.filter(l=>l.counterpicked).forEach(l=>notes.push(`${l.ours} pické avant ${l.theirs} : lane contrée (${l.wr} %)`));
   (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===them&&i<=8){ const C=CHAMPS[a.name]; const l=lanes.find(x=>x.theirs===a.name||x.theirs2===a.name);
@@ -972,4 +1017,4 @@ function reviewSummary(cfg,S,prepFor){
     laneFav:{n:lf.length,ok:lf.filter(l=>l.gd>0).length}, laneUnf:{n:lu.length,ok:lu.filter(l=>l.gd<0).length},
     series:series.map(s=>({date:s.date,opp:s.opp,n:s.n,w:s.w,win:Math.round(s.win/s.n),t3:s.p?Math.round(100*s.t3/s.p):null})).reverse()}; }
 
-if(typeof module!=="undefined"&&module.exports) module.exports={bansAgainstUs,draftReview,reviewSummary,compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+if(typeof module!=="undefined"&&module.exports) module.exports={gameAnalysis,bansAgainstUs,draftReview,reviewSummary,compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};

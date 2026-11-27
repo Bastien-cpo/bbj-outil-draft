@@ -1,8 +1,33 @@
-# BBJ - Fin de serie : exporte les parties personnalisees du client LoL et envoie leurs stats a BBJ Outil Draft.
+﻿# BBJ - Fin de serie : exporte les parties personnalisees du client LoL et envoie leurs stats a BBJ Outil Draft.
 # Lance par le bouton "Fin de serie" de l'outil (lien bbj-export://), ou a la main. Le client LoL doit etre ouvert.
 param([string]$Lien = "")
 $ErrorActionPreference = 'Stop'
 $dir = $PSScriptRoot; $out = Join-Path $dir 'parties'; $log = Join-Path $dir 'log.txt'
+
+# Timeline compacte (or et CS par minute, XP a 15 min, kills, objectifs, tours) pour l'analyse de la game dans l'outil
+function Compact-Timeline($d, $tl, $ourTeam) {
+  if (-not $tl -or -not $tl.frames) { return $null }
+  $P = @($d.participants | Sort-Object participantId)
+  $idx = @{}; $sd = @{}; $pl = @()
+  for ($i = 0; $i -lt $P.Count; $i++) { $q = $P[$i]; $idx[[int]$q.participantId] = $i; $sd[[int]$q.participantId] = $(if ([int]$q.teamId -eq [int]$ourTeam) { 0 } else { 1 }); $pl += ,@($sd[[int]$q.participantId], [int]$q.championId) }
+  $g = @(); $c = @(); for ($i = 0; $i -lt $P.Count; $i++) { $g += ,(New-Object System.Collections.ArrayList); $c += ,(New-Object System.Collections.ArrayList) }
+  $x15 = @(0) * $P.Count; $ev = New-Object System.Collections.ArrayList
+  $mon = @{ DRAGON = 'D'; RIFTHERALD = 'H'; BARON_NASHOR = 'B'; HORDE = 'V'; ATAKHAN = 'A' }
+  $fi = 0
+  foreach ($f in $tl.frames) {
+    foreach ($q in $P) { $k = [int]$q.participantId; $pf = $f.participantFrames."$k"; $i = $idx[$k]
+      [void]$g[$i].Add([int]$pf.totalGold); [void]$c[$i].Add([int]$pf.minionsKilled + [int]$pf.jungleMinionsKilled)
+      if ($fi -eq 15) { $x15[$i] = [int]$pf.xp } }
+    foreach ($e in $f.events) {
+      $t = [int][math]::Floor($e.timestamp / 1000); $kid = [int]$e.killerId
+      if ($e.type -eq 'CHAMPION_KILL' -and $idx.ContainsKey([int]$e.victimId)) { [void]$ev.Add(@($t, 'K', (1 - $sd[[int]$e.victimId]), $idx[[int]$e.victimId])) }
+      elseif ($e.type -eq 'ELITE_MONSTER_KILL' -and $sd.ContainsKey($kid)) { $ty = $mon["$($e.monsterType)"]; if (-not $ty) { $ty = '?' }; [void]$ev.Add(@($t, $ty, $sd[$kid], ("$($e.monsterSubType)" -replace '_DRAGON',''))) }
+      elseif ($e.type -eq 'BUILDING_KILL' -and ([int]$e.teamId -eq 100 -or [int]$e.teamId -eq 200)) { $lost = $(if ([int]$e.teamId -eq [int]$ourTeam) { 0 } else { 1 }); [void]$ev.Add(@($t, $(if ($e.buildingType -eq 'TOWER_BUILDING') { 'T' } else { 'I' }), (1 - $lost), (("$($e.laneType)" -replace '_LANE','') + ':' + ("$($e.towerType)" -replace '_TURRET','')))) }
+    }
+    $fi++
+  }
+  return [ordered]@{ v = 1; p = $pl; g = @($g | ForEach-Object { ,@($_.ToArray()) }); c = @($c | ForEach-Object { ,@($_.ToArray()) }); x15 = $x15; ev = @($ev.ToArray()) }
+}
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 Set-Content -Path $log -Value ("=== Fin de serie " + (Get-Date).ToString('s') + " ===") -Encoding UTF8
 function Log($m) { Add-Content -Path $log -Value ((Get-Date).ToString('HH:mm:ss') + '  ' + $m) -Encoding UTF8; Write-Host $m }
@@ -45,7 +70,9 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
   foreach ($g in $games) {
     $id = $g.gameId; $d = Get-Lcu "/lol-match-history/v1/games/$id"
     $file = Join-Path $out "$id.json"
-    if (-not (Test-Path $file)) { $tl = $null; try { $tl = Get-Lcu "/lol-match-history/v1/game-timelines/$id" } catch {}; ([ordered]@{ exportedAt = (Get-Date).ToString('s'); game = $d; timeline = $tl }) | ConvertTo-Json -Depth 100 -Compress | Out-File -FilePath $file -Encoding utf8 }
+    $tl = $null
+    if (-not (Test-Path $file)) { try { $tl = Get-Lcu "/lol-match-history/v1/game-timelines/$id" } catch {}; ([ordered]@{ exportedAt = (Get-Date).ToString('s'); game = $d; timeline = $tl }) | ConvertTo-Json -Depth 100 -Compress | Out-File -FilePath $file -Encoding utf8 }
+    else { try { $tl = (Get-Content $file -Raw -Encoding utf8 | ConvertFrom-Json).timeline } catch {} }
     $pid0 = ($d.participantIdentities | Where-Object { $_.player.puuid -eq $me.puuid } | Select-Object -First 1).participantId
     $ourTeam = ($d.participants | Where-Object { $_.participantId -eq $pid0 }).teamId
     if (-not $ourTeam) { $ourTeam = 100 }
@@ -68,7 +95,8 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
     $obj = @{}
     foreach ($tm in $d.teams) { $obj[[int]$tm.teamId] = [ordered]@{ towers = $tm.towerKills; drakes = $tm.dragonKills; barons = $tm.baronKills; herald = $tm.riftHeraldKills; grubs = $(if ($tm.hordeKills) { $tm.hordeKills } else { 0 }) }; if ([int]$tm.teamId -eq $ourTeam) { $win = ($tm.win -eq 'Win') } }
     $them = 300 - $ourTeam
-    $res += [ordered]@{ gameId = $id; at = $d.gameCreation; min = [math]::Round($d.gameDuration / 60); win = $win; us = $side[$ourTeam]; them = $side[$them]; objUs = $obj[$ourTeam]; objThem = $obj[$them] }
+    $tlc = $null; try { $tlc = Compact-Timeline $d $tl $ourTeam } catch { Log "Timeline non lue pour $id : $($_.Exception.Message)" }
+    $res += [ordered]@{ gameId = $id; at = $d.gameCreation; min = [math]::Round($d.gameDuration / 60); win = $win; us = $side[$ourTeam]; them = $side[$them]; objUs = $obj[$ourTeam]; objThem = $obj[$them]; tl = $tlc }
     Log ("Partie {0} : {1} min, {2}" -f $id, [math]::Round($d.gameDuration / 60), $(if ($win) {'victoire'} else {'defaite'}))
   }
   # 3) Publication sur GitHub (toute l'equipe la recoit) : la serie envoyee par l'outil + les stats, ajoutee a team.json
@@ -81,6 +109,7 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
     for ($i = 0; $i -lt $gs.Count; $i++) {
       $x = $res[$res.Count - $gs.Count + $i]; if (-not $x) { continue }
       $st = [ordered]@{ gameId = $x.gameId; min = $x.min; us = $x.us; them = $x.them; objUs = $x.objUs; objThem = $x.objThem }
+      if ($x.tl) { $st.tl = $x.tl }
       $gs[$i] | Add-Member -NotePropertyName stats -NotePropertyValue $st -Force
       if (-not $gs[$i].result) { $gs[$i] | Add-Member -NotePropertyName result -NotePropertyValue $(if ($x.win) {'W'} else {'L'}) -Force }
     }
@@ -105,7 +134,9 @@ public class BBJTrust : ICertificatePolicy { public bool CheckValidationResult(S
   }
   Log "Serie $pub"
   # 4) Envoi a l'outil de ce navigateur
-  $json = ([ordered]@{ v = 1; games = $res }) | ConvertTo-Json -Depth 10 -Compress
+  # le lien #import reste court : la timeline passe uniquement par team.json (GitHub)
+  $resImp = @($res | ForEach-Object { $o = [ordered]@{}; foreach ($k in $_.Keys) { if ($k -ne 'tl') { $o[$k] = $_[$k] } }; $o })
+  $json = ([ordered]@{ v = 1; games = $resImp }) | ConvertTo-Json -Depth 10 -Compress
   $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json)).TrimEnd('=').Replace('+','-').Replace('/','_')
   Start-Process ("https://bastien-cpo.github.io/bbj-outil-draft/#import=" + $b64)
   Log "Stats envoyees a l'outil dans le navigateur. Termine."

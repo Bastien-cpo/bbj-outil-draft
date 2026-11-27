@@ -2,6 +2,19 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.14 — 27/11/2026
+- Analyse de la game (Historique, en ouvrant une game), à partir de la timeline du client LoL :
+  - verdict prudent « draft ou gameplay ? » qui croise la draft estimée et le résultat ;
+  - courbe de l'écart d'or minute par minute, avec les objectifs (nous en haut, eux en bas) ;
+  - phases early (0-15), mid (15-25) et late : or gagné, kills et objectifs ;
+  - lanes à 10 et 15 min : écart d'or, de CS et d'XP ;
+  - first blood, première tour et ordre des objectifs ;
+  - lecture automatique : plan early respecté ou raté selon les compos, lanes prévues gagnantes perdues (exécution) ou prévues perdantes et perdues (draft), avance non convertie, joueurs morts 2 fois ou plus avant 15 min.
+- Revue de draft et bilan : les lanes sont jugées sur l'or à 15 min quand la timeline existe (plus juste que l'or en fin de game).
+- Timelines ajoutées pour les séries PickUp (17/11) et Funky (19/11) ; les stats de PickUp, qui manquaient, sont recréées depuis les fichiers du client.
+- Script « Fin de série » : exporte désormais une timeline compacte (environ 4 Ko par game) avec les stats.
+- Nos flex : les deux joueurs au moins en B et l'un des deux en S/A (Viktor et Syndra JH/Bastien, Dr. Mundo, Sion, Sylas, Swain). Viktor ajouté en B dans la tier list de Bastien.
+
 ## 1.13 — 27/11/2026
 - Revue de draft (Historique, en ouvrant une game) : draft estimée par l'outil et résultat ; pour chacun de nos picks, sa place dans les conseils de l'outil à ce moment-là (1er, 3e, hors des conseils…) et le conseil n°1 ; lanes prévues (%) face à l'or en fin de game ; alertes « pické avant son counter : lane contrée » et « pické tôt puis joué hors de son rôle : flex ».
 - Bilan des drafts (en haut de l'Historique) : l'outil voit-il juste (victoires selon la draft estimée, lanes prévues gagnantes ou perdantes face à l'or réel) ; suivons-nous ses conseils (part de nos picks dans son top 3, victoires quand on les suit ou non) ; résumé par série.

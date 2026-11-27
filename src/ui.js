@@ -198,8 +198,32 @@ function reviewHtml(s,gi){ let r; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catc
     <p>Draft estimée à <b>${r.win} %</b> par l'outil · résultat : <b class="${r.result==="W"?"w":"l"}">${r.result==="W"?"victoire":"défaite"}</b></p>
     ${r.notes.length?`<div class="rvnotes">${r.notes.map(n=>`<div>⚠ ${esc(n)}</div>`).join("")}</div>`:""}
     <table class="rvt"><tr><th>Nos picks</th><th>Place dans les conseils</th><th></th></tr>${r.picks.map(pk).join("")}</table>
-    <table class="rvt"><tr><th>Lanes</th><th>Prévu</th><th>Or fin de game</th><th></th></tr>${r.lanes.map(ln).join("")}</table>
-    <p class="muted">Conseils recalculés avec vos pools et tier lists actuels. L'or en fin de game n'est qu'un indice du résultat des lanes.</p></div>`; }
+    <table class="rvt"><tr><th>Lanes</th><th>Prévu</th><th>${r.lanes.some(l=>l.at15)?"Or à 15 min":"Or fin de game"}</th><th></th></tr>${r.lanes.map(ln).join("")}</table>
+    <p class="muted">Conseils recalculés avec vos pools et tier lists actuels. L'or (à 15 min si la timeline est disponible, sinon en fin de game) n'est qu'un indice du résultat des lanes.</p></div>`; }
+
+// ---------- Analyse de la game (timeline) ----------
+function gdSvg(a){ const W=600,H=110,n=a.gdc.length, mx=Math.max(1500,...a.gdc.map(Math.abs)), x=m=>8+m*(W-16)/Math.max(1,n-1), y=v=>H/2-v*(H/2-10)/mx;
+  const pts=a.gdc.map((v,m)=>`${x(m).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const band=(m0,m1,c)=>m0<n?`<rect x="${x(m0)}" y="0" width="${Math.max(0,x(Math.min(m1,n-1))-x(m0))}" height="${H}" fill="${c}"/>`:"";
+  const IC={D:"🐉",H:"👁",B:"👑",V:"🪲",A:"☠"};
+  const marks=a.obj.map(o=>`<text x="${x(o.t/60).toFixed(1)}" y="${o.sd===0?12:H-3}" font-size="10" text-anchor="middle">${IC[o.ty]||"•"}</text>`).join("");
+  return `<svg class="gdsvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${band(0,15,"rgba(255,255,255,.03)")}${band(25,999,"rgba(255,255,255,.03)")}
+    <line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="#3a4352" stroke-dasharray="3 3"/>${[10,15,20,25,30,35].filter(m=>m<n).map(m=>`<text x="${x(m)}" y="${H/2+11}" font-size="9" fill="#6b7587" text-anchor="middle">${m}'</text>`).join("")}
+    <polyline points="${pts}" fill="none" stroke="#4da3ff" stroke-width="2"/>${marks}</svg>`; }
+function analysisHtml(s,gi){ let a; try{ a=gameAnalysis(cfg,s,gi,prepFor(s)); }catch(e){ return ""; } if(!a) return "";
+  const k=v=>v==null?"–":Math.abs(v)<150?"≈ 0":(v>0?"+":"")+(v/1000).toFixed(1)+"k", c=v=>v==null?"":v>=150?"w":v<=-150?"l":"", n0=v=>v==null?"–":(v>0?"+":"")+v;
+  const mm=t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`, ON={D:"Drake",H:"Héraut",B:"Baron",V:"Larves",A:"Atakhan"};
+  const lanes=a.lanes.filter(l=>l.role!=="A"&&l.role!=="S").concat(a.lanes.filter(l=>l.role==="A"||l.role==="S"));
+  return `<div class="review gan"><h4>Analyse de la game</h4>
+    ${a.verdict?`<p><b>${esc(a.verdict)}</b> <span class="muted">(draft estimée à ${a.draftWin} %)</span></p>`:""}
+    <div class="gdh"><span>Écart d'or (nous − eux)</span><span class="muted">10' <b class="${c(a.gd10)}">${k(a.gd10)}</b> · 15' <b class="${c(a.gd15)}">${k(a.gd15)}</b> · 20' <b class="${c(a.gd20)}">${k(a.gd20)}</b> · fin <b class="${c(a.gdEnd)}">${k(a.gdEnd)}</b></span></div>
+    ${gdSvg(a)}<p class="muted sm">Icônes en haut : objectifs pris par nous · en bas : par eux (🐉 drake, 🪲 larves, 👁 héraut, 👑 baron).</p>
+    <table class="rvt"><tr><th>Phase</th><th>Or gagné</th><th>Kills</th><th>Objectifs</th></tr>${a.phases.map(p=>`<tr><td><b>${p.name}</b> <span class="muted">${p.label}'</span></td><td class="${c(p.delta)}">${k(p.delta)}</td><td>${p.kills[0]} – ${p.kills[1]}</td><td>${p.obj[0]} – ${p.obj[1]}</td></tr>`).join("")}</table>
+    <table class="rvt"><tr><th>Lanes</th><th>Or 10'</th><th>Or 15'</th><th>CS 15'</th><th>XP 15'</th></tr>${lanes.map(l=>`<tr><td><b>${RVN(l.role)}</b> <span class="muted">${esc(l.ours)} vs ${esc(l.theirs)}</span></td><td class="${c(l.gd10)}">${k(l.gd10)}</td><td class="${c(l.gd15)}">${k(l.gd15)}</td><td class="${l.cs15>=8?"w":l.cs15<=-8?"l":""}">${n0(l.cs15)}</td><td class="${l.xp15>=300?"w":l.xp15<=-300?"l":""}">${n0(l.xp15)}</td></tr>`).join("")}</table>
+    <p class="sm">${a.fb?`First blood : <b class="${a.fb.sd===0?"w":"l"}">${a.fb.sd===0?"nous":"eux"}</b> (${mm(a.fb.t)})`:""}${a.ft?` · Première tour : <b class="${a.ft.sd===0?"w":"l"}">${a.ft.sd===0?"nous":"eux"}</b> (${mm(a.ft.t)})`:""}</p>
+    ${a.obj.length?`<div class="objl">${a.obj.reduce((L,o)=>{ const p=L[L.length-1]; if(p&&p.ty===o.ty&&p.sd===o.sd&&o.ty==="V"&&o.t-p.t<=120){ p.n=(p.n||1)+1; return L; } L.push({...o}); return L; },[]).map(o=>`<span class="${o.sd===0?"w":"l"}">${mm(o.t)} ${ON[o.ty]||o.ty}${o.n>1?" ×"+o.n:""}${o.ty==="D"&&o.x?" "+esc(o.x.toLowerCase()):""}</span>`).join("")}</div>`:""}
+    ${a.notes.length?`<div class="rvnotes">${a.notes.map(x=>`<div>• ${esc(x)}</div>`).join("")}</div>`:""}
+    <p class="muted sm">Lecture automatique à partir des chiffres : elle ne voit ni la communication ni les décisions, à confronter avec la VOD.</p></div>`; }
 let _revCache=null;
 function reviewSummaryHtml(){ const S=history.series||[]; const key=JSON.stringify(S.map(s=>[s.date,s.opponent,s.games.map(g=>g.result+(g.stats?1:0))]))+JSON.stringify(cfg.tiers||{}).length;
   if(!_revCache||_revCache.key!==key){ let v=null; try{ v=reviewSummary(cfg,S,prepFor); }catch(e){} _revCache={key,v}; }
@@ -217,7 +241,7 @@ function viewHistory(){
   const S=history.series||[];
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
     return `<div class="dtop"><button class="btn sm" data-act="hclose">← Historique</button><b>${esc(s.date)} · ${esc(s.type||"Scrim")} vs ${esc(s.opponent)} · Game ${ui.hist.g+1} ${g.result==="W"?"(victoire)":g.result==="L"?"(défaite)":""}</b></div>
-      ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${reviewHtml(s,ui.hist.g)}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
+      ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${analysisHtml(s,ui.hist.g)}${reviewHtml(s,ui.hist.g)}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
   if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée.</p></section>`;
   return reviewSummaryHtml()+S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
     <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
