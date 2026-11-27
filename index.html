@@ -1681,7 +1681,12 @@ function applyDrafter(st){
   const allPicked=[...(st.bp||[]),...(st.rp||[])].filter(x=>x!=null).length>=10;
   ["B","R"].forEach(sd=>{ const L=sd==="B"?st.bpr:st.rpr, P=src.pick[sd]; if(!L||!allPicked) return;
     const names=P.map(x=>x==="none"?"none":drafterChamp(x)), known=STEPS.map((x,i)=>x[0]==="pick"&&x[1]===sd?i:-1).filter(i=>i>=0).map(i=>old[i]?(old[i].miss?"none":old[i].name):null);
-    names.forEach((n,j)=>{ if(n&&n!=="none"&&L[j]) laneOf[sd][n]=L[j]; });
+    // 26/11 (EQX G1) : sans échange de rôles sur Drafter, les icônes de lane suivent juste l'ordre des cases (Top, Jungle, Mid…)
+    // → on n'accepte une lane que si elle est plausible pour ce champion (rôle habituel, ou présent dans le pool du joueur à ce rôle)
+    const plaus=(n,r)=>{ const C=CHAMPS[n]; if(C&&C.roles.includes(r)) return true;
+      if(sd===side){ const pid=(prep.lineup||{})[r]; return !!(pid&&cfg.tiers&&cfg.tiers[pid]&&cfg.tiers[pid][n]); }
+      try{ return prepPlayers(prep).some(p=>p.role===r&&(p.all||p.list||[]).some(x=>x.c===n&&x.g>=5)); }catch(e){ return false; } };
+    names.forEach((n,j)=>{ if(n&&n!=="none"&&L[j]&&plaus(n,L[j])) laneOf[sd][n]=L[j]; });
     const same=names.filter(n=>n&&n!=="none").sort().join("|")===known.filter(n=>n&&n!=="none").sort().join("|")&&known.every(Boolean);
     if(same) src.pick[sd]=known.map(n=>n==="none"?"none":n); });
   const slots=st.v>=3, raws=STEPS.map(([t,s])=>src[t][s][cnt[t][s]++]);
