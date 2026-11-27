@@ -216,6 +216,12 @@ const ROLE_NAMES = {T:"Top", J:"Jungle", M:"Mid", A:"ADC", S:"Support"};
 
 // ===== Patch à venir (26.23, preview du 11/11 : sortie ~18/11) — les données OP.GG couvrent déjà 26.21 et 26.22 =====
 // Patch 26.23 (sorti le 18/11) : notes officielles. Données de jeu encore en 26.22 (trop peu de games sur 26.23) → léger ajustement des champions modifiés
+// Patchs sortis depuis les dernières games pro (Worlds 2026 = patch 26.20) : buffs / nerfs à appliquer au score pro
+const PATCHES_SINCE_PRO = [
+  {v:"26.21", buff:"Azir,Darius,Miss Fortune,Nunu & Willump,Orianna,Ryze,Sion,Taliyah,Vel'Koz,Xin Zhao,Zyra", nerf:"Caitlyn,Jinx,Lee Sin,Nidalee,Qiyana,Rammus,Tristana,Viktor,Wukong,Yone"},
+  {v:"26.22", buff:"Aurelion Sol,Corki,Kayle,Maokai,Naafiri,Rumble,Shen,Smolder,Viktor,Zaahen", nerf:"Locke,Thresh,Yasuo"},
+  {v:"26.23", buff:"Annie,Azir,Bard,Ezreal,Galio,Gnar,K'Sante,Mel,Vi", nerf:"LeBlanc,Master Yi,Syndra"}
+];
 // Patch suivant (anticipation) : 26.24 le 09/12/2026, d'après le PBE (rien de définitif). Les changements du 26.23 sont déjà dans les stats OP.GG.
 const PATCH_NEXT = {v:"26.24", buff:"Akshan", nerf:""};
 // ===== Synergies botlane (Master+, patch 26.21, lolstats.gg) : ADC/Support/games/synergie % =====

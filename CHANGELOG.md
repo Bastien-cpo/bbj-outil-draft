@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.18 — 27/11/2026
+- Le pro redevient la référence majoritaire de la force d'un pick : 65 % pro / 35 % solo Q du patch actuel. Le jeu en équipe (bans, ordre de pick, blind, counters, synergies, duos) reste entièrement basé sur le pro.
+- Le score pro est corrigé par les patch notes sortis depuis les Worlds (patch 26.20) : 26.21, 26.22 et 26.23. Chaque buff ou nerf compte, et ils se cumulent ou s'annulent (ex. Azir ▲▲, Viktor ▲▼ = 0). La raison apparaît dans le détail du pick (« buffé depuis les Worlds »).
+
 ## 1.17 — 27/11/2026
 - Force d'un pick : 50 % pro / 50 % solo Q. Le pro reste la référence du jeu en équipe (draft, ordre de pick, blind, counters) ; la solo Q du patch actuel corrige seulement l'écart de patch depuis les Worlds.
 

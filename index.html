@@ -244,7 +244,7 @@ body.embed header h1 small,body.embed #sync{display:none}body.embed .dtop .sl2{d
 </style>
 </head>
 <body>
-<header><h1>BBJ OUTIL DRAFT <small>v1.17 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
+<header><h1>BBJ OUTIL DRAFT <small>v1.18 · patch 26.23</small></h1><span id="drsync"></span><span id="sync"></span>
 <button class="tutob" data-act="tuto" title="Tuto : comment utiliser l'outil"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/></svg>Tuto</button>
 <nav class="tabs"><button data-tab="draft">Draft</button><button data-tab="prep">Préparation</button><button data-tab="pools">Pools</button><button data-tab="hist">Historique</button><button data-tab="settings">Réglages</button></nav></header>
 <main id="view"></main>
@@ -470,6 +470,12 @@ const ROLE_NAMES = {T:"Top", J:"Jungle", M:"Mid", A:"ADC", S:"Support"};
 
 // ===== Patch à venir (26.23, preview du 11/11 : sortie ~18/11) — les données OP.GG couvrent déjà 26.21 et 26.22 =====
 // Patch 26.23 (sorti le 18/11) : notes officielles. Données de jeu encore en 26.22 (trop peu de games sur 26.23) → léger ajustement des champions modifiés
+// Patchs sortis depuis les dernières games pro (Worlds 2026 = patch 26.20) : buffs / nerfs à appliquer au score pro
+const PATCHES_SINCE_PRO = [
+  {v:"26.21", buff:"Azir,Darius,Miss Fortune,Nunu & Willump,Orianna,Ryze,Sion,Taliyah,Vel'Koz,Xin Zhao,Zyra", nerf:"Caitlyn,Jinx,Lee Sin,Nidalee,Qiyana,Rammus,Tristana,Viktor,Wukong,Yone"},
+  {v:"26.22", buff:"Aurelion Sol,Corki,Kayle,Maokai,Naafiri,Rumble,Shen,Smolder,Viktor,Zaahen", nerf:"Locke,Thresh,Yasuo"},
+  {v:"26.23", buff:"Annie,Azir,Bard,Ezreal,Galio,Gnar,K'Sante,Mel,Vi", nerf:"LeBlanc,Master Yi,Syndra"}
+];
 // Patch suivant (anticipation) : 26.24 le 09/12/2026, d'après le PBE (rien de définitif). Les changements du 26.23 sont déjà dans les stats OP.GG.
 const PATCH_NEXT = {v:"26.24", buff:"Akshan", nerf:""};
 // ===== Synergies botlane (Master+, patch 26.21, lolstats.gg) : ADC/Support/games/synergie % =====
@@ -650,9 +656,11 @@ const proPrio = c=>{ const p=PRO[c]; return p? clamp01(Math.sqrt((p.p+p.b)/PRO_M
 // Méta = moitié games pro récentes (Worlds 2026 + ligues majeures été), moitié solo Q du patch actuel
 function proScore(c){ const p=PRO[c]; if(!p) return 0.15; const pres=clamp01(Math.sqrt((p.p+p.b)/PRO_MAX)); const wr=p.p>=10?p.w/p.p:0.5; return clamp01(0.85*pres+0.15+0.5*(wr-0.5)); }
 // Calibrage pro 2026 : la présence pro prédit la victoire, pas la force solo Q → 60 % pro / 40 % solo Q (on reste une équipe amateur : l'affinité garde son poids)
-// Pro / solo Q à parts égales : le pro reste la référence du jeu en équipe (draft, ordre de pick, blind, counters),
-// la solo Q du patch actuel corrige l'écart de patch depuis les Worlds, jusqu'à la reprise pro de janvier
-function force(cfg,c,role){ return clamp01(0.5*proScore(c)+0.5*metaInfo(c,role).v); }
+// Le pro reste la référence majoritaire (draft d'équipe : bans, ordre de pick, blind, counters, synergies). Son score est corrigé
+// par les patch notes sortis depuis les dernières games pro (26.21 → aujourd'hui) ; la solo Q du patch actuel ne pèse que 35 %.
+const SINCE_PRO={}; (typeof PATCHES_SINCE_PRO!=="undefined"?PATCHES_SINCE_PRO:[]).forEach(p=>{ p.buff.split(",").filter(Boolean).forEach(n=>{ const c=findChamp(n.trim())||n.trim(); SINCE_PRO[c]=(SINCE_PRO[c]||0)+1; }); p.nerf.split(",").filter(Boolean).forEach(n=>{ const c=findChamp(n.trim())||n.trim(); SINCE_PRO[c]=(SINCE_PRO[c]||0)-1; }); });
+const proAdj=c=>clamp01(proScore(c)+0.05*Math.max(-2,Math.min(2,SINCE_PRO[c]||0)));
+function force(cfg,c,role){ return clamp01(0.65*proAdj(c)+0.35*metaInfo(c,role).v); }
 // Premier pick bleu en pro 2026 (games, victoires) : léger bonus/malus, ramené vers 50 % selon l'échantillon
 const B1_PRO={"Lee Sin":[58,30],"Camille":[18,7],"Bard":[25,8],"Varus":[41,22],"Jarvan IV":[131,57],"Ryze":[105,50],"Vi":[127,71],"Karma":[56,24],"Jayce":[46,18],"Rumble":[76,41],"Orianna":[127,69],"Nocturne":[83,38],"Ezreal":[95,55],"Naafiri":[22,11],"Viktor":[24,14],"Seraphine":[34,20],"Cassiopeia":[100,63],"Lulu":[18,11],"Lucian":[40,19],"Pantheon":[37,16],"Olaf":[23,13],"Syndra":[25,7],"Annie":[34,16],"Ashe":[21,13]};
 function b1Adj(c){ const x=B1_PRO[c]; if(!x) return 0; return (x[1]/x[0]-0.5)*x[0]/(x[0]+60); }
@@ -915,6 +923,7 @@ function scorePick(cfg,c,role,ctx){
   if(coh!=null&&coh>=0.6) why.push("Compo cohérente avec ce pick"); else if(coh!=null&&coh<=0.3) why.push("⚠ Laisse la compo avec des faiblesses");
   if(tim!=null&&tim<0.5) why.push("Rôle/champion rarement pické aussi tôt");
   if(NEXT_DELTA[c]) why.push((NEXT_DELTA[c]>0?"buff ":"nerf ")+PATCH_NEXT.v);
+  if(SINCE_PRO[c]) why.push((SINCE_PRO[c]>0?"buffé":"nerfé")+" depuis les Worlds"+(Math.abs(SINCE_PRO[c])>1?" (×"+Math.abs(SINCE_PRO[c])+")":""));
   if(exploit) why.unshift(`Exploite ${exploit.why} (${FAMS[exploit.fam].fr})`);
   return {name:c, role, score, raw, parts, why, tier:af.tier, badge:pickBadge(c,role), duo:!!(sy.duos&&sy.duos.length), exploit:!!exploit};
 }
@@ -2143,7 +2152,7 @@ function viewSettings(){
    <label class="chk"><input type="checkbox" data-act="exd" ${cfg.excludeD?"checked":""}> Ne jamais proposer un champion en tier D</label></section>
    <section class="card"><h3>Ordre des rôles en draft</h3><p class="muted">Du rôle pické le plus tôt au plus tard. Il ordonne les lignes de suggestions et pénalise, en début de draft seulement, un rôle pické trop tôt (critère Timing). Le support remonte dès que l'ADC est pris.</p>
    <div class="row">${roleOrderOf(cfg).map((r,k)=>`<span class="tag">${k+1}. ${ROLE_NAMES[r]}${k?` <button class="btn sm" data-act="rup" data-r="${r}" title="Monter">↑</button>`:""}</span>`).join("")}</div></section>
-   <section class="card"><h3>Sources</h3><p class="muted">Méta : OP.GG Maître+ et Émeraude+ patch 26.23 (relevé du 27/11), pondérée 50 % pro / 50 % solo Q jusqu'à la reprise pro de janvier, ajustée avec le patch ${PATCH_NEXT.v} (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Pro : gol.gg (ordre de pick, position de pick). Duos pro : 12 746 games pro 2025-2026, récentes pondérées plus fort, reworks exclus. Matchups : lolalytics Maître+ 26.22, complétés par lolstats.gg. Synergies : lolstats.gg (botlane), metabot.gg (autres rôles). Nos games : Parthénon (72 scrims jusqu'au 17/11) puis les séries exportées avec « Fin de série ». Solo Q : op.gg, tous les comptes de chaque joueur.</p></section>
+   <section class="card"><h3>Sources</h3><p class="muted">Méta : OP.GG Maître+ et Émeraude+ patch 26.23 (relevé du 27/11), combinée à 35 % avec le pro (65 %), lui-même corrigé par les patch notes 26.21 à 26.23 sortis depuis les Worlds, ajustée avec le patch ${PATCH_NEXT.v} (▲ ${esc(PATCH_NEXT.buff.split(",").join(", "))} ▼ ${esc(PATCH_NEXT.nerf.split(",").join(", "))}). Pro : gol.gg (ordre de pick, position de pick). Duos pro : 12 746 games pro 2025-2026, récentes pondérées plus fort, reworks exclus. Matchups : lolalytics Maître+ 26.22, complétés par lolstats.gg. Synergies : lolstats.gg (botlane), metabot.gg (autres rôles). Nos games : Parthénon (72 scrims jusqu'au 17/11) puis les séries exportées avec « Fin de série ». Solo Q : op.gg, tous les comptes de chaque joueur.</p></section>
    ${synEditor()}${ctrEditor()}${bookmarkCard()}
    <section class="card"><button class="btn" data-act="reset">Réinitialiser les réglages</button></section>`;
 }
