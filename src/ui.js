@@ -17,7 +17,10 @@ const curStep=()=>live.draft.actions.findIndex(a=>!a);
 const playerOpts=sel=>PLAYERS.map(p=>`<option ${p.id===sel?"selected":""}>${p.id}</option>`).join("");
 
 // ---------- Stockage : base partagée (équipe) sinon navigateur ----------
-function saveLocal(){ if(window.__bbjYield) return; try{ if(live.draft.actions.some(Boolean)||live.series.games.length) live.ts=Date.now(); localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{poolPlayer:ui.poolPlayer}})); }catch(e){} }
+// Sauvegarde locale regroupée (300 ms après le dernier changement) : évite de tout réécrire à chaque clic ou lettre tapée
+let _saveT=null; function saveLocal(){ if(window.__bbjYield) return; clearTimeout(_saveT); _saveT=setTimeout(saveNow,300); }
+window.addEventListener("pagehide",()=>{ if(_saveT) saveNow(); }); document.addEventListener("visibilitychange",()=>{ if(document.hidden&&_saveT) saveNow(); });
+function saveNow(){ clearTimeout(_saveT); _saveT=null; if(window.__bbjYield) return; try{ if(live.draft.actions.some(Boolean)||live.series.games.length) live.ts=Date.now(); localStorage.setItem(LS,JSON.stringify({cfg,prep,live,history,ui:{poolPlayer:ui.poolPlayer}})); }catch(e){} }
 // Fayk → Romain, Billy → Fabien (vrais prénoms) : anciennes lineups, historique et préparation
 const RENAMED={Fayk:"Romain",Billy:"Fabien"};
 function fixLineup(l){ if(l) for(const r in l) if(RENAMED[l[r]]) l[r]=RENAMED[l[r]]; return l; }
@@ -59,8 +62,22 @@ function renderSync(){ const el=$("#sync"); if(el){ el.textContent=sync.note; el
 function render(){
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===ui.tab));
   const v={draft:viewDraft,prep:viewPrep,pools:viewPools,hist:viewHistory,settings:viewSettings}[ui.tab]||viewDraft;
-  $("#view").innerHTML=v()+(ui.tuto?tutoModal():""); const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
+  const ae=document.activeElement, keep=ae&&ae.id==="gq"?[ae.selectionStart,ae.selectionEnd]:null;
+  $("#view").innerHTML=v()+(ui.tuto?tutoModal():""); if(keep){ const g=$("#gq"); if(g){ g.focus({preventScroll:true}); try{ g.setSelectionRange(keep[0],keep[1]); }catch(e){} } } const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
 }
+// Rafraîchissement ciblé de l'écran de draft (grille, barre de confirmation, cases, sélection) sans recalculer les suggestions
+function patchDraft(o){ const ar=ui.tab==="draft"&&ui.viewGame==null&&!ui.scout&&!ui.tuto?$("#view .arena"):null; if(!ar) return render();
+  const t=document.createElement("div");
+  if(o.board){ t.innerHTML=boardCol("B",live.draft)+boardCol("R",live.draft); const [b,r]=t.children; if(!b||!r) return render(); ar.firstElementChild.replaceWith(b); ar.lastElementChild.replaceWith(r); }
+  if(o.grid){ const gb=ar.querySelector(".gridbox"); if(!gb) return render(); t.innerHTML=grid(); const n=t.firstElementChild;
+    gb.querySelector(".cgrid").replaceWith(n.querySelector(".cgrid")); gb.querySelector(".cbar").replaceWith(n.querySelector(".cbar"));
+    gb.querySelectorAll(".rf").forEach(x=>x.classList.toggle("on",x.dataset.v===ui.gridRole)); }
+  if(o.cbar){ const gb=ar.querySelector(".gridbox"); if(!gb) return render(); t.innerHTML=grid(); gb.querySelector(".cbar").replaceWith(t.querySelector(".cbar")); }
+  if(o.sel) ar.querySelectorAll(".bub,.gc").forEach(x=>x.classList.toggle("sel",!!ui.pending&&x.dataset.n===ui.pending.name));
+}
+// Cache du moteur : tant que draft, série, préparation et réglages sont identiques, les suggestions ne sont pas recalculées
+let _mk="", _mm=new Map();
+function memo(name,f){ const k=JSON.stringify([live.draft.side,live.draft.actions,live.series,cfg,prep]); if(k!==_mk){ _mk=k; _mm.clear(); } if(!_mm.has(name)) _mm.set(name,f()); return _mm.get(name); }
 // Chaque ligne de suggestions montre autant de bulles entières que la largeur le permet
 function fitRows(){ document.querySelectorAll(".fit1").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.display=""); const W=b.clientWidth; k.forEach(c=>{ if(c.offsetLeft+c.offsetWidth>W+1) c.style.display="none"; }); });
   document.querySelectorAll(".bubs.fill").forEach(b=>{ const k=[...b.children]; k.forEach(c=>c.style.visibility="");
@@ -145,7 +162,7 @@ function applyDrafter(st){
   const hovCh=JSON.stringify(hv)!==JSON.stringify(ui.hover||null); ui.hover=hv;
   const changed=JSON.stringify(acts)!==JSON.stringify(old)||side!==live.draft.side||prevHow!==live.sideHow;
   live.draft.side=side; live.draft.actions=acts;
-  if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else if(hovCh) render(); else renderSync();
+  if(changed){ ui.pending=null; ui.edit=null; ui.viewGame=null; persist("live"); render(); } else if(hovCh){ if(ui.tab==="draft"&&ui.viewGame==null&&!ui.scout) patchDraft({board:1}); } else renderSync();
 }
 // Nom de l'adversaire pris sur Drafter seulement si la préparation n'en a pas et que notre côté est confirmé
 function opponentFromDrafter(st,side){ const n=(side==="B"?st.red:st.blue)||""; if(prep.opponent||!sideOk()) return false; if(n&&!/^(adversaires?|blue|red|bleu|rouge|team ?\d|équipe ?\d)$/i.test(n.trim())&&prep.opponent!==n){ prep.opponent=n; persist("prep"); return true; } return false; }
@@ -197,7 +214,19 @@ function statsHtml(st){ if(!st||!st.us) return "";
 // ---------- Revue de draft ----------
 const prepFor=s=>(prep.opponent&&s.opponent&&prep.opponent.toLowerCase()===String(s.opponent).toLowerCase())?prep:{players:[],lineup:s.lineup};
 const RVN=r=>r==="B"?"Botlane":ROLE_NAMES[r];
-function reviewHtml(s,gi){ let r; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catch(e){ return ""; } if(!r||!r.picks.length) return "";
+// Revues de draft en cache (mémoire + stockage local), calculées en tâche de fond après le chargement : l'Historique s'ouvre sans attendre
+const RV_LS=LS+"-rv", RV_V="1.20"; let _rv=null, _rvT=null;
+function hashStr(t){ let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36)+t.length.toString(36); }
+function rvStore(){ if(!_rv){ try{ _rv=JSON.parse(localStorage.getItem(RV_LS)||"null"); }catch(e){} if(!_rv||_rv.v!==RV_V||!_rv.m) _rv={v:RV_V,m:{}}; } return _rv; }
+function rvKey(s,gi){ const p=prepFor(s); return hashStr(JSON.stringify([s.lineup,s.games.slice(0,gi+1).map(g=>[g.side,g.actions,g.result]),s.games[gi].stats||0,cfg.tiers,cfg.weights,cfg.roleOrder,cfg.excludeD,p===prep?[p.opponent,p.players]:0])); }
+function rvSave(){ clearTimeout(_rvT); _rvT=setTimeout(()=>{ try{ localStorage.setItem(RV_LS,JSON.stringify(_rv)); }catch(e){} },800); }
+function reviewOf(s,gi){ const st=rvStore(), k=rvKey(s,gi); if(k in st.m) return st.m[k]; let r=null; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catch(e){} st.m[k]=r; rvSave(); return r; }
+function rvWarm(){ const todo=[], live_=new Set(), S0=history.series; (S0||[]).forEach(s=>(s.games||[]).forEach((g,gi)=>{ if(g.result&&(g.actions||[]).some(Boolean)) todo.push([s,gi]); }));
+  const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>10}),60));
+  const step=dl=>{ while(todo.length&&dl.timeRemaining()>3){ const [s,gi]=todo.shift(); live_.add(rvKey(s,gi)); reviewOf(s,gi); }
+    if(todo.length) idle(step); else if(history.series===S0){ const st=rvStore(); for(const k in st.m) if(!live_.has(k)) delete st.m[k]; rvSave(); } };
+  idle(step); }
+function reviewHtml(s,gi){ const r=reviewOf(s,gi); if(!r||!r.picks.length) return "";
   const rk=p=>p.rank===1?`<b class="w">1er conseil</b>`:p.rank&&p.rank<=3?`<b>${p.rank}e conseil</b>`:p.rank?`<span class="l">${p.rank}e conseil</span>`:`<span class="l">hors des conseils</span>`;
   const pk=p=>`<tr><td>${av(p.name,"sm")} <b>${esc(p.name)}</b> <span class="muted">${ROLE_NAMES[p.role]}</span></td><td>${rk(p)}${p.score!=null?` <span class="muted">(${p.score})</span>`:""}</td><td class="muted">${p.top&&p.top.name!==p.name?`conseil n°1 : ${esc(p.top.name)} (${p.top.score})`:""}${p.best&&p.best.role!==p.role&&p.best.score>=(p.score||0)+8?`<br>meilleur pick toutes lignes : ${esc(p.best.name)} ${ROLE_NAMES[p.best.role]} (${p.best.score})`:""}</td></tr>`;
   const ln=l=>{ const pr=l.wr>=52?"w":l.wr<=48?"l":"", ok=l.gd==null?"":(l.wr>=52&&l.gd>0)||(l.wr<=48&&l.gd<0)?"✓":(l.wr>=52&&l.gd<0)||(l.wr<=48&&l.gd>0)?"✗":"";
@@ -234,7 +263,7 @@ function analysisHtml(s,gi){ let a; try{ a=gameAnalysis(cfg,s,gi,prepFor(s)); }c
     <p class="muted sm">Lecture automatique à partir des chiffres : elle ne voit ni la communication ni les décisions, à confronter avec la VOD.</p></div>`; }
 let _revCache=null;
 function reviewSummaryHtml(){ const S=history.series||[]; const key=JSON.stringify(S.map(s=>[s.date,s.opponent,s.games.map(g=>g.result+(g.stats?1:0))]))+JSON.stringify(cfg.tiers||{}).length;
-  if(!_revCache||_revCache.key!==key){ let v=null; try{ v=reviewSummary(cfg,S,prepFor); }catch(e){} _revCache={key,v}; }
+  if(!_revCache||_revCache.key!==key){ let v=null; try{ v=reviewSummary(cfg,S,prepFor,reviewOf); }catch(e){} _revCache={key,v}; }
   const v=_revCache.v; if(!v||!v.games) return "";
   const pc=(a,b)=>b?Math.round(100*a/b)+" %":"–", wr=g=>g.n?`${g.w}/${g.n} (${pc(g.w,g.n)})`:"–";
   return `<section class="card rvsum"><h3>Bilan des drafts <span class="muted">${v.games} games</span></h3>
@@ -299,7 +328,7 @@ function bubble(x,role,dim){
 function flexBanner(){ const fxs=teamPicks(live.draft,live.draft.side==="B"?"R":"B").filter(p=>p.flex&&p.fx);
   return fxs.map(p=>`<div class="flexw"><b>⚠ ${esc(p.name)} : flex possible ${(p.fxr||[]).map(r=>ROLE_NAMES[r]).join(" / ")}</b><span>${esc(p.fx)}. Ne le counterpickez pas dans un rôle précis tant que son rôle n'est pas confirmé.</span></div>`).join(""); }
 function pickBubbles(){
-  const r=recommendPicks(cfg,live.series,live.draft,prep.lineup,24); lastRecs={};
+  const r=memo("picks",()=>recommendPicks(cfg,live.series,live.draft,prep.lineup,24)); lastRecs={};
   // Anneau vert : parmi les meilleurs de la ligne, ce pick punit la compo adverse (seulement les 3 premiers concernés, pour ne pas surcharger)
   Object.values(r).forEach(R=>R.list.filter(x=>x.exploit).slice(0,3).forEach(x=>{ if(x.score>=(R.list[0]?R.list[0].score:0)-12) x.ring="exploit"; }));
   // Picks 4-5 : bandeau + anneau bleu sur ce qui comble les faiblesses de notre compo (prioritaire sur le vert)
@@ -311,16 +340,16 @@ function pickBubbles(){
     <div class="bubs fill">${r[role].list.map(x=>bubble(x,role,false)).join("")||'<span class="muted">Pool vide</span>'}</div></div>`).join("");
 }
 function duoRow(){
-  const D=recommendDuos(cfg,live.series,live.draft,prep.lineup,20); if(!D.length) return "";
+  const D=memo("duos",()=>recommendDuos(cfg,live.series,live.draft,prep.lineup,20)); if(!D.length) return "";
   return `<div class="rrow duo"><div class="rl"><b>Duos</b></div><div class="bubs fill duos">${D.map(x=>`<button class="duob${x.team?" team":""}" data-act="duo" data-a="${esc(x.a.name)}" data-ra="${x.roles[0]}" data-b="${esc(x.b.name)}" data-rb="${x.roles[1]}" title="${esc(x.a.name)} + ${esc(x.b.name)}${x.pro?` · ${x.pro.n} games ensemble en pro (${x.pro.wr} % de victoires)`:""}${x.team?" · déjà joués en équipe":""}${x.answer?" · répond à leurs picks":""}${x.edge&&x.edge.why.length?` · botlane estimée ${x.edge.v>0?"+":""}${x.edge.v} pts (${esc(x.edge.why.join(", "))})`:""}">
      ${av(x.a.name,"md")}${av(x.b.name,"md")}</button>`).join("")}</div></div>`;
 }
 function banBubbles(){
-  const r=recommendBans(cfg,live.series,live.draft,prep,prep.lineup,24); lastRecs={};
+  const r=memo("bans",()=>recommendBans(cfg,live.series,live.draft,prep,prep.lineup,24)); lastRecs={};
   r.forEach((x,k)=>{ x.rank=k+1; lastRecs[x.name]=x; });
   const phase2=live.draft.actions.filter((a,i)=>a&&STEPS[i][0]==="pick").length>=6;
   // Bans 4-5 : la stratégie (les priver de ce qui manque / casser leur synergie) et un anneau bleu sur les bans qui la servent
-  const strat=phase2?banStrategy(cfg,live.series,live.draft,prep.lineup,prep):null;
+  const strat=phase2?memo("bstrat",()=>banStrategy(cfg,live.series,live.draft,prep.lineup,prep)):null;
   if(strat) r.slice(0,6).forEach(x=>{ if(x.fam===strat.mode) x.ring="strat"; });
   // Bans 1-3 : rappel de nos 3 premiers bans de la game précédente (souvent les mêmes), à part des autres suggestions
   let prevRow=""; const G=live.series.games, ti=targetIndex();
@@ -333,7 +362,7 @@ function banBubbles(){
 }
 function grid(){
   const un=unavailable(live.series,live.draft); const q=normName(ui.gridQ); const p=ui.pending;
-  let list=CHAMP_NAMES.filter(n=>(ui.gridRole==="all"||CHAMPS[n].roles.includes(ui.gridRole))&&(!q||normName(n).includes(q)));
+  let list=CHAMP_NAMES.filter(n=>ui.gridRole==="all"||CHAMPS[n].roles.includes(ui.gridRole));
   // Notre tour de pick : étoile sur nos champions S à B (tier du joueur du rôle filtré, sinon meilleur tier parmi nos rôles encore libres)
   const ti=targetIndex(), ourPick=ti>=0&&STEPS[ti][0]==="pick"&&STEPS[ti][1]===live.draft.side, TR={S:3,A:2,B:1};
   const freeR=ROLES.filter(r=>!teamPicks(live.draft,live.draft.side).some(a=>a.role===r&&!a.flex));
@@ -344,7 +373,7 @@ function grid(){
   return `<div class="gridbox"><div class="gtools"><input id="gq" data-act="gq" value="${esc(ui.gridQ)}" placeholder="Rechercher un champion…" autocomplete="off">
     ${[["all","Tous"],...ROLES.map(r=>[r,ROLE_NAMES[r]])].map(([k,l])=>`<button class="rf ${ui.gridRole===k?"on":""}" data-act="grole" data-v="${k}">${l}</button>`).join("")}</div>
     <div class="cgrid">${list.map(n=>{ const off=un.has(n)&&!(ui.edit!=null&&live.draft.actions[ui.edit]&&live.draft.actions[ui.edit].name===n);
-      return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""} data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★</i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
+      const nq=normName(n); return `<button class="gc${off?" off":""}${p&&p.name===n?" sel":""}" ${off?"disabled":""}${q&&!nq.includes(q)?" hidden":""} data-q="${esc(nq)}" data-act="choose" data-n="${esc(n)}" title="${esc(n+(T[n]?` · tier ${T[n].t} de ${prep.lineup[T[n].r]} (${ROLE_NAMES[T[n].r]})`:""))}">${av(n,"md")}${T[n]?`<i class="star t${T[n].t}">★</i>`:""}<span>${esc(n)}</span></button>`; }).join("")}</div>
     <div class="cbar">${p?`${av(p.name,"md")}<b>${esc(p.name)}</b>`:`<span class="muted">Clique un champion puis confirme (double-clic = direct)</span>`}<span class="sp"></span>
       ${ui.edit!=null?`<button class="btn" data-act="clearslot">Vider</button><button class="btn" data-act="canceledit">Annuler</button>`:(curStep()!==0?`<button class="btn" data-act="undo" title="Annuler la dernière étape">↶ Retour</button>`:"")}
       <button class="btn pri confirm" data-act="confirm" ${p?"":"disabled"}>Confirmer</button></div></div>`;
@@ -647,16 +676,16 @@ document.addEventListener("click",e=>{
   else if(act==="choose"){ const n=b.dataset.n, now=Date.now();
     // double-clic : le premier clic redessine la grille, donc on le détecte nous-mêmes (même champion cliqué deux fois en moins de 450 ms)
     if(ui._lastChoose&&ui._lastChoose.n===n&&now-ui._lastChoose.t<450){ ui._lastChoose=null; ui.duoNext=null; addChamp(n,b.dataset.r||null); return; }
-    ui._lastChoose={n,t:now}; ui.pending={name:n,role:b.dataset.r||null}; ui.duoNext=null; render(); }
+    ui._lastChoose={n,t:now}; ui.pending={name:n,role:b.dataset.r||null}; ui.duoNext=null; patchDraft({board:1,cbar:1,sel:1}); }
   else if(act==="rup"){ const o=roleOrderOf(cfg).slice(), k=o.indexOf(b.dataset.r); if(k>0){ [o[k-1],o[k]]=[o[k],o[k-1]]; cfg.roleOrder=o; persist("config"); render(); } }
-  else if(act==="duo"){ ui.pending={name:b.dataset.a,role:b.dataset.ra}; ui.duoNext={name:b.dataset.b,role:b.dataset.rb}; render(); }
+  else if(act==="duo"){ ui.pending={name:b.dataset.a,role:b.dataset.ra}; ui.duoNext={name:b.dataset.b,role:b.dataset.rb}; patchDraft({board:1,cbar:1,sel:1}); }
   else if(act==="confirm"){ if(ui.pending){ const dn=ui.duoNext&&ui.duoNext.name!==ui.pending.name?ui.duoNext:null; ui.duoNext=null;
       if(addChamp(ui.pending.name,ui.pending.role)&&dn){ const i=live.draft.actions.findIndex(a=>!a);
         if(i>=0&&STEPS[i][0]==="pick"&&STEPS[i][1]===live.draft.side&&!unavailable(live.series,live.draft).has(dn.name)){ ui.pending=dn; render(); } } } }
   else if(act==="editslot"){ const k=+b.dataset.k; if(!live.draft.actions[k]) return; ui.edit=k; ui.pending=null; render(); }
   else if(act==="canceledit"){ ui.edit=null; ui.pending=null; render(); }
   else if(act==="clearslot"){ live.draft.actions[ui.edit]=null; if(live.draft.manual) delete live.draft.manual[ui.edit]; ui.edit=null; ui.pending=null; persist("live"); render(); }
-  else if(act==="grole"){ ui.gridRole=b.dataset.v; render(); }
+  else if(act==="grole"){ ui.gridRole=b.dataset.v; patchDraft({grid:1}); }
   else if(act==="viewgame"){ const k=+b.dataset.k; ui.viewGame=k<0?null:k; render(); }
   else if(act==="undo"){ let i=curStep(); i=i<0?19:i-1; if(i>=0){ live.draft.actions[i]=null; if(live.draft.manual) delete live.draft.manual[i]; } ui.pending=null; persist("live"); render(); }
   else if(act==="flex"){ const a=live.draft.actions[+b.dataset.k]; a.flex=!a.flex; if(!a.flex){ delete a.fx; delete a.fxr; } persist("live"); render(); }
@@ -711,12 +740,14 @@ document.addEventListener("change",e=>{
 document.addEventListener("mouseover",e=>{ const b=e.target.closest(".bub"); const tip=$("#tip"); if(!b){ if(!e.target.closest("#tip")) tip.classList.remove("on"); return; }
   const x=lastRecs[b.dataset.h]; if(!x) return; tip.innerHTML=tipHtml(x); const r=b.getBoundingClientRect();
   tip.classList.add("on"); const w=tip.offsetWidth; tip.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+"px"; tip.style.top=(r.bottom+6+scrollY)+"px"; });
-document.addEventListener("input",e=>{ if(e.target.id==="gq"){ ui.gridQ=e.target.value; const pos=e.target.selectionStart; const box=$(".cgrid"); render(); const g=$("#gq"); if(g){ g.focus(); g.setSelectionRange(pos,pos); } } });
+// Recherche : on masque/affiche les champions déjà présents dans la grille (aucun recalcul, instantané)
+document.addEventListener("input",e=>{ if(e.target.id==="gq"){ ui.gridQ=e.target.value; const cg=$("#view .cgrid"); if(!cg) return patchDraft({grid:1}); const q=normName(ui.gridQ);
+  for(const b of cg.children){ const h=!!q&&!(b.dataset.q||"").includes(q); if(b.hidden!==h) b.hidden=h; } } });
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&ui.scout){ ui.scout=null; render(); return; }
   if(ui.tab!=="draft") return;
   if(e.key==="Enter"){ if(ui.pending){ addChamp(ui.pending.name,ui.pending.role); e.preventDefault(); }
-    else if(e.target.id==="gq"){ const n=CHAMP_NAMES.filter(x=>(ui.gridRole==="all"||CHAMPS[x].roles.includes(ui.gridRole))&&normName(x).includes(normName(ui.gridQ)))[0]; if(n){ ui.pending={name:n,role:null}; render(); } } }
+    else if(e.target.id==="gq"){ const n=CHAMP_NAMES.filter(x=>(ui.gridRole==="all"||CHAMPS[x].roles.includes(ui.gridRole))&&normName(x).includes(normName(ui.gridQ)))[0]; if(n){ ui.pending={name:n,role:null}; patchDraft({board:1,cbar:1,sel:1}); } } }
   if(e.key==="Escape"){ ui.pending=null; ui.edit=null; render(); } });
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; ui.tierPop=null; render(); });
 $("#champs").innerHTML=CHAMP_NAMES.map(n=>`<option value="${esc(n)}">`).join("");
@@ -724,7 +755,7 @@ $("#champs").innerHTML=CHAMP_NAMES.map(n=>`<option value="${esc(n)}">`).join("")
 // Artefact Claude : l'historique publié (team.json, mis à jour par « Fin de série ») remplace celui de la base quand il est plus récent
 let _snapArt=null;
 function adoptSnapHistory(){ if(!_snapArt||!_snapArt.history||sync.histAt==null||_snapArt.at<=sync.histAt) return false;
-  history=Object.assign({series:[]},JSON.parse(JSON.stringify(_snapArt.history))); fixNames(); sync.histAt=_snapArt.at; saveLocal(); render();
+  history=Object.assign({series:[]},JSON.parse(JSON.stringify(_snapArt.history))); fixNames(); sync.histAt=_snapArt.at; saveLocal(); render(); setTimeout(rvWarm,800);
   if(sync.db&&!sync.readOnly){ pending.history=true; clearTimeout(timers.history); flush("history"); } flash("Historique de l'équipe mis à jour"); return true; }
 async function initSnapshot(){
   if(window.claude&&window.claude.use){ try{ const r=await fetch("team.json",{cache:"no-store"}); if(r.ok){ const s=await r.json(); if(s&&s.at){ _snapArt=s; adoptSnapHistory(); } } }catch(e){} return; }
@@ -749,6 +780,6 @@ function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(
   const S=history.series||[]; let s=S.find(x=>x.pendingExport)||S.find(x=>x.games.length===G.length&&!x.games.some(g=>g.stats))||S[0]; if(!s) return;
   const games=s.games, off=Math.max(0,G.length-games.length), list=G.slice(off);
   games.forEach((g,i)=>{ const x=list[i]; if(!x) return; g.stats={gameId:x.gameId,min:x.min,us:x.us,them:x.them,objUs:x.objUs,objThem:x.objThem}; if(!g.result&&x.win!=null) g.result=x.win?"W":"L"; });
-  delete s.pendingExport; persist("history"); saveLocal(); if(bbjBC) bbjBC.postMessage("reload");
+  delete s.pendingExport; persist("history"); saveNow(); if(bbjBC) bbjBC.postMessage("reload");
   ui.tab="hist"; flash(`Stats de ${Math.min(list.length,games.length)} games ajoutées à la série vs ${s.opponent}`); render(); }
-loadLocal(); ui.tuto=false; render(); initDb(); initSnapshot(); setTimeout(importFromHash,300);
+loadLocal(); ui.tuto=false; render(); initDb(); initSnapshot(); setTimeout(importFromHash,300); setTimeout(rvWarm,2500);

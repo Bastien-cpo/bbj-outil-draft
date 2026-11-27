@@ -1012,9 +1012,9 @@ function draftReview(cfg,s,gi,pp){
     if(C&&l&&!C.roles.includes(l.role==="B"?(l.theirs===a.name?"A":"S"):l.role)) notes.push(`${a.name} pické tôt puis joué hors de son rôle habituel : flex`); } });
   return {win:f?f.win:null,result:g.result||null,picks,lanes,notes}; }
 // Bilan sur tout l'historique : l'outil a-t-il raison, et le suivons-nous ?
-function reviewSummary(cfg,S,prepFor){
+function reviewSummary(cfg,S,prepFor,rev){
   const rows=[]; (S||[]).forEach((s,si)=>(s.games||[]).forEach((g,gi)=>{ if(!g.result||!(g.actions||[]).some(Boolean)) return;
-    let r; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catch(err){ return; } rows.push({si,gi,date:s.date,opp:s.opponent,r}); }));
+    let r; try{ r=rev?rev(s,gi):draftReview(cfg,s,gi,prepFor(s)); }catch(err){ return; } if(!r) return; rows.push({si,gi,date:s.date,opp:s.opponent,r}); }));
   const W=a=>a.filter(x=>x.r.result==="W").length, grp=f=>{ const a=rows.filter(f); return {n:a.length,w:W(a)}; };
   const P=rows.flatMap(x=>x.r.picks), top3=P.filter(p=>p.rank&&p.rank<=3).length;
   const follow=x=>x.r.picks.length&&x.r.picks.filter(p=>p.rank&&p.rank<=3).length>=Math.ceil(x.r.picks.length*0.6);

@@ -2,6 +2,15 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.20 — 27/11/2026
+- Allègement et rapidité (aucun changement de calcul ni d'affichage) :
+  - recherche de champion instantanée : chaque lettre masque ou affiche les champions déjà dans la grille au lieu de tout redessiner (2 ms par lettre au lieu de 50 à 110 ms) ;
+  - clic sur un champion, une bulle, un duo ou un filtre de rôle : seules la sélection, la barre « Confirmer » et les cases de la draft sont mises à jour (moins de 10 ms) ;
+  - les suggestions (picks, duos, bans, stratégie de bans) sont gardées en mémoire tant que la draft, la série, la préparation et les réglages ne changent pas ;
+  - survol d'un champion par l'adversaire sur Drafter : seules les cases de la draft sont redessinées. Avant, tout l'écran l'était et la recherche en cours perdait le focus ; le focus et le curseur sont maintenant toujours conservés ;
+  - sauvegarde locale regroupée (300 ms après le dernier changement, et immédiate à la fermeture de la page) au lieu d'une réécriture complète à chaque clic ;
+  - Historique : les revues de draft de chaque game sont calculées en tâche de fond après le chargement puis conservées sur l'appareil. Avec 48 games (volume attendu du Parthénon), l'onglet s'ouvre en 4 ms au lieu de 0,7 s (2,7 s sur un appareil lent).
+
 ## 1.19 — 27/11/2026
 - La correction du score pro ne compte plus les buffs et nerfs : elle mesure l'effet réel des patchs. Pour chaque champion et chaque rôle, l'outil compare son winrate solo Q (LoLalytics Maître+, écart au winrate moyen) entre le patch des Worlds (26.20) et le 26.23, pondéré par le nombre de games. Exemples : Viktor mid −0,9 pt (nerf puis buff, toujours plus faible qu'aux Worlds), Ezreal ADC +1,2, Orianna mid +1,7, Syndra mid −1,8. Les buffs/nerfs ne servent que pour un champion sans assez de données. Le détail du pick indique « plus fort / plus faible qu'aux Worlds ».
 
