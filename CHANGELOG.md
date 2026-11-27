@@ -2,6 +2,12 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.13 — 27/11/2026
+- Revue de draft (Historique, en ouvrant une game) : draft estimée par l'outil et résultat ; pour chacun de nos picks, sa place dans les conseils de l'outil à ce moment-là (1er, 3e, hors des conseils…) et le conseil n°1 ; lanes prévues (%) face à l'or en fin de game ; alertes « pické avant son counter : lane contrée » et « pické tôt puis joué hors de son rôle : flex ».
+- Bilan des drafts (en haut de l'Historique) : l'outil voit-il juste (victoires selon la draft estimée, lanes prévues gagnantes ou perdantes face à l'or réel) ; suivons-nous ses conseils (part de nos picks dans son top 3, victoires quand on les suit ou non) ; résumé par série.
+- Nos flex, discrets : petite étiquette grise « flex » sur une suggestion jouée en S/A par deux de nos joueurs (ex. Dr. Mundo top/jungle), seulement pour nos 2-3 premiers picks.
+- Préparation : « Bans probables contre nous », d'après les bans subis dans l'historique (l'adversaire préparé compte double).
+
 ## 1.12 — 26/11/2026
 - Historique : stats de chaque game en miroir. Au centre, le rôle avec nos champions et les leurs ; de chaque côté, la même stat (or, puis CS, puis KDA, puis dégâts). La meilleure valeur de chaque paire est en vert, la moins bonne en rouge. Les objectifs (tours, drakes, barons, héraut, larves) suivent le même principe. Sur téléphone, les dégâts sont masqués pour garder le tableau lisible.
 - Série du 26/11 contre EQX classée en « Compétition ».

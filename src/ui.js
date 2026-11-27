@@ -185,13 +185,41 @@ function statsHtml(st){ if(!st||!st.us) return "";
   const OB=[["Tours","towers"],["Drakes","drakes"],["Barons","barons"],["Héraut","herald"],["Larves","grubs"]];
   const obj=st.objUs&&st.objThem?`<table class="mirror obj">${OB.map(([n,f])=>{ const a=st.objUs[f]||0, b=st.objThem[f]||0; return `<tr><td class="${a>b?"w":a<b?"l":""}">${a}</td><td class="mid"><span class="rl2">${n}</span></td><td class="${b>a?"w":b<a?"l":""}">${b}</td></tr>`; }).join("")}</table>`:"";
   return `<div class="gstats"><h4>Stats de la game · ${st.min} min</h4><table class="mirror">${head}${ROLES.map(row).join("")}${totRow}</table>${obj}</div>`; }
+
+// ---------- Revue de draft ----------
+const prepFor=s=>(prep.opponent&&s.opponent&&prep.opponent.toLowerCase()===String(s.opponent).toLowerCase())?prep:{players:[],lineup:s.lineup};
+const RVN=r=>r==="B"?"Botlane":ROLE_NAMES[r];
+function reviewHtml(s,gi){ let r; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catch(e){ return ""; } if(!r||!r.picks.length) return "";
+  const rk=p=>p.rank===1?`<b class="w">1er conseil</b>`:p.rank&&p.rank<=3?`<b>${p.rank}e conseil</b>`:p.rank?`<span class="l">${p.rank}e conseil</span>`:`<span class="l">hors des conseils</span>`;
+  const pk=p=>`<tr><td>${av(p.name,"sm")} <b>${esc(p.name)}</b> <span class="muted">${ROLE_NAMES[p.role]}</span></td><td>${rk(p)}${p.score!=null?` <span class="muted">(${p.score})</span>`:""}</td><td class="muted">${p.top&&p.top.name!==p.name?`conseil n°1 : ${esc(p.top.name)} (${p.top.score})`:""}${p.best&&p.best.role!==p.role&&p.best.score>=(p.score||0)+8?`<br>meilleur pick toutes lignes : ${esc(p.best.name)} ${ROLE_NAMES[p.best.role]} (${p.best.score})`:""}</td></tr>`;
+  const ln=l=>{ const pr=l.wr>=52?"w":l.wr<=48?"l":"", ok=l.gd==null?"":(l.wr>=52&&l.gd>0)||(l.wr<=48&&l.gd<0)?"✓":(l.wr>=52&&l.gd<0)||(l.wr<=48&&l.gd>0)?"✗":"";
+    return `<tr><td><b>${RVN(l.role)}</b> ${esc(l.ours)}${l.ours2?" + "+esc(l.ours2):""} <span class="muted">vs</span> ${esc(l.theirs)}${l.theirs2?" + "+esc(l.theirs2):""}</td><td class="${pr}">${l.wr} %${l.counterpicked?" · contrée":""}</td><td class="${l.gd>0?"w":l.gd<0?"l":""}">${l.gd==null?"–":Math.abs(l.gd)<150?"≈ 0":(l.gd>0?"+":"")+(l.gd/1000).toFixed(1)+"k"}</td><td>${ok}</td></tr>`; };
+  return `<div class="review"><h4>Revue de draft</h4>
+    <p>Draft estimée à <b>${r.win} %</b> par l'outil · résultat : <b class="${r.result==="W"?"w":"l"}">${r.result==="W"?"victoire":"défaite"}</b></p>
+    ${r.notes.length?`<div class="rvnotes">${r.notes.map(n=>`<div>⚠ ${esc(n)}</div>`).join("")}</div>`:""}
+    <table class="rvt"><tr><th>Nos picks</th><th>Place dans les conseils</th><th></th></tr>${r.picks.map(pk).join("")}</table>
+    <table class="rvt"><tr><th>Lanes</th><th>Prévu</th><th>Or fin de game</th><th></th></tr>${r.lanes.map(ln).join("")}</table>
+    <p class="muted">Conseils recalculés avec vos pools et tier lists actuels. L'or en fin de game n'est qu'un indice du résultat des lanes.</p></div>`; }
+let _revCache=null;
+function reviewSummaryHtml(){ const S=history.series||[]; const key=JSON.stringify(S.map(s=>[s.date,s.opponent,s.games.map(g=>g.result+(g.stats?1:0))]))+JSON.stringify(cfg.tiers||{}).length;
+  if(!_revCache||_revCache.key!==key){ let v=null; try{ v=reviewSummary(cfg,S,prepFor); }catch(e){} _revCache={key,v}; }
+  const v=_revCache.v; if(!v||!v.games) return "";
+  const pc=(a,b)=>b?Math.round(100*a/b)+" %":"–", wr=g=>g.n?`${g.w}/${g.n} (${pc(g.w,g.n)})`:"–";
+  return `<section class="card rvsum"><h3>Bilan des drafts <span class="muted">${v.games} games</span></h3>
+    <div class="rvgrid">
+      <div><b>L'outil voit juste ?</b><span>Draft favorable (≥ 53 %) : ${wr(v.fav)} gagnées</span><span>Équilibrée : ${wr(v.neu)}</span><span>Défavorable (≤ 47 %) : ${wr(v.unf)}</span>
+        <span>Lanes prévues gagnantes : ${v.laneFav.ok}/${v.laneFav.n} finies avec plus d'or</span><span>Lanes prévues perdantes : ${v.laneUnf.ok}/${v.laneUnf.n} finies avec moins d'or</span></div>
+      <div><b>Suivons-nous les conseils ?</b><span>Picks dans le top 3 de l'outil : ${v.top3}/${v.picks} (${pc(v.top3,v.picks)})</span>
+        <span>Games où ≥ 60 % des picks étaient dans le top 3 : ${wr(v.followed)}</span><span>Autres games : ${wr(v.notFollowed)}</span></div>
+      <div><b>Par série</b>${v.series.map(s=>`<span>${esc(s.date)} vs ${esc(s.opp||"?")} : ${s.w}/${s.n} · draft ${s.win} % · top 3 ${s.t3} %</span>`).join("")}</div>
+    </div><p class="muted">Ouvre une game pour sa revue détaillée. Peu de games pour l'instant : à lire comme une tendance, pas comme une vérité.</p></section>`; }
 function viewHistory(){
   const S=history.series||[];
   if(ui.hist&&S[ui.hist.s]&&S[ui.hist.s].games[ui.hist.g]){ const s=S[ui.hist.s], g=s.games[ui.hist.g];
     return `<div class="dtop"><button class="btn sm" data-act="hclose">← Historique</button><b>${esc(s.date)} · ${esc(s.type||"Scrim")} vs ${esc(s.opponent)} · Game ${ui.hist.g+1} ${g.result==="W"?"(victoire)":g.result==="L"?"(défaite)":""}</b></div>
-      ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
+      ${(()=>{ ui.histOpp=s.opponent||""; const h=`<section class="arena">${boardCol("B",g,true)}<div class="center">${finalHtml(g,"hist")}${reviewHtml(s,ui.hist.g)}${statsHtml(g.stats)}</div>${boardCol("R",g,true)}</section>`; ui.histOpp=null; return h; })()}`; }
   if(!S.length) return `<section class="card"><h3>Historique</h3><p class="muted">Aucune série enregistrée.</p></section>`;
-  return S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
+  return reviewSummaryHtml()+S.map((s,si)=>`<section class="card hs"><h3>${esc(s.date)} · vs <input class="hopp" data-act="hopp" data-s="${si}" value="${esc(s.opponent)}"> <span class="tag ${seriesScore(s.games).split("-")[0]>seriesScore(s.games).split("-")[1]?"ok":"ko"}">${seriesScore(s.games)}</span>
     <button class="btn sm" data-act="htype" data-s="${si}" title="Changer le type">${esc(s.type||"Scrim")}${(s.type||"Scrim")==="Scrim"?` · ${s.games.length} games`:""}</button>${s.note?` <span class="muted">${esc(s.note)}</span>`:""}</h3>
     ${s.games.map((g,gi)=>{ const us=g.side, them=us==="B"?"R":"B", P=t=>g.actions.filter((a,i)=>a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===t);
       return `<div class="hg" data-act="hview" data-s="${si}" data-g="${gi}"><b class="${g.result==="W"?"w":g.result==="L"?"l":""}">G${gi+1} ${g.result==="W"?"✓":g.result==="L"?"✗":"·"}</b><span class="muted">${us==="B"?"Blue":"Red"}</span>
@@ -233,7 +261,7 @@ function bubble(x,role,dim){
   const hk=x.name+"|"+(role||""); lastRecs[hk]=x; const sel=ui.pending&&ui.pending.name===x.name;
   const ring=x.ring?` ring-${x.ring}`:"";
   return `<button class="bub${dim?" dim":""}${x.prep?" prep":""}${sel?" sel":""}${ring}" data-act="choose" data-n="${esc(x.name)}" ${role?`data-r="${role}"`:""} data-h="${esc(hk)}">
-    ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}${x.offpool?'<span class="duom off" title="Hors de son pool, mais comble notre faiblesse">hors pool</span>':""}<span class="bn">${esc(x.name)}</span></button>`;
+    ${av(x.name,"lg")}${x.rank?`<span class="sc rank${x.rank<=3?" hi":""}">${x.rank}</span>`:`<span class="sc ${x.score>=85?"hi":x.score>=72?"md":""}">${x.score}</span>`}${x.duo?'<span class="duom" title="Duo avéré avec un de vos picks">duo</span>':""}${x.offpool?'<span class="duom off" title="Hors de son pool, mais comble notre faiblesse">hors pool</span>':""}${x.ourFlex&&!x.duo&&!x.offpool&&teamPicksNames(live.draft,live.draft.side).length<3?`<span class="duom ofx" title="${esc("Flex chez nous : aussi joué "+x.ourFlex.map(r=>"en "+ROLE_NAMES[r]+" par "+((prep.lineup||{})[r]||ROLE_NAMES[r])).join(" et ")+". Pické tôt, il cache notre rôle.")}">flex</span>`:""}<span class="bn">${esc(x.name)}</span></button>`;
 }
 // Picks adverses au rôle incertain (flex) : alerte visible pendant nos picks ET nos bans
 function flexBanner(){ const fxs=teamPicks(live.draft,live.draft.side==="B"?"R":"B").filter(p=>p.flex&&p.fx);
@@ -452,6 +480,9 @@ function viewPrep(){
     <div class="ids5">${ROLES.map((r,k)=>`<label><em>Joueur ${k+1}</em><input data-act="pid" data-k="${k}" value="${esc((prep.ids||[])[k]||"")}" placeholder="Pseudo#TAG"></label>`).join("")}</div>
     <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button><button class="btn sm" data-act="clearprep" title="Série terminée : vide l'adversaire, son op.gg et les bans de préparation">Effacer la préparation</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
     ${reqStatus()||prep.updatedAt?`<p class="muted">${reqStatus()}${prep.updatedAt?` Profils mis à jour le ${esc(prep.updatedAt)}.`:""}</p>`:""}</section>
+  ${(()=>{ const B=bansAgainstUs(history.series,prep.opponent); if(!B.games||!B.list.length) return "";
+    return `<section class="card"><h3>Bans probables contre nous</h3><p class="muted">Ce qu'on nous a banni sur ${B.games} games de l'historique (${esc(prep.opponent||"l'adversaire")} compte double). Utile pour préparer les plans B et s'entraîner à drafter avant le match.</p>
+    <div class="chips">${B.list.slice(0,10).map(x=>`<span class="chip" title="${esc(`${x.name} : banni ${x.n} fois contre nous${x.same?`, dont ${x.same} par ${prep.opponent}`:""}`)}">${av(x.name,"sm")}<b>${x.n}×</b>${x.same?`<span class="muted">${esc(prep.opponent)} ${x.same}×</span>`:""}</span>`).join("")}</div></section>`; })()}
   <section class="card"><h3>Bans conseillés</h3>
     ${plan.length?`<div class="bplan">${plan.slice(0,7).map((x,k)=>`<div class="bpc"><span class="rk">${k+1}</span>${av(x.name,"lg")}<b>${esc(x.name)}</b><span class="muted">${esc(x.player.split("#")[0])} · ${ROLE_NAMES[x.role]}</span>
       <div class="btags">${x.tags.map(t=>`<span class="tag ${t==="Meilleur joueur"?"star":"ok"}" ${t==="Contrable par nous"&&x.counters.length?`title="${esc(x.counters.slice(0,3).map(o=>`${o.champ} (${o.player}, ${o.wr} %)`).join(", "))}"`:""}>${esc(t)}</span>`).join("")}</div>

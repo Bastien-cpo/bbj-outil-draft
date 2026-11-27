@@ -429,6 +429,8 @@ function recommendPicks(cfg,series,draft,lineup,per=5){
         .map(c=>{ const x=scorePick(cfg,c,role,ctx); x.fill=familiesOf(c).find(k=>gaps.includes(k)); x.offpool=true; x.why.unshift(`Hors de son pool, mais comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); return x; })
         .sort((a,b)=>b.score-a.score).slice(0,2);
       const ref=list[4]?list[4].score:0; extra.forEach((x,k)=>{ let i=list.findIndex(y=>!y.offpool&&y.score<x.score); if(i<0) i=list.length; list.splice(x.score>=ref-8?Math.max(Math.min(i,5+k),Math.min(5+k,list.length)):Math.min(i,7+k),0,x); }); list.forEach(x=>{ if(x.fill&&!x.offpool) x.why.unshift(`Comble notre manque de ${FAMS[x.fill].fr.toLowerCase()}`); }); }
+    // Nos flex (discret) : champion aussi joué par un autre de nos joueurs (tier S/A/B) à un autre rôle encore ouvert
+    list.forEach(x=>{ if(!["S","A"].includes(tierFor(cfg,pid,role,x.name))) return; const o=ctx.open.filter(r=>r!==role&&lineup[r]&&["S","A"].includes(tierFor(cfg,lineup[r],r,x.name))); if(o.length) x.ourFlex=o; });
     out[role]={list, prio:prio[role]};
   });
   return out;
@@ -922,4 +924,52 @@ function analyzeFinal(cfg,draft,prep,lineup){
   const win=Math.round(Math.max(35,Math.min(65,50+0.6*total)));
   return {win, factors, us:U, them:T, lanes:A.lanes, plan:A.plan};
 }
-if(typeof module!=="undefined"&&module.exports) module.exports={compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
+
+// Bans probables contre nous : ce que nos adversaires ont banni contre nous dans l'historique (même adversaire = poids double)
+function bansAgainstUs(S,opp){ const cnt={}; let games=0;
+  (S||[]).forEach(s=>{ const same=opp&&s.opponent&&String(s.opponent).toLowerCase()===String(opp).toLowerCase();
+    (s.games||[]).forEach(g=>{ if(!(g.actions||[]).some(Boolean)) return; games++; (g.actions||[]).forEach((a,i)=>{ if(!a||!a.name||a.miss||STEPS[i][0]!=="ban"||STEPS[i][1]===g.side) return;
+      const c=cnt[a.name]||(cnt[a.name]={name:a.name,n:0,same:0,p1:0}); c.n++; if(same) c.same++; if(i<6) c.p1++; }); }); });
+  return {games,list:Object.values(cnt).map(c=>({...c,w:c.n+c.same})).sort((a,b)=>b.w-a.w||b.p1-a.p1)}; }
+
+// ---- Revue de draft (après coup) : nos picks face aux conseils de l'outil, lanes prévues face à l'or réel ----
+function draftReview(cfg,s,gi,pp){
+  const g=s.games[gi], side=g.side, them=side==="B"?"R":"B", lineup=s.lineup||{};
+  const locked=[]; s.games.slice(0,gi).forEach(x=>(x.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick") locked.push(a.name); }));
+  const ser={locked,games:s.games.slice(0,gi)}, idx={};
+  (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick") idx[a.name]=i; });
+  const picks=[];
+  (g.actions||[]).forEach((a,i)=>{ if(!a||!a.name||STEPS[i][0]!=="pick"||STEPS[i][1]!==side||!a.role) return;
+    const d={side,actions:g.actions.map((x,j)=>j<i?x:null)}; let R; try{ R=recommendPicks(cfg,ser,d,lineup,40); }catch(err){ return; }
+    const L=(R[a.role]&&R[a.role].list||[]).filter(x=>!x.offpool), k=L.findIndex(x=>x.name===a.name);
+    let sc=k>=0?L[k].score:null; if(sc==null){ try{ const c=pickContext(d,lineup,ser); c.cfg=cfg; sc=scorePick(cfg,a.name,a.role,c).score; }catch(err){} }
+    let best=null; for(const r in R){ const y=(R[r].list||[]).find(x=>!x.offpool); if(y&&(!best||y.score>best.score)) best={name:y.name,role:r,score:y.score}; }
+    picks.push({i,name:a.name,role:a.role,rank:k>=0?k+1:null,score:sc,top:L[0]?{name:L[0].name,score:L[0].score}:null,best}); });
+  let f=null; try{ f=analyzeFinal(cfg,{side,actions:g.actions},pp||{players:[]},lineup); }catch(err){}
+  const st=g.stats, gold=(t,r)=>st&&st[t]&&st[t][r]?st[t][r].gold:null;
+  const lanes=(f&&f.lanes||[]).map(l=>{ const rs=l.role==="B"?["A","S"]:[l.role]; let gd=null;
+    if(st&&rs.every(r=>gold("us",r)!=null&&gold("them",r)!=null)) gd=rs.reduce((a,r)=>a+gold("us",r)-gold("them",r),0);
+    const first=idx[l.ours]!=null&&idx[l.theirs]!=null&&idx[l.ours]<idx[l.theirs];
+    return {role:l.role,ours:l.ours,theirs:l.theirs,ours2:l.ours2,theirs2:l.theirs2,wr:l.wr,gd,counterpicked:first&&l.wr<=47.5}; });
+  const notes=[];
+  lanes.filter(l=>l.counterpicked).forEach(l=>notes.push(`${l.ours} pické avant ${l.theirs} : lane contrée (${l.wr} %)`));
+  (g.actions||[]).forEach((a,i)=>{ if(a&&a.name&&STEPS[i][0]==="pick"&&STEPS[i][1]===them&&i<=8){ const C=CHAMPS[a.name]; const l=lanes.find(x=>x.theirs===a.name||x.theirs2===a.name);
+    if(C&&l&&!C.roles.includes(l.role==="B"?(l.theirs===a.name?"A":"S"):l.role)) notes.push(`${a.name} pické tôt puis joué hors de son rôle habituel : flex`); } });
+  return {win:f?f.win:null,result:g.result||null,picks,lanes,notes}; }
+// Bilan sur tout l'historique : l'outil a-t-il raison, et le suivons-nous ?
+function reviewSummary(cfg,S,prepFor){
+  const rows=[]; (S||[]).forEach((s,si)=>(s.games||[]).forEach((g,gi)=>{ if(!g.result||!(g.actions||[]).some(Boolean)) return;
+    let r; try{ r=draftReview(cfg,s,gi,prepFor(s)); }catch(err){ return; } rows.push({si,gi,date:s.date,opp:s.opponent,r}); }));
+  const W=a=>a.filter(x=>x.r.result==="W").length, grp=f=>{ const a=rows.filter(f); return {n:a.length,w:W(a)}; };
+  const P=rows.flatMap(x=>x.r.picks), top3=P.filter(p=>p.rank&&p.rank<=3).length;
+  const follow=x=>x.r.picks.length&&x.r.picks.filter(p=>p.rank&&p.rank<=3).length>=Math.ceil(x.r.picks.length*0.6);
+  const L=rows.flatMap(x=>x.r.lanes).filter(l=>l.gd!=null);
+  const lf=L.filter(l=>l.wr>=52), lu=L.filter(l=>l.wr<=48);
+  const series=[]; rows.forEach(x=>{ let s=series.find(y=>y.si===x.si); if(!s) series.push(s={si:x.si,date:x.date,opp:x.opp,n:0,w:0,win:0,p:0,t3:0});
+    s.n++; if(x.r.result==="W") s.w++; s.win+=x.r.win||50; s.p+=x.r.picks.length; s.t3+=x.r.picks.filter(p=>p.rank&&p.rank<=3).length; });
+  return {games:rows.length, fav:grp(x=>x.r.win>=53), neu:grp(x=>x.r.win>47&&x.r.win<53), unf:grp(x=>x.r.win<=47),
+    picks:P.length, top3, followed:grp(follow), notFollowed:grp(x=>!follow(x)),
+    laneFav:{n:lf.length,ok:lf.filter(l=>l.gd>0).length}, laneUnf:{n:lu.length,ok:lu.filter(l=>l.gd<0).length},
+    series:series.map(s=>({date:s.date,opp:s.opp,n:s.n,w:s.w,win:Math.round(s.win/s.n),t3:s.p?Math.round(100*s.t3/s.p):null})).reverse()}; }
+
+if(typeof module!=="undefined"&&module.exports) module.exports={bansAgainstUs,draftReview,reviewSummary,compTempo,banStrategy,punishers,exploitOf,familiesOf,familyCount,familyGaps,FAMS,vsHabit,vsAgainst,teamStats,champPerf,firstPickGuess,predictEnemy,botEdge,draftMoment,pickContext,scorePick,blindInfo,analyzeFinal,provenDuo,ourCounters,rankValue,pickBadge,synVal,CHAMPS,CHAMP_NAMES,STEPS,defaultConfig,recommendPicks,recommendDuos,recommendBans,banPlan,prepPlayers,stepLabel,poolOf,affinity,compProfile,identity,teamPicks,openRoles,findChamp,ICON_INDEX,force,metaInfo,matchup,ctrList,blindability,analyzeDraft,nextIsDouble};
