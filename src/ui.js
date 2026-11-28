@@ -63,10 +63,10 @@ function render(){
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===ui.tab));
   const v={draft:viewDraft,prep:viewPrep,pools:viewPools,hist:viewHistory,settings:viewSettings}[ui.tab]||viewDraft;
   const ae=document.activeElement, keep=ae&&ae.id==="gq"?[ae.selectionStart,ae.selectionEnd]:null;
-  $("#view").innerHTML=v()+(ui.tuto?tutoModal():""); if(keep){ const g=$("#gq"); if(g){ g.focus({preventScroll:true}); try{ g.setSelectionRange(keep[0],keep[1]); }catch(e){} } } const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
+  $("#view").innerHTML=v()+(ui.tuto?tutoModal():"")+(ui.bld?buildModal():""); if(keep){ const g=$("#gq"); if(g){ g.focus({preventScroll:true}); try{ g.setSelectionRange(keep[0],keep[1]); }catch(e){} } } const tp=$("#tip"); if(tp) tp.classList.remove("on"); document.body.classList.toggle("drafting",ui.tab==="draft"); renderSync(); saveLocal(); fitRows();
 }
 // Rafraîchissement ciblé de l'écran de draft (grille, barre de confirmation, cases, sélection) sans recalculer les suggestions
-function patchDraft(o){ const ar=ui.tab==="draft"&&ui.viewGame==null&&!ui.scout&&!ui.tuto?$("#view .arena"):null; if(!ar) return render();
+function patchDraft(o){ const ar=ui.tab==="draft"&&ui.viewGame==null&&!ui.scout&&!ui.tuto&&!ui.bld?$("#view .arena"):null; if(!ar) return render();
   const t=document.createElement("div");
   if(o.board){ t.innerHTML=boardCol("B",live.draft)+boardCol("R",live.draft); const [b,r]=t.children; if(!b||!r) return render(); ar.firstElementChild.replaceWith(b); ar.lastElementChild.replaceWith(r); }
   if(o.grid){ const gb=ar.querySelector(".gridbox"); if(!gb) return render(); t.innerHTML=grid(); const n=t.firstElementChild;
@@ -394,23 +394,40 @@ function finalHtml(d,ro){
     ${[["Early (0-14 min)",A.plan.early],["Mid game (14-25 min)",A.plan.mid],["Late game",A.plan.late]].filter(x=>x[1]&&x[1].length).map(x=>`<div class="ph"><em>${x[0]}</em><ul class="plan">${x[1].map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}
     ${buildsHtml(d,ro==="hist"?((history.series[(ui.hist||{}).s]||{}).lineup||null):prep.lineup)}
     ${d===live.draft||live.series.games.includes(d)?`<div class="row c res"><span class="muted">Résultat :</span><button class="btn sm ${d.result==="W"?"on w":""}" data-act="result" data-v="W">Victoire</button><button class="btn sm ${d.result==="L"?"on l":""}" data-act="result" data-v="L">Défaite</button></div>`:""}
-    ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Partie suivante → game ${live.series.games.length+2}</button><button class="btn big" data-act="endseries" title="Archive la série et lance l'export des stats depuis le client LoL">Fin de série</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
+    ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Partie suivante → game ${live.series.games.length+2}</button><button class="btn big" data-act="endseries" title="Archive la série et lance l'export des stats depuis le client LoL">Fin de série</button><span class="muted">Clique un champion adverse pour le corriger (les nôtres : bouton « Corriger ce pick » dans leur build)</span></div>`}</div>`;
 }
-// Builds adaptés (fin de draft) : build de base OP.GG du patch + ajustements selon leur compo et leur plan de jeu
-function buildsHtml(d,lineup){
-  const us=d.side, them=us==="B"?"R":"B", P=t=>teamPicks(d,t).filter(a=>a.role&&!a.miss);
-  const ours=P(us), theirs=P(them); if(ours.length<5||theirs.length<5) return "";
-  let r; try{ r=draftBuilds(ours.map(a=>({name:a.name,role:a.role})),theirs.map(a=>({name:a.name,role:a.role}))); }catch(e){ return ""; }
-  const B=r.builds.slice().sort((a,b)=>ROLES.indexOf(a.role)-ROLES.indexOf(b.role));
-  const chip=(it,k,b)=>`<span class="bit${b.changed.includes(it)?" chg":""}"><i>${k+1}</i>${esc(it)}</span>`;
-  return `<details class="bld"${ui.bldOpen===false?"":" open"}><summary><b>Builds adaptés à la draft</b> <span class="muted">base OP.GG ${BUILD_PATCH} ajustée à leur compo</span></summary>
+// Builds adaptés (fin de draft) : un clic sur un de nos champions ouvre son build (icônes), items adaptés surlignés et expliqués
+const ITEM_NAMES_LONG=Object.keys(ITEM_META).sort((a,b)=>b.length-a.length);
+const itFr=n=>(ITEM_META[n]||[])[2]||n;
+const frItems=t=>ITEM_NAMES_LONG.reduce((s,n)=>s.indexOf(n)<0?s:s.split(n).join(itFr(n)),t);
+function itIco(n,cls=""){ const m=ITEM_META[n]; if(!m) return `<span class="it none ${cls}" title="${esc(n)}">?</span>`; return `<span class="it ${cls}" style="--c:${m[0]%12};--r:${Math.floor(m[0]/12)}" title="${esc(m[2]+" · "+n)}"></span>`; }
+function draftComplete(d){ return d&&["B","R"].every(t=>teamPicks(d,t).filter(a=>a.role&&!a.miss).length>=5); }
+function buildsOf(d){ if(!draftComplete(d)) return null; const us=d.side, them=us==="B"?"R":"B", P=t=>teamPicks(d,t).filter(a=>a.role&&!a.miss).map(a=>({name:a.name,role:a.role}));
+  try{ return draftBuilds(P(us),P(them)); }catch(e){ return null; } }
+function buildsHtml(d,lineup){ const r=buildsOf(d); if(!r) return "";
+  const B=r.builds.slice().sort((a,b)=>ROLES.indexOf(a.role)-ROLES.indexOf(b.role)), n=B.filter(b=>b.changed.length||b.bootsChanged).length;
+  const kOf=name=>d.actions.findIndex((a,i)=>a&&a.name===name&&STEPS[i][0]==="pick"&&STEPS[i][1]===d.side);
+  return `<div class="bldhint"><b>Builds adaptés à la draft</b><span class="muted">clique sur un de nos champions${n?` · ${n} adapté${n>1?"s":""} à cette draft`:""}</span>
+    <div class="bldav">${B.map(b=>`<button class="bldc${b.changed.length||b.bootsChanged?" chg":""}" data-act="bld" data-k="${kOf(b.name)}" title="Build de ${esc(b.name)}">${av(b.name,"md")}${b.changed.length||b.bootsChanged?"<i>!</i>":""}</button>`).join("")}</div></div>`; }
+function bldCtx(){ const B=ui.bld; if(!B) return null;
+  if(B.src==="hist"){ const s=(history.series||[])[(ui.hist||{}).s]; const g=s&&s.games[(ui.hist||{}).g]; return g?{d:g,lineup:s.lineup||null,edit:false}:null; }
+  if(B.src==="vg"){ const g=live.series.games[ui.viewGame]; return g?{d:g,lineup:prep.lineup,edit:false}:null; }
+  return {d:live.draft,lineup:prep.lineup,edit:true}; }
+function buildModal(){ const c=bldCtx(); if(!c) return ""; const a=c.d.actions[ui.bld.k]; const r=a&&buildsOf(c.d); const b=r&&r.builds.find(x=>x.name===a.name); if(!b) return "";
+  const pl=c.lineup&&c.lineup[b.role], adapted=b.changed.length||b.bootsChanged;
+  const box=(it,txt)=>`<div class="bwhy">${itIco(it,"sm")}<div><b>${esc(itFr(it))}</b><span>${esc(frItems(txt))}</span></div></div>`;
+  return `<div class="scmodal" data-act="bldclose"><div class="scbox bldbox" data-act="none">
+    <div class="bmh">${av(b.name,"xl")}<div class="bmt"><b>${esc(b.name)}</b><span class="muted">${ROLE_NAMES[b.role]}${pl?" · "+esc(pl):""}</span></div><button class="btn sm" data-act="bldclose" title="Fermer">✕</button></div>
     <div class="bldsum"><span class="muted">En face :</span>${enemyBuildSummary(r.enemy).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>
-    ${B.map(b=>`<div class="bldr"><div class="bldh">${av(b.name,"xs")}<b>${esc(b.name)}</b><span class="muted">${ROLE_NAMES[b.role]}${lineup&&lineup[b.role]?" · "+esc(lineup[b.role]):""}</span>${b.changed.length||b.bootsChanged?'<span class="tag ok">adapté</span>':'<span class="muted sm">build habituel</span>'}</div>
-      ${b.base?"":'<div class="muted sm">Pas de build de base enregistré pour ce champion : seuls les ajustements sont indiqués</div>'}
-      ${b.items.length?`<div class="bits">${b.items.map((it,k)=>chip(it,k,b)).join("")}${b.boots?`<span class="bit boots${b.bootsChanged?" chg":""}">Bottes : ${esc(b.boots)}</span>`:""}</div>`:""}
-      ${b.why.length||b.bootsWhy||b.notes.length?`<ul class="bldw">${b.why.map(w=>`<li>${esc(w)}</li>`).join("")}${b.bootsWhy?`<li>${esc(b.boots)} : ${esc(b.bootsWhy)}</li>`:""}${b.notes.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`:""}</div>`).join("")}
-    <p class="muted sm">Repères, pas des obligations : le build de base vient des games Émeraude+ du patch, les ajustements de règles simples sur leur compo. À adapter à l'état de la partie.</p></details>`; }
-document.addEventListener("toggle",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("bld")) ui.bldOpen=t.open; },true);
+    <div class="bitems">${b.items.map((it,k)=>`<div class="bi${b.changed.includes(it)?" chg":""}">${itIco(it,"lg")}<i class="n">${k+1}</i></div>`).join("")}${b.boots?`<div class="bi boots${b.bootsChanged?" chg":""}">${itIco(b.boots,"lg")}<i class="n">bottes</i></div>`:""}</div>
+    ${b.base?"":'<p class="muted sm">Pas de build de base enregistré pour ce champion : seuls les items adaptés à la draft sont indiqués.</p>'}
+    ${b.comps.length?`<div class="bcomp">À acheter tôt : ${b.comps.map(x=>`${itIco(x,"sm")} ${esc(itFr(x))}`).join(" · ")}</div>`:""}
+    ${b.changed.slice().sort((x,y)=>b.items.indexOf(x)-b.items.indexOf(y)).map(it=>b.reasons[it]?box(it,b.reasons[it]):"").join("")}${b.bootsChanged?box(b.boots,b.bootsWhy):""}
+    ${b.late.length?`<div class="bcomp">Si la partie dure : ${b.late.map(x=>`${itIco(x,"sm")} ${esc(itFr(x))}`).join(" · ")}</div>${b.late.map(it=>b.reasons[it]?box(it,b.reasons[it]):"").join("")}`:""}
+    ${b.notes.map(t=>`<p class="muted sm">${esc(frItems(t))}</p>`).join("")}
+    ${adapted||b.late.length?"":'<p class="muted">Build habituel : rien dans leur draft ne demande de l\'adapter.</p>'}
+    <div class="bmf"><span class="muted sm">Base : build le plus joué sur OP.GG ${BUILD_PATCH} (Émeraude+). Items surlignés : adaptés à cette draft.</span>${c.edit?`<button class="btn sm" data-act="editslot" data-k="${ui.bld.k}">Corriger ce pick</button>`:""}</div>
+  </div></div>`; }
 function boardCol(team,d,ro){
   const i=ro?-1:targetIndex(); const active=!ro&&i>=0&&STEPS[i][1]===team;
   const slots=STEPS.map((s,k)=>({s,k})).filter(x=>x.s[1]===team);
@@ -424,7 +441,7 @@ function boardCol(team,d,ro){
   // Nos idées de picks pendant les bans 1 : bulles dans nos premières cases (bleu : first pick ; rouge : paires R1-R2)
   let ideas=null; const pk0=d.actions.findIndex(a=>!a);
   if(!ro&&team===d.side&&pk0>=0&&pk0<6&&sideOk()){ try{ ideas=pickIdeas(cfg,live.series,d,prep.lineup,14); }catch(e){ ideas=null; } }
-  let ii=0;
+  let ii=0; const full=draftComplete(d)&&(ro||i===-1);
   const pick=x=>{const a=d.actions[x.k], p=pv(x.k);
     if(ideas&&ideas.kind==="R"&&ii===1&&!a&&!p){ ii++; return ""; } // rouge : la case R2 est fusionnée avec R1
     if(!a&&!p&&ideas&&ideas.list.length&&ii<1){ ii++;
@@ -439,7 +456,8 @@ function boardCol(team,d,ro){
     if(a&&a.miss&&!p) return `<div class="pk miss ${x.k===i?"cur":""}" ${ro?"":`data-act="editslot" data-k="${x.k}" title="Clique pour indiquer le champion"`}><span class="miss">∅</span><div class="pki"><span class="muted">Pick raté : clique pour corriger</span></div></div>`;
     if(p) return `<div class="pk cur pv${hv(x.k)?" hov":""}">${av(p,"xl")}<div class="pki"><span class="nm">${esc(p)}</span><span class="muted">${hv(x.k)?"survolé sur Drafter":"à confirmer"}</span></div></div>`;
     const roles=CHAMPS[a.name]?CHAMPS[a.name].roles:ROLES;
-    return `<div class="pk ${x.k===i?"cur":""}"><button class="pkb" ${ro?"disabled":""} data-act="editslot" data-k="${x.k}" title="Corriger">${av(a.name,"xl")}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
+    const bk=full&&team===d.side;
+    return `<div class="pk ${x.k===i?"cur":""}${bk?" bk":""}"><button class="pkb" ${ro&&!bk?"disabled":""} data-act="${bk?"bld":"editslot"}" data-k="${x.k}" title="${bk?"Voir le build adapté à la draft":"Corriger"}">${av(a.name,"xl")}${bk?'<i class="bkb">build</i>':""}</button><div class="pki"><span class="nm">${esc(a.name)}${a.fx&&a.flex?` <b class="fxq" title="${esc("Flex possible : "+a.fx)}">Flex ?</b>`:a.flex?" <b class='fx'>*</b>":""}</span>
       <div class="pkrow">${ro?`<span class="muted">${ROLE_NAMES[a.role]||""}</span>`:`<select data-act="role" data-k="${x.k}">${ROLES.map(r=>`<option value="${r}" ${a.role===r?"selected":""}>${ROLE_NAMES[r]}${roles.includes(r)?"":" ?"}</option>`).join("")}</select>`}${famIcons(a.name)}</div>${a.fx&&a.flex?`<div class="fxl">${(a.fxr||[]).map(r=>ROLE_NAMES[r]).join(" ou ")} ?</div>`:""}</div>
       ${ro?"":`<button class="flex ${a.flex?"on":""}" data-act="flex" data-k="${x.k}" title="Flex pick : rôle incertain">*</button>`}</div>`;};
   const name=d.side===team?ourName():theirName();
@@ -685,6 +703,9 @@ document.addEventListener("click",e=>{
   const sc=e.target.closest("[data-act]"); if(sc&&sc.dataset.act==="none") return;
   if(sc&&sc.dataset.act==="scout"){ ui.scout=sc.dataset.r; render(); return; }
   if(sc&&sc.dataset.act==="scoutclose"){ ui.scout=null; render(); return; }
+  if(sc&&sc.dataset.act==="bld"){ ui.bld={k:+sc.dataset.k,src:ui.tab==="hist"?"hist":ui.viewGame!=null?"vg":"live"}; render(); return; }
+  if(sc&&sc.dataset.act==="bldclose"){ ui.bld=null; render(); return; }
+  if(sc&&sc.dataset.act==="editslot"&&ui.bld){ ui.bld=null; }
   if(sc&&sc.dataset.act==="tuto"){ ui.tuto=true; render(); return; }
   if(sc&&sc.dataset.act==="tutoclose"){ ui.tuto=false; render(); return; }
   const b=e.target.closest("[data-act]"); if(!b||["SELECT","INPUT","TEXTAREA"].includes(b.tagName)) return; const act=b.dataset.act;
@@ -720,7 +741,7 @@ document.addEventListener("click",e=>{
   else if(act==="clearprep"){ clearPrep(); flash("Préparation remise à zéro"); render(); }
   else if(act==="result"){ const g=ui.viewGame!=null?live.series.games[ui.viewGame]:live.draft; g.result=g.result===b.dataset.v?null:b.dataset.v; persist("live"); render(); }
   else if(act==="hview"){ ui.hist={s:+b.dataset.s,g:+b.dataset.g}; render(); }
-  else if(act==="hclose"){ ui.hist=null; render(); }
+  else if(act==="hclose"){ ui.hist=null; ui.bld=null; render(); }
   else if(act==="htype"){ const s=history.series[+b.dataset.s]; const T=["Scrim","Compétition"]; s.type=T[(T.indexOf(s.type||"Scrim")+1)%T.length]; persist("history"); render(); }
   else if(act==="goprep"){ ui.tab="prep"; render(); }
   else if(act==="pplayer"){ ui.poolPlayer=b.dataset.p; ui.tierPop=null; render(); }
@@ -761,11 +782,12 @@ document.addEventListener("input",e=>{ if(e.target.id==="gq"){ ui.gridQ=e.target
   for(const b of cg.children){ const h=!!q&&!(b.dataset.q||"").includes(q); if(b.hidden!==h) b.hidden=h; } } });
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&ui.scout){ ui.scout=null; render(); return; }
+  if(e.key==="Escape"&&ui.bld){ ui.bld=null; render(); return; }
   if(ui.tab!=="draft") return;
   if(e.key==="Enter"){ if(ui.pending){ addChamp(ui.pending.name,ui.pending.role); e.preventDefault(); }
     else if(e.target.id==="gq"){ const n=CHAMP_NAMES.filter(x=>(ui.gridRole==="all"||CHAMPS[x].roles.includes(ui.gridRole))&&normName(x).includes(normName(ui.gridQ)))[0]; if(n){ ui.pending={name:n,role:null}; patchDraft({board:1,cbar:1,sel:1}); } } }
   if(e.key==="Escape"){ ui.pending=null; ui.edit=null; render(); } });
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; ui.tierPop=null; render(); });
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; ui.tierPop=null; ui.bld=null; render(); });
 $("#champs").innerHTML=CHAMP_NAMES.map(n=>`<option value="${esc(n)}">`).join("");
 // Hors de Claude (GitHub Pages) : pas de base d'équipe, on charge la copie team.json publiée avec le site
 // Artefact Claude : l'historique publié (team.json, mis à jour par « Fin de série ») remplace celui de la base quand il est plus récent

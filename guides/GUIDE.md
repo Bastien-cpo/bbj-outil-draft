@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.21
+# Guide de l'outil draft BBJ — version 1.22
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -86,14 +86,15 @@ Clique le champion dans la grille, puis **Confirmer**. Un double-clic confirme d
 - **Forces et faiblesses** de chaque compo, avec les synergies et anti-synergies.
 - Les **4 matchups** : top, jungle, mid, botlane. Un « ≈ » signifie une estimation (pas de duel mesuré dans nos données).
 - Le **plan de jeu** : il n'apparaît que quand quelque chose est vraiment marqué (lane très gagnante ou perdante, gros écart d'early ou de scaling…).
-- **Builds adaptés à la draft** (cadre repliable) : pour nos 5 champions, l'ordre d'items conseillé pour cette game. On part du build le plus joué du patch, puis on l'ajuste selon leur compo. Les items en **vert** sont ceux qui ont été ajoutés ou avancés, avec la raison en dessous :
-  - **soins forts** en face (Vladimir, Mundo, Warwick…) : anti-soin obligatoire chez 2 joueurs, composant dès le 1er retour ;
+- **Builds adaptés à la draft** : à la fin de la draft, nos 5 champions portent un badge **BUILD** (et une ligne de raccourcis apparaît au centre). Un clic ouvre le build du champion : les icônes des 6 items dans l'ordre, puis les bottes. Le build de base (le plus joué du patch) n'a pas d'explication. Les items **surlignés en or** sont adaptés à cette draft, avec la raison dans un encadré :
+  - **soins forts** en face (Vladimir, Mundo, Warwick…) : anti-soin obligatoire chez 2 joueurs, composant dès le 1er retour (Thornmail en 2e pour un tank, Mortal Reminder en 4e pour un ADC) ;
   - **2 tanks ou plus** : pénétration plus tôt (Dominik, Black Cleaver, Void Staff…) ;
   - **3 corps à corps ou plus** : Runaan's à la place de l'item de vitesse d'attaque pour les ADC qui l'utilisent ;
-  - **leur plan = engage / dive / assassins** : défensif plus tôt chez nos carries (Guardian Angel, Shieldbow, Zhonya, Mikael's…) ;
-  - **carries critiques** en face : Randuin's chez nos tanks et supports tank ;
-  - beaucoup de **dégâts magiques**, de **boucliers** ou une **suppression** : résistance magique, Serpent's Fang, Mercurial ; les bottes des tanks et bruisers suivent aussi (Steelcaps ou Mercury's).
+  - **leur plan = engage / dive / assassins** : défensif chez nos carries, mais un ADC garde ses 3 premiers items offensifs (Ange gardien ou Shieldbow en 5e) ;
+  - **carries à vrais critiques** en face : Randuin's chez nos tanks (pas contre Ashe, dont les critiques ne font pas de dégâts en plus) ;
+  - beaucoup de **dégâts magiques**, de **boucliers** ou une **suppression** : résistance magique, Serpent's Fang, Mercurial ; les bottes des tanks et bruisers suivent aussi.
 
+  Pour corriger un de nos picks une fois la draft finie : ouvre son build, puis « Corriger ce pick ».
   Ce sont des repères, pas des obligations : l'état de la partie compte plus.
 - **Résultat** : Victoire / Défaite. **Partie suivante** sert seulement si l'outil ne suit pas tout seul ; **Fin de série**, c'est moi qui m'en occupe.
 

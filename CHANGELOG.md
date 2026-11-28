@@ -2,6 +2,14 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.22 — 28/11/2026
+- Builds adaptés : nouvel affichage. À la fin de la draft (et dans l'historique), un clic sur un de nos champions (badge « BUILD ») ouvre son build en **icônes**, dans l'ordre, avec les bottes. Les items adaptés à la draft sont surlignés et expliqués dans un encadré ; le build habituel n'a pas d'explication. Composants à acheter tôt et items « si la partie dure » indiqués à part. Noms d'items en français (nom anglais au survol). Nos picks se corrigent via « Corriger ce pick » dans leur build.
+- Icônes : les 120 items concernés, depuis Data Dragon 16.23.1, regroupés dans un seul fichier items.webp (77 Ko).
+- Règles revues avec Bastien :
+  - un ADC garde ses 3 premiers items offensifs : seuls des items de dégâts peuvent y entrer (Runaan's à la place de Phantom Dancer, Dominik contre les tanks). Le défensif passe en 5e item (Ange gardien, Shieldbow), ce qui correspond aussi aux données OP.GG où il n'apparaît qu'en 5e ou 6e item. L'anti-soin d'un ADC passe en 4e item (5e s'il est seulement utile), Executioner's Calling restant acheté tôt ;
+  - Ashe n'est plus comptée comme carry à coups critiques : ses critiques ne font pas de dégâts en plus (passif vérifié sur les données officielles), donc Randuin's ne sert presque à rien contre elle. Randuin's n'est conseillé que contre 2 vrais carries critiques ; contre des carries à l'auto-attaque sans critiques, c'est Frozen Heart ;
+  - un mage ne prend son défensif en 2e item que contre 2 assassins, sinon en 3e.
+
 ## 1.21 — 28/11/2026
 - Nouveau : **builds adaptés à la draft** dans l'analyse de fin de draft (et dans l'historique). Pour nos 5 champions, l'ordre des 6 items et les bottes :
   - base : le build le plus joué du patch 16.23 sur OP.GG (Émeraude+), relevé pour les 106 champions/rôles de nos pools (S à B). Un champion sans build de base reçoit seulement les ajustements ;
