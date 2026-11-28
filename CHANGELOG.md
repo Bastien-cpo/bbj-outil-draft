@@ -2,6 +2,14 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.24 — 28/11/2026
+- Builds, corrections après relecture de Bastien :
+  - items qui ne se cumulent pas (Data Dragon 16.23.1) : un seul item par groupe. Groupes : pénétration d'armure en % (Dominik, Mortal Reminder, Serylda's), pénétration magique en % (Void Staff, Cryptbloom), Hydre, Spellblade, Lifeline, Annul, Immolate, Quicksilver, items de Larme, Thornmail/Bramble Vest. Un item adapté retire l'item incompatible du build (ex. Jinx : Mortal Reminder remplace Dominik) ;
+  - anti-soin : 1 porteur (anti-soin utile) ou 2 (obligatoire) par équipe, en priorité ceux qui l'ont déjà dans leur core, puis un physique et un tank ou mage. Les autres joueurs n'en reçoivent plus, même si leur build OP.GG en contient en fin de partie ;
+  - items hors profil retirés : pas d'items critiques (IE…) pour un champion dont le core ne joue pas critique (Vi), pas d'items AP pour un champion AD ;
+  - plus jamais proposés par défaut : Mejai's Soulstealer (snowball) et Protoplasm Harness (situationnel, acheté tôt quand il l'est) ;
+  - pénétration après les dégâts : Void Staff en 4e item contre 3 tanks (5e contre 2) pour un mage, Dominik en 3e (4e contre 2 tanks) pour un ADC, Serylda's en 4e pour la létalité.
+
 ## 1.23 — 28/11/2026
 - Séries de démonstration : une série marquée « démo » s'affiche dans l'historique (builds consultables) mais est exclue du bilan des drafts, des bans probables et de l'export « Fin de série ». L'artifact contient une série « Démo builds » de 10 drafts d'exemple, à retirer une fois les builds relus.
 - Bottes des tanks et bruisers : Plated Steelcaps aussi contre une compo presque entièrement physique (peu d'AP), même sans carries à l'auto-attaque. Mercury's Treads n'est plus déclenché par les champions de dive, seulement par l'engage et les suppressions (ex. Cho'Gath et Wukong contre Riven, Briar, Talon, Draven, Blitzcrank : Steelcaps).

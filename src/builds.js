@@ -54,6 +54,16 @@ const B_AH={crit:["Mortal Reminder","Executioner's Calling"],onhit:["Mortal Remi
 const B_APOFF=new Set(["Nashor's Tooth","Rabadon's Deathcap","Zhonya's Hourglass"]);
 // Place minimale (0 = 1er item) d'un item situationnel selon le profil : un ADC garde ses 3 premiers items offensifs (défensif en 5e, d'après les 4e-6e items OP.GG)
 const B_MIN={def:{crit:4,onhit:4,leth:3,mage:2,bruiser:1,tank:1,tsup:1,ench:1},ah:{crit:3,onhit:3,leth:2,mage:2,bruiser:1,tank:1,tsup:1,ench:1}};
+// Items qui ne se cumulent pas (même passif unique ou même pénétration en %, d'après Data Dragon 16.23.1)
+const B_EXCL=[["Lord Dominik's Regards","Mortal Reminder","Serylda's Grudge"],["Void Staff","Cryptbloom"],["Titanic Hydra","Ravenous Hydra","Profane Hydra","Stridebreaker"],
+  ["Trinity Force","Lich Bane","Essence Reaver","Iceborn Gauntlet","Dusk and Dawn"],["Immortal Shieldbow","Maw of Malmortius","Sterak's Gage","Seraph's Embrace","Protoplasm Harness"],
+  ["Banshee's Veil","Edge of Night"],["Sunfire Aegis","Hollow Radiance"],["Mercurial Scimitar","Quicksilver Sash"],["Muramana","Seraph's Embrace","Fimbulwinter","Diadem of Songs"],
+  ["Thornmail","Bramble Vest"],["Mejai's Soulstealer","Dark Seal"]];
+const B_GRP={}; B_EXCL.forEach((g,i)=>g.forEach(n=>(B_GRP[n]=B_GRP[n]||[]).push(i)));
+const bClash=(a,b)=>a!==b&&(B_GRP[a]||[]).some(g=>(B_GRP[b]||[]).includes(g));
+// Jamais proposés par défaut : items de snowball ou très situationnels (Mejai's, Protoplasm Harness…)
+const B_NOFILL=new Set(["Mejai's Soulstealer","Protoplasm Harness","Dark Seal","Quicksilver Sash"]);
+const B_AHSET=new Set(["Mortal Reminder","Thornmail","Morellonomicon","Chempunk Chainsword","Executioner's Calling","Bramble Vest","Oblivion Orb"]);
 const ORD=i=>i<0?"fin de build, si la partie dure":i===0?"1er item":(i+1)+"e item";
 function lst(names){ return names.slice(0,3).join(", ")+(names.length>3?"…":""); }
 // Build adapté pour chacun de nos 5 champions. ours / theirs : [{name, role}] ; plans : familles de jeu des deux compos
@@ -64,11 +74,16 @@ function draftBuilds(ours,theirs){
   const ahOrder=["crit","onhit","tank","tsup","mage","bruiser","leth"];
   const info=ours.map(o=>{ const base=buildBase(o.name,o.role); let cls=buildClass(o.name,o.role,base); return {...o,base,cls}; });
   let ahWho=[];
-  if(E.healMust||E.healUseful){ const cand=info.filter(x=>B_AH[x.cls]).sort((a,b)=>ahOrder.indexOf(a.cls)-ahOrder.indexOf(b.cls));
-    const want=E.healMust?2:1; const first=cand[0]; if(first){ ahWho.push(first.name); if(want>1){ const physical=new Set(["crit","onhit","leth","bruiser"]); const second=cand.find(x=>x!==first&&physical.has(x.cls)!==physical.has(first.cls))||cand.find(x=>x!==first); if(second) ahWho.push(second.name); } } }
+  if(E.healMust||E.healUseful){ const want=E.healMust?2:1, physical=new Set(["crit","onhit","leth","bruiser"]);
+    const cand=info.filter(x=>B_AH[x.cls]).sort((a,b)=>{ const ca=a.base&&a.base.c.i.some(i=>B_AHSET.has(i))?0:1, cb=b.base&&b.base.c.i.some(i=>B_AHSET.has(i))?0:1; return ca-cb||ahOrder.indexOf(a.cls)-ahOrder.indexOf(b.cls); });
+    const first=cand[0]; if(first){ ahWho.push(first.name); if(want>1){ const second=cand.find(x=>x!==first&&physical.has(x.cls)!==physical.has(first.cls))||cand.find(x=>x!==first); if(second) ahWho.push(second.name); } } }
   info.forEach(o=>{
     const cls=o.cls, base=o.base, ops=[]; let boots=base?base.b:"", bootsWhy=null, notes=[];
-    const items=base?[...base.c.i.filter(x=>!BLD_COMPONENTS.has(x)),...(base.l||[])].filter((x,i,a)=>a.indexOf(x)===i&&!BLD_COMPONENTS.has(x)).slice(0,6):[];
+    const core=base?base.c.i.filter(x=>!BLD_COMPONENTS.has(x)):[];
+    const coreCrit=core.some(x=>BLD_SET.crit.has(x)), coreAP=core.filter(x=>BLD_SET.mage.has(x)).length>=2, isAH=ahWho.includes(o.name);
+    const okFill=x=>!BLD_COMPONENTS.has(x)&&!B_NOFILL.has(x)&&!(B_AHSET.has(x)&&!isAH)&&!(BLD_SET.crit.has(x)&&!coreCrit)&&!(BLD_SET.mage.has(x)&&!coreAP&&!core.includes(x));
+    const pool=[]; [...core,...(base?base.l:[]).filter(okFill)].forEach(x=>{ if(!pool.includes(x)&&!pool.some(y=>bClash(x,y))) pool.push(x); });
+    const items=pool.slice(0,6);
     const tear=base&&base.c.i.includes("Tear of the Goddess");
     const has=it=>items.slice(0,3).includes(it);
     const ad=cls==="crit"||cls==="onhit";
@@ -79,7 +94,8 @@ function draftBuilds(ours,theirs){
     const nt=E.tanks.length+(E.ap+E.ad<4?0:0);
     if(nt>=2&&cls!=="tank"&&cls!=="tsup"&&cls!=="ench"){
       const it=cls==="crit"?"Lord Dominik's Regards":cls==="onhit"?"Blade of The Ruined King":cls==="leth"?"Serylda's Grudge":cls==="bruiser"?"Black Cleaver":"Void Staff";
-      ops.push({it,at:nt>=3?1:2,prio:nt>=3?8:4,why:`${nt} tanks en face (${lst(E.tanks)}) : ${it} (${cls==="mage"?"pénétration magique":"pénétration d'armure"}) en %P`});
+      const at=cls==="mage"?(nt>=3?3:4):cls==="crit"?(nt>=3?2:3):cls==="leth"?3:(nt>=3?1:2);
+      ops.push({it,at,prio:nt>=3?8:4,why:`${nt} tanks en face (${lst(E.tanks)}) : ${it} (${cls==="mage"?"pénétration magique":"pénétration d'armure"}) en %P`});
       if(cls==="leth"&&nt>=3) notes.push("La létalité perd beaucoup de valeur contre 3 tanks : privilégier les dégâts sur la durée"); }
     // 3. Beaucoup de corps à corps : Runaan's pour les ADC qui l'utilisent
     if(E.melee.length>=3&&B_RUNAAN.has(o.name)&&cls==="crit"){
@@ -114,12 +130,14 @@ function draftBuilds(ours,theirs){
       if(want&&want!==boots){ boots=want; bootsWhy=w; } }
     // Application : les plus prioritaires en dernier (ils gardent leur place), 3 changements au plus
     const keep=ops.sort((a,b)=>b.prio-a.prio).slice(0,3); const L=items.slice(); const changed=new Set();
-    keep.slice().reverse().forEach(op=>{ let k=L.indexOf(op.it); const was=k;
+    keep.slice().reverse().forEach(op=>{ for(let j=L.length-1;j>=0;j--) if(bClash(op.it,L[j])) L.splice(j,1); let k=L.indexOf(op.it); const was=k;
       if(k<0&&op.replace){ const r=op.replace.find(x=>L.slice(0,3).includes(x)); if(r){ k=L.indexOf(r); L.splice(k,1); } }
       if(was>=0) L.splice(was,1);
       if(was>=0&&was<=op.at){ L.splice(was,0,op.it); op.already=true; return; }
       L.splice(Math.min(op.at,L.length),0,op.it); if(was<0) changed.add(op.it); else changed.add(op.it); });
-    const all=L.filter((x,i,a)=>a.indexOf(x)===i), final=all.slice(0,6), late=keep.filter(x=>!final.includes(x.it)).map(x=>x.it);
+    const all=[]; L.forEach(x=>{ if(!all.includes(x)&&!all.some(y=>bClash(x,y))) all.push(x); });
+    pool.forEach(x=>{ if(all.length<6&&!all.includes(x)&&!all.some(y=>bClash(x,y))) all.push(x); });
+    const final=all.slice(0,6), late=keep.filter(x=>!final.includes(x.it)).map(x=>x.it);
     out.push({name:o.name,role:o.role,player:o.player,cls,base:base?{core:base.c,boots:base.b,tear}:null,items:final,changed:[...changed].filter(x=>final.includes(x)),late,reasons:Object.fromEntries(keep.filter(x=>!x.already).map(x=>[x.it,x.why.replace("%P",ORD(final.indexOf(x.it)))])),boots,bootsChanged:!!bootsWhy,bootsWhy,
       why:keep.filter(x=>!x.already).map(x=>x.why.replace("%P",ORD(final.indexOf(x.it)))),kept:keep.filter(x=>x.already).map(x=>x.it),comps:keep.filter(x=>x.comp).map(x=>x.comp),notes}); });
   return {enemy:E,builds:out}; }
