@@ -392,9 +392,25 @@ function finalHtml(d,ro){
     <div class="acards">${us==="R"?card(theirName(),A.them)+card(ourName(),A.us):card(ourName(),A.us)+card(theirName(),A.them)}</div>
     ${A.lanes.length?`<div class="lanes">${A.lanes.map(l=>`<span class="lane ${l.wr>=53?"w":l.wr<=47?"l":""}" ${l.detail?`title="${esc(l.detail)}"`:""}>${l.role==="B"?"Botlane":ROLE_NAMES[l.role]} : ${(()=>{ const o=av(l.ours,"xs")+(l.ours2?av(l.ours2,"xs"):""), t=av(l.theirs,"xs")+(l.theirs2?av(l.theirs2,"xs"):""); return us==="R"?t+" vs "+o:o+" vs "+t; })()} <b title="${l.est?"Estimation (pas de duel mesuré)":"Notre winrate"}">${l.est?"≈":""}${l.wr}%</b></span>`).join("")}</div>`:""}
     ${[["Early (0-14 min)",A.plan.early],["Mid game (14-25 min)",A.plan.mid],["Late game",A.plan.late]].filter(x=>x[1]&&x[1].length).map(x=>`<div class="ph"><em>${x[0]}</em><ul class="plan">${x[1].map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}
+    ${buildsHtml(d,ro==="hist"?((history.series[(ui.hist||{}).s]||{}).lineup||null):prep.lineup)}
     ${d===live.draft||live.series.games.includes(d)?`<div class="row c res"><span class="muted">Résultat :</span><button class="btn sm ${d.result==="W"?"on w":""}" data-act="result" data-v="W">Victoire</button><button class="btn sm ${d.result==="L"?"on l":""}" data-act="result" data-v="L">Défaite</button></div>`:""}
     ${ro==="hist"?"":ro?`<div class="row c"><button class="btn" data-act="viewgame" data-k="-1">Retour à la draft en cours</button></div>`:`<div class="row c"><button class="btn pri big" data-act="nextgame">Partie suivante → game ${live.series.games.length+2}</button><button class="btn big" data-act="endseries" title="Archive la série et lance l'export des stats depuis le client LoL">Fin de série</button><span class="muted">Clique un champion du tableau pour le corriger</span></div>`}</div>`;
 }
+// Builds adaptés (fin de draft) : build de base OP.GG du patch + ajustements selon leur compo et leur plan de jeu
+function buildsHtml(d,lineup){
+  const us=d.side, them=us==="B"?"R":"B", P=t=>teamPicks(d,t).filter(a=>a.role&&!a.miss);
+  const ours=P(us), theirs=P(them); if(ours.length<5||theirs.length<5) return "";
+  let r; try{ r=draftBuilds(ours.map(a=>({name:a.name,role:a.role})),theirs.map(a=>({name:a.name,role:a.role}))); }catch(e){ return ""; }
+  const B=r.builds.slice().sort((a,b)=>ROLES.indexOf(a.role)-ROLES.indexOf(b.role));
+  const chip=(it,k,b)=>`<span class="bit${b.changed.includes(it)?" chg":""}"><i>${k+1}</i>${esc(it)}</span>`;
+  return `<details class="bld"${ui.bldOpen===false?"":" open"}><summary><b>Builds adaptés à la draft</b> <span class="muted">base OP.GG ${BUILD_PATCH} ajustée à leur compo</span></summary>
+    <div class="bldsum"><span class="muted">En face :</span>${enemyBuildSummary(r.enemy).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>
+    ${B.map(b=>`<div class="bldr"><div class="bldh">${av(b.name,"xs")}<b>${esc(b.name)}</b><span class="muted">${ROLE_NAMES[b.role]}${lineup&&lineup[b.role]?" · "+esc(lineup[b.role]):""}</span>${b.changed.length||b.bootsChanged?'<span class="tag ok">adapté</span>':'<span class="muted sm">build habituel</span>'}</div>
+      ${b.base?"":'<div class="muted sm">Pas de build de base enregistré pour ce champion : seuls les ajustements sont indiqués</div>'}
+      ${b.items.length?`<div class="bits">${b.items.map((it,k)=>chip(it,k,b)).join("")}${b.boots?`<span class="bit boots${b.bootsChanged?" chg":""}">Bottes : ${esc(b.boots)}</span>`:""}</div>`:""}
+      ${b.why.length||b.bootsWhy||b.notes.length?`<ul class="bldw">${b.why.map(w=>`<li>${esc(w)}</li>`).join("")}${b.bootsWhy?`<li>${esc(b.boots)} : ${esc(b.bootsWhy)}</li>`:""}${b.notes.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`:""}</div>`).join("")}
+    <p class="muted sm">Repères, pas des obligations : le build de base vient des games Émeraude+ du patch, les ajustements de règles simples sur leur compo. À adapter à l'état de la partie.</p></details>`; }
+document.addEventListener("toggle",e=>{ const t=e.target; if(t&&t.classList&&t.classList.contains("bld")) ui.bldOpen=t.open; },true);
 function boardCol(team,d,ro){
   const i=ro?-1:targetIndex(); const active=!ro&&i>=0&&STEPS[i][1]===team;
   const slots=STEPS.map((s,k)=>({s,k})).filter(x=>x.s[1]===team);

@@ -1,4 +1,4 @@
-# Guide de l'outil draft BBJ — version 1.20
+# Guide de l'outil draft BBJ — version 1.21
 
 **Lien de l'outil :** https://bastien-cpo.github.io/bbj-outil-draft/
 
@@ -86,6 +86,15 @@ Clique le champion dans la grille, puis **Confirmer**. Un double-clic confirme d
 - **Forces et faiblesses** de chaque compo, avec les synergies et anti-synergies.
 - Les **4 matchups** : top, jungle, mid, botlane. Un « ≈ » signifie une estimation (pas de duel mesuré dans nos données).
 - Le **plan de jeu** : il n'apparaît que quand quelque chose est vraiment marqué (lane très gagnante ou perdante, gros écart d'early ou de scaling…).
+- **Builds adaptés à la draft** (cadre repliable) : pour nos 5 champions, l'ordre d'items conseillé pour cette game. On part du build le plus joué du patch, puis on l'ajuste selon leur compo. Les items en **vert** sont ceux qui ont été ajoutés ou avancés, avec la raison en dessous :
+  - **soins forts** en face (Vladimir, Mundo, Warwick…) : anti-soin obligatoire chez 2 joueurs, composant dès le 1er retour ;
+  - **2 tanks ou plus** : pénétration plus tôt (Dominik, Black Cleaver, Void Staff…) ;
+  - **3 corps à corps ou plus** : Runaan's à la place de l'item de vitesse d'attaque pour les ADC qui l'utilisent ;
+  - **leur plan = engage / dive / assassins** : défensif plus tôt chez nos carries (Guardian Angel, Shieldbow, Zhonya, Mikael's…) ;
+  - **carries critiques** en face : Randuin's chez nos tanks et supports tank ;
+  - beaucoup de **dégâts magiques**, de **boucliers** ou une **suppression** : résistance magique, Serpent's Fang, Mercurial ; les bottes des tanks et bruisers suivent aussi (Steelcaps ou Mercury's).
+
+  Ce sont des repères, pas des obligations : l'état de la partie compte plus.
 - **Résultat** : Victoire / Défaite. **Partie suivante** sert seulement si l'outil ne suit pas tout seul ; **Fin de série**, c'est moi qui m'en occupe.
 
 ---
@@ -154,3 +163,4 @@ Je m'occupe ensuite de récupérer la série et les stats des games depuis mon P
 - **Matchups** : lolalytics Maître+, complétés par lolstats.gg. **Synergies** : lolstats.gg et metabot.gg.
 - **Nos games** : Parthénon (72 scrims jusqu'au 17/11), puis chaque série exportée avec « Fin de série ».
 - **Solo Q** : op.gg, tous les comptes de chaque joueur.
+- **Builds de base** : OP.GG patch 16.23 (Émeraude+), le core le plus joué de chaque champion de nos pools, relevé le 28/11. Les ajustements selon la compo sont des règles écrites à la main (à corriger avec vos retours).

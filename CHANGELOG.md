@@ -2,6 +2,21 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.21 — 28/11/2026
+- Nouveau : **builds adaptés à la draft** dans l'analyse de fin de draft (et dans l'historique). Pour nos 5 champions, l'ordre des 6 items et les bottes :
+  - base : le build le plus joué du patch 16.23 sur OP.GG (Émeraude+), relevé pour les 106 champions/rôles de nos pools (S à B). Un champion sans build de base reçoit seulement les ajustements ;
+  - ajustements selon leur compo, avec la raison affichée et la place réelle de l'item :
+    - soins (Vladimir, Mundo, Warwick, Aatrox, Soraka, Yuumi, Sylas, Swain…) : anti-soin obligatoire chez 2 joueurs (un physique, un tank ou mage), composant dès le 1er retour, ou utile chez 1 joueur ;
+    - 2 tanks ou plus : pénétration en 3e item, en 2e item contre 3 tanks ;
+    - 3 corps à corps ou plus : Runaan's Hurricane à la place de l'item de vitesse d'attaque (Phantom Dancer, Navori, Rapid Firecannon) pour les ADC qui l'utilisent ;
+    - lien avec les familles de jeu : contre une compo engage / dive / assassins, nos carries avancent leur défensif (Guardian Angel ou Shieldbow pour l'ADC, Zhonya ou Banshee pour le mage, Mikael's ou Locket pour l'enchanteur, Knight's Vow pour le support tank) ;
+    - 2 carries critiques ou à l'auto-attaque : Randuin's ou Frozen Heart chez nos tanks, Death's Dance chez les bruisers ;
+    - dégâts magiques (3 sources ou plus), boucliers (Serpent's Fang), suppressions (Mercurial Scimitar) ;
+    - bottes des tanks, bruisers et supports tank : Plated Steelcaps contre une compo physique à l'auto-attaque, Mercury's Treads contre une compo magique ou pleine de contrôles ;
+  - 3 changements au plus par champion, les plus importants gardent leur place.
+- Exemple sur nos games : G2 contre EQX (Ashe contre Alistar, Pantheon, Galio, Renekton), l'outil aurait conseillé Runaan's en 2e item à la place de Phantom Dancer.
+- À revoir : les règles sont écrites à la main et les listes de champions (soins, boucliers, corps à corps…) sont à corriger avec vos retours.
+
 ## 1.20 — 27/11/2026
 - Allègement et rapidité (aucun changement de calcul ni d'affichage) :
   - recherche de champion instantanée : chaque lettre masque ou affiche les champions déjà dans la grille au lieu de tout redessiner (2 ms par lettre au lieu de 50 à 110 ms) ;
