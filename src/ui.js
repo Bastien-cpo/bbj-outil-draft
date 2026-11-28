@@ -262,7 +262,9 @@ function analysisHtml(s,gi){ let a; try{ a=gameAnalysis(cfg,s,gi,prepFor(s)); }c
     ${a.notes.length?`<div class="rvnotes">${a.notes.map(x=>`<div>• ${esc(x)}</div>`).join("")}</div>`:""}
     <p class="muted sm">Lecture automatique à partir des chiffres : elle ne voit ni la communication ni les décisions, à confronter avec la VOD.</p></div>`; }
 let _revCache=null;
-function reviewSummaryHtml(){ const S=history.series||[]; const key=JSON.stringify(S.map(s=>[s.date,s.opponent,s.games.map(g=>g.result+(g.stats?1:0))]))+JSON.stringify(cfg.tiers||{}).length;
+// Séries de démonstration (s.demo) : visibles dans l'historique, exclues du bilan, des stats et de l'export
+const realSeries=()=>(history.series||[]).filter(s=>!s.demo);
+function reviewSummaryHtml(){ const S=realSeries(); const key=JSON.stringify(S.map(s=>[s.date,s.opponent,s.games.map(g=>g.result+(g.stats?1:0))]))+JSON.stringify(cfg.tiers||{}).length;
   if(!_revCache||_revCache.key!==key){ let v=null; try{ v=reviewSummary(cfg,S,prepFor,reviewOf); }catch(e){} _revCache={key,v}; }
   const v=_revCache.v; if(!v||!v.games) return "";
   const pc=(a,b)=>b?Math.round(100*a/b)+" %":"–", wr=g=>g.n?`${g.w}/${g.n} (${pc(g.w,g.n)})`:"–";
@@ -575,7 +577,7 @@ function viewPrep(){
     <div class="ids5">${ROLES.map((r,k)=>`<label><em>Joueur ${k+1}</em><input data-act="pid" data-k="${k}" value="${esc((prep.ids||[])[k]||"")}" placeholder="Pseudo#TAG"></label>`).join("")}</div>
     <div class="row"><button class="btn pri" data-act="askprep">Demander l'analyse op.gg</button><button class="btn sm" data-act="clearprep" title="Série terminée : vide l'adversaire, son op.gg et les bans de préparation">Effacer la préparation</button>${multiLink()?`<a class="lnk" href="${esc(multiLink())}" target="_blank" rel="noopener">Ouvrir le multi-op.gg</a>`:""}</div>
     ${reqStatus()||prep.updatedAt?`<p class="muted">${reqStatus()}${prep.updatedAt?` Profils mis à jour le ${esc(prep.updatedAt)}.`:""}</p>`:""}</section>
-  ${(()=>{ const B=bansAgainstUs(history.series,prep.opponent); if(!B.games||!B.list.length) return "";
+  ${(()=>{ const B=bansAgainstUs(realSeries(),prep.opponent); if(!B.games||!B.list.length) return "";
     return `<section class="card"><h3>Bans probables contre nous</h3><p class="muted">Ce qu'on nous a banni sur ${B.games} games de l'historique (${esc(prep.opponent||"l'adversaire")} compte double). Utile pour préparer les plans B et s'entraîner à drafter avant le match.</p>
     <div class="chips">${B.list.slice(0,10).map(x=>`<span class="chip" title="${esc(`${x.name} : banni ${x.n} fois contre nous${x.same?`, dont ${x.same} par ${prep.opponent}`:""}`)}">${av(x.name,"sm")}<b>${x.n}×</b>${x.same?`<span class="muted">${esc(prep.opponent)} ${x.same}×</span>`:""}</span>`).join("")}</div></section>`; })()}
   <section class="card"><h3>Bans conseillés</h3>
@@ -815,7 +817,7 @@ function importFromHash(){ const m=location.hash.match(/^#import=([\w-]+)/); if(
   window.history.replaceState(null,"",location.pathname+location.search);
   let data; try{ const b=m[1].replace(/-/g,"+").replace(/_/g,"/"), bin=atob(b+"===".slice((b.length+3)%4)); data=JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))); }catch(e){ flash("Import illisible"); return; }
   const G=(data.games||[]).slice().sort((a,b)=>a.at-b.at); if(!G.length) return;
-  const S=history.series||[]; let s=S.find(x=>x.pendingExport)||S.find(x=>x.games.length===G.length&&!x.games.some(g=>g.stats))||S[0]; if(!s) return;
+  const S=realSeries(); let s=S.find(x=>x.pendingExport)||S.find(x=>x.games.length===G.length&&!x.games.some(g=>g.stats))||S[0]; if(!s) return;
   const games=s.games, off=Math.max(0,G.length-games.length), list=G.slice(off);
   games.forEach((g,i)=>{ const x=list[i]; if(!x) return; g.stats={gameId:x.gameId,min:x.min,us:x.us,them:x.them,objUs:x.objUs,objThem:x.objThem}; if(!g.result&&x.win!=null) g.result=x.win?"W":"L"; });
   delete s.pendingExport; persist("history"); saveNow(); if(bbjBC) bbjBC.postMessage("reload");

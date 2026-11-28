@@ -2,6 +2,10 @@
 
 Chaque version résume ce qui a été ajouté ou changé concrètement. Les points marqués « à revoir » sont des choix discutables à rediscuter en équipe.
 
+## 1.23 — 28/11/2026
+- Séries de démonstration : une série marquée « démo » s'affiche dans l'historique (builds consultables) mais est exclue du bilan des drafts, des bans probables et de l'export « Fin de série ». L'artifact contient une série « Démo builds » de 10 drafts d'exemple, à retirer une fois les builds relus.
+- Bottes des tanks et bruisers : Plated Steelcaps aussi contre une compo presque entièrement physique (peu d'AP), même sans carries à l'auto-attaque. Mercury's Treads n'est plus déclenché par les champions de dive, seulement par l'engage et les suppressions (ex. Cho'Gath et Wukong contre Riven, Briar, Talon, Draven, Blitzcrank : Steelcaps).
+
 ## 1.22 — 28/11/2026
 - Builds adaptés : nouvel affichage. À la fin de la draft (et dans l'historique), un clic sur un de nos champions (badge « BUILD ») ouvre son build en **icônes**, dans l'ordre, avec les bottes. Les items adaptés à la draft sont surlignés et expliqués dans un encadré ; le build habituel n'a pas d'explication. Composants à acheter tôt et items « si la partie dure » indiqués à part. Noms d'items en français (nom anglais au survol). Nos picks se corrigent via « Corriger ce pick » dans leur build.
 - Icônes : les 120 items concernés, depuis Data Dragon 16.23.1, regroupés dans un seul fichier items.webp (77 Ko).

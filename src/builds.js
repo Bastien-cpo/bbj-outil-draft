@@ -41,12 +41,12 @@ function buildClass(c,role,base){
   return role==="M"?"leth":"bruiser"; }
 // Ce que la compo adverse impose
 function enemyProfile(names){
-  const p={n:names.length,melee:[],tanks:[],crit:[],aa:[],heal2:[],heal1:[],shield:[],supp:[],assaAD:[],assaAP:[],engage:[],poke:[],ad:0,ap:0};
+  const p={n:names.length,cc:[],melee:[],tanks:[],crit:[],aa:[],heal2:[],heal1:[],shield:[],supp:[],assaAD:[],assaAP:[],engage:[],poke:[],ad:0,ap:0};
   names.forEach(c=>{ const C=CHAMPS[c]; if(!C) return;
     if(B_MELEE.has(c)) p.melee.push(c); if(C.dmg==="TK") p.tanks.push(c); if(B_CRIT.has(c)) p.crit.push(c); if(B_CRIT.has(c)||B_ONHIT.has(c)) p.aa.push(c);
     if(B_HEAL2.has(c)) p.heal2.push(c); else if(B_HEAL1.has(c)) p.heal1.push(c); if(B_SHIELD.has(c)) p.shield.push(c); if(B_SUPP.has(c)) p.supp.push(c);
     if(B_ASSA_AD.has(c)) p.assaAD.push(c); if(B_ASSA_AP.has(c)) p.assaAP.push(c);
-    const f=familiesOf(c); if(f.includes("engage")||f.includes("dive")) p.engage.push(c); if(f.includes("poke")) p.poke.push(c);
+    const f=familiesOf(c); if(f.includes("engage")||f.includes("dive")) p.engage.push(c); if(f.includes("engage")) p.cc.push(c); if(f.includes("poke")) p.poke.push(c);
     p.ad+=C.dmg==="AD"?1:C.dmg==="MIX"?0.5:C.dmg==="TK"?0.3:0; p.ap+=C.dmg==="AP"?1:C.dmg==="MIX"?0.5:C.dmg==="TK"?0.3:0; });
   p.heal=p.heal2.length*2+p.heal1.length; p.healMust=p.heal2.length>=1&&p.heal>=3||p.heal2.length>=2; p.healUseful=p.heal>=3||p.heal2.length>=1;
   return p; }
@@ -109,8 +109,8 @@ function draftBuilds(ours,theirs){
     // Bottes des tanks / bruisers / supports tank
     if(cls==="tank"||cls==="bruiser"||cls==="tsup"){
       let want=null, w=null;
-      if(E.ad>=3.5&&E.aa.length>=2){ want="Plated Steelcaps"; w=`${Math.round(E.ad)} sources de dégâts physiques dont ${E.aa.length} à l'auto-attaque`; }
-      else if(E.ap>=3||E.engage.length+E.supp.length>=3){ want="Mercury's Treads"; w=E.ap>=3?`${Math.round(E.ap)} sources de dégâts magiques`:"beaucoup de contrôles en face"; }
+      if(E.ad>=3.5&&(E.aa.length>=2||E.ap<1.5)){ want="Plated Steelcaps"; w=E.aa.length>=2?`${Math.round(E.ad)} sources de dégâts physiques dont ${E.aa.length} à l'auto-attaque`:`compo presque entièrement physique (${Math.round(E.ad)} sources de dégâts physiques)`; }
+      else if(E.ap>=3||E.cc.length+E.supp.length>=3){ want="Mercury's Treads"; w=E.ap>=3?`${Math.round(E.ap)} sources de dégâts magiques`:"beaucoup de contrôles en face"; }
       if(want&&want!==boots){ boots=want; bootsWhy=w; } }
     // Application : les plus prioritaires en dernier (ils gardent leur place), 3 changements au plus
     const keep=ops.sort((a,b)=>b.prio-a.prio).slice(0,3); const L=items.slice(); const changed=new Set();
